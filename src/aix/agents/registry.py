@@ -20,7 +20,7 @@ from aix.config.schema import AixConfig
 from aix.domain.agents import AgentSpec
 from aix.domain.errors import ConfigError
 
-BUILTIN_IDS: tuple[str, ...] = ("fake", "claude", "codex", "gemini", "opencode")
+BUILTIN_IDS: tuple[str, ...] = ("fake", "claude", "codex", "gemini", "opencode", "ollama")
 """Built-in adapter ids; extended as each adapter lands (M2.4 fake, M2.7 claude, ...)."""
 
 ALWAYS_ENABLED: frozenset[str] = frozenset({"fake"})

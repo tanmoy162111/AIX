@@ -1,0 +1,22 @@
+id: ollama
+name: Ollama (local models)
+kind: local
+probe:
+  version_args: []
+  help_args: []
+capabilities:
+  research: 0.55
+  review: 0.5
+  summarize: 0.65
+  design: 0.4
+cost_class: free
+supports:
+  streaming: true
+  sessions: false
+  non_interactive: true
+  cancel: true
+  cost_reporting: full
+  model_select: true
+  enforces: [read_only, write_scope, network_deny]
+env_allowlist:
+  - OLLAMA_HOST
