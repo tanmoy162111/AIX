@@ -176,3 +176,14 @@ async def test_wait_without_consuming_lines_still_finishes(tmp_path: Path) -> No
     async with spawn(py("print('x')"), cwd=tmp_path, env=base_env(), timeout_s=20) as p:
         res = await p.wait()
     assert res.exit_code == 0
+
+
+async def test_stdin_is_devnull_by_default_and_fed_when_given(tmp_path: Path) -> None:
+    code = "import sys; print(repr(sys.stdin.read()))"
+    lines, _ = await run_all(py(code), tmp_path)
+    assert lines == ["''"]
+    big = "x" * 300_000
+    lines2, res = await run_all(
+        py("import sys; print(len(sys.stdin.read()))"), tmp_path, stdin_data=big.encode()
+    )
+    assert lines2 == ["300000"] and res.exit_code == 0

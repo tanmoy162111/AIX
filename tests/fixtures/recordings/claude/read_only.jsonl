@@ -1,0 +1,3 @@
+{"type":"system","subtype":"init","cwd":"/work/ws","session_id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","tools":["Read","Glob","Grep"],"model":"claude-sonnet-5","permissionMode":"dontAsk"}
+{"type":"assistant","message":{"id":"msg_10","role":"assistant","model":"claude-sonnet-5","content":[{"type":"text","text":"The repo has a UserStore and a request handler."}],"usage":{"input_tokens":90,"output_tokens":12}},"session_id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":2100,"num_turns":1,"result":"The repo has a UserStore and a request handler.","session_id":"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee","total_cost_usd":0.004,"usage":{"input_tokens":90,"output_tokens":12}}

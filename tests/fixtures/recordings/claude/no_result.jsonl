@@ -1,0 +1,2 @@
+{"type":"system","subtype":"init","session_id":"s-none","model":"claude-sonnet-5","tools":["Read"]}
+{"type":"assistant","message":{"id":"m","role":"assistant","content":[{"type":"text","text":"working..."}]},"session_id":"s-none"}

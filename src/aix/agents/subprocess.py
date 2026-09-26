@@ -1,6 +1,7 @@
 """Shared streaming subprocess runner (PLAYBOOK §10.3).
 
-* ``anyio.open_process`` in a new session/process group; ``cwd`` is the workspace; the ``env`` is
+* ``anyio.open_process`` in a new session/process group (stdin is /dev/null, or a pipe fed with
+  ``stdin_data``); ``cwd`` is the workspace; the ``env`` is
   used *as given* (the caller has already filtered it, §20.5). Never ``shell=True``.
 * stdout is delivered line by line and, optionally, mirrored to a raw capture file.
 * stderr is drained concurrently into a bounded ring buffer (256 KiB tail).
@@ -15,6 +16,7 @@ from __future__ import annotations
 import math
 import os
 import signal
+import subprocess
 import time
 from collections import deque
 from collections.abc import AsyncIterator
@@ -125,6 +127,16 @@ class RunningProcess:
             while self._stderr_size - len(self._stderr[0]) >= STDERR_LIMIT:
                 self._stderr_size -= len(self._stderr.popleft())
 
+    async def _feed_stdin(self, data: bytes) -> None:
+        stream = self._proc.stdin
+        assert stream is not None
+        try:
+            await stream.send(data)
+        except (anyio.BrokenResourceError, anyio.ClosedResourceError):
+            pass  # the child exited before reading everything; its exit code tells the story
+        finally:
+            await stream.aclose()
+
     async def _watchdog(self) -> None:
         with anyio.move_on_after(self._timeout_s) as scope:
             await self._done.wait()
@@ -187,6 +199,7 @@ async def spawn(
     timeout_s: float,
     grace_s: float = 10.0,
     capture_path: Path | None = None,
+    stdin_data: bytes | None = None,
 ) -> AsyncIterator[RunningProcess]:
     """Start ``argv`` and manage its lifetime.
 
@@ -199,7 +212,7 @@ async def spawn(
     try:
         proc = await anyio.open_process(
             argv,
-            stdin=None,
+            stdin=subprocess.PIPE if stdin_data is not None else subprocess.DEVNULL,
             stdout=-1,
             stderr=-1,
             cwd=cwd,
@@ -224,6 +237,8 @@ async def spawn(
             tg.start_soon(running._pump_stdout)  # pyright: ignore[reportPrivateUsage]
             tg.start_soon(running._pump_stderr)  # pyright: ignore[reportPrivateUsage]
             tg.start_soon(running._watchdog)  # pyright: ignore[reportPrivateUsage]
+            if stdin_data is not None:
+                tg.start_soon(running._feed_stdin, stdin_data)  # pyright: ignore[reportPrivateUsage]
             try:
                 yield running
             finally:

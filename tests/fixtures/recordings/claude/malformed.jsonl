@@ -1,0 +1,7 @@
+{"type":"system","subtype":"init","session_id":"s-mal","model":"claude-sonnet-5","tools":["Read"]}
+this is not json at all
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"partial"
+{"type":"assistant","message":{"id":"m","role":"assistant","content":[{"type":"text","text":"ok after garbage"}]},"session_id":"s-mal"}
+["valid","json","but","not","an","object"]
+{"type":"totally_unknown_event","payload":1}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":10,"num_turns":1,"result":"ok after garbage","session_id":"s-mal","total_cost_usd":0.001,"usage":{"input_tokens":10,"output_tokens":3}}

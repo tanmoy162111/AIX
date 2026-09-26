@@ -1,0 +1,2 @@
+{"type":"system","subtype":"init","session_id":"s-max","model":"claude-sonnet-5","tools":["Read"]}
+{"type":"result","subtype":"error_max_turns","is_error":true,"duration_ms":30000,"num_turns":25,"session_id":"s-max","total_cost_usd":0.5,"usage":{"input_tokens":9000,"output_tokens":1500}}

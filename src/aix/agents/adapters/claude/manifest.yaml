@@ -1,0 +1,41 @@
+id: claude
+name: Claude Code
+kind: cli
+binary: claude
+probe:
+  version_args: ["--version"]
+  help_args: ["--help"]
+  auth_check: exec_smoke
+required_flags:
+  - --output-format
+  - --verbose
+  - --permission-mode
+  - --allowedTools
+  - --disallowedTools
+  - --model
+  - --resume
+capabilities:
+  design: 0.9
+  implement: 0.85
+  debug: 0.85
+  review: 0.85
+  research: 0.8
+  summarize: 0.8
+  document: 0.8
+  test: 0.75
+  security: 0.7
+cost_class: high
+supports:
+  streaming: true
+  sessions: true
+  non_interactive: true
+  cancel: true
+  cost_reporting: full
+  model_select: true
+models: [fable, opus, sonnet]
+env_allowlist:
+  - ANTHROPIC_API_KEY
+  - ANTHROPIC_AUTH_TOKEN
+  - ANTHROPIC_BASE_URL
+  - CLAUDE_CODE_OAUTH_TOKEN
+  - CLAUDE_CONFIG_DIR

@@ -43,6 +43,8 @@ class AgentRequest(DomainModel):
     env: dict[str, str] = Field(default_factory=dict[str, str])
     """Already filtered by the secrets policy (§20.5)."""
     session_ref: str | None = None
+    stream_path: Path | None = None
+    """Where to mirror the raw agent stdout (``.aix/runs/<run>/<attempt>.stream.jsonl``)."""
 
 
 EventKind = Literal["started", "text", "tool_call", "tool_result", "usage", "error", "finished"]

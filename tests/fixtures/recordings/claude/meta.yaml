@@ -1,0 +1,16 @@
+# Recording metadata. `synthetic: true` means hand-authored from the documented stream-json
+# schema because no live capture was possible; replace via `aix dev record claude` (M10.1).
+agent: claude
+synthetic: true
+cli_version_documented_against: "2.1.283"
+authored: "2026-09-26"
+invocation: "claude -p --output-format stream-json --verbose (prompt on stdin)"
+files:
+  success.jsonl: "one edit tool call, successful result with usage and cost"
+  read_only.jsonl: "text-only answer, no tools"
+  max_turns.jsonl: "result subtype error_max_turns"
+  budget.jsonl: "result subtype error_max_budget_usd"
+  auth_failure.jsonl: "result with is_error and an authentication message"
+  rate_limit.jsonl: "result with is_error and a rate limit message"
+  malformed.jsonl: "garbage and truncated lines mixed into a valid stream"
+  no_result.jsonl: "stream that ends without a result event"

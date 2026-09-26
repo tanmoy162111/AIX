@@ -1,0 +1,2 @@
+{"type":"system","subtype":"init","session_id":"s-rate","model":"claude-sonnet-5","tools":[]}
+{"type":"result","subtype":"success","is_error":true,"duration_ms":900,"num_turns":1,"result":"API Error: 429 {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"Number of request tokens has exceeded your per-minute rate limit\"}}","session_id":"s-rate","total_cost_usd":0,"usage":{"input_tokens":0,"output_tokens":0}}

@@ -1,0 +1,2 @@
+{"type":"system","subtype":"init","session_id":"s-budget","model":"claude-sonnet-5","tools":["Read"]}
+{"type":"result","subtype":"error_max_budget_usd","is_error":true,"duration_ms":12000,"num_turns":6,"session_id":"s-budget","total_cost_usd":1.02,"usage":{"input_tokens":5000,"output_tokens":900}}

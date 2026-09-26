@@ -243,7 +243,8 @@ async def test_builtin_fake_and_extra_fakes_in_registry() -> None:
     reg.register(make_fake_entry("fake-reviewer", capabilities={Capability.REVIEW: 0.9}))
     specs = {s.id: s for s in await reg.probe_all()}
     assert {"fake", "fake-a", "fake-reviewer"} <= set(specs)
-    assert all(s.health == "ready" for s in specs.values())  # fake-* are always enabled
+    fakes = [s for i, s in specs.items() if i.startswith("fake")]
+    assert all(s.health == "ready" for s in fakes)  # fake and fake-* are always enabled
 
 
 def test_git_available_for_patch_tests() -> None:
