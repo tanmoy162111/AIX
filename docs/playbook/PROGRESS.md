@@ -63,7 +63,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M3.14 Run M3 Exit Gate; tag `m3-done`.
 
 ## M4 — Verification (§17)
-- [ ] M4.1 Toolchain detection table + explicit command override; recorded in report.
+- [x] M4.1 Toolchain detection table + explicit command override; recorded in report.
 - [ ] M4.2 Check runner (allowlist, network deny best-effort, artifacts for stdout/stderr).
 - [ ] M4.3 Parsers: JUnit XML, SARIF, gitleaks JSON, pip-audit/npm-audit JSON.
 - [ ] M4.4 Check kinds: build/tests/lint/typecheck; missing tool → skipped → report incomplete.
@@ -188,3 +188,4 @@ M3.11 — done; ADR-0015 (gemini+opencode discovered behavior, no --auto/yolo); 
 M3.12 — done; core/orchestrator/status.py snapshot() (reused by the API in M9), cli/status.py: TTY redraws with rich Live, non-TTY `--watch` prints a frame only when the run changes; tested against a live slow subprocess run.
 M3.13 — done; tests/golden/test_golden_multi.py. G2 asserts >=5 tasks, >=3 agents, independent reviewer, green integrated branch; its handoff-in-prompt assertion is M6.6. G5 shows independence also re-routes the review to the spare. Stub verification in use (removed M4.11).
 M3.14 — done; exit gate green: make check (1215 passed, 10 live skipped), test_multi_task_run + test_merge_conflict (12 passed), golden G2/G5 (2 passed). Tagged m3-done.
+M4.1 — done; verification/commands.py resolve_commands -> ResolvedCommand{argv,source,available}; python/node/go/rust then Makefile fallback; config wins. Recording in the report happens when the runner (M4.2/4.4) stores it in Check.command.
