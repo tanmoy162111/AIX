@@ -87,7 +87,7 @@ _CONVENTION_FILES = ("AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "README.md")
 _SKIP_DIRS = frozenset({".git", ".aix", "node_modules", ".venv", "venv", "__pycache__", "target"})
 
 
-def _configures_pytest(root: Path) -> bool:
+def configures_pytest(root: Path) -> bool:
     for name in ("pytest.ini", "tox.ini"):
         if (root / name).is_file():
             return True
@@ -134,7 +134,7 @@ def inspect_repo(root: Path) -> RepoFacts:
         tests.append("make test")
     if "test" in tc.package_scripts:
         tests.append("npm test")
-    if "python" in tc.ecosystems and _configures_pytest(root):
+    if "python" in tc.ecosystems and configures_pytest(root):
         tests.append("pytest -q")
     if "go" in tc.ecosystems:
         tests.append("go test ./...")
