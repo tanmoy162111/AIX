@@ -50,7 +50,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M3.1 Repo facts inspector (languages, managers, commands, size) — shared with §17.1 detection.
 - [x] M3.2 Intent engine (rules); risk keywords; tests.
 - [x] M3.3 Skills: schemas for 4 files, loader, registry, 7 builtin skills, `aix skill list|inspect`.
-- [ ] M3.4 TemplatePlanner from skill `workflow.yaml`.
+- [x] M3.4 TemplatePlanner from skill `workflow.yaml`.
 - [ ] M3.5 AgentPlanner: prompt B.1, read-only run, JSON extraction, schema validation, 2-step repair loop, fallback to template; tests with fake `planner_output`.
 - [ ] M3.6 Plan post-processing: caps, capability normalization, implicit file-scope edges, verification spec defaults; `--plan-only`, `aix plan show`.
 - [ ] M3.7 Router (rules strategy): eligibility, scoring formula, penalties, static pins, fallbacks, reason codes; table tests incl. NO_ELIGIBLE_AGENT.
@@ -177,3 +177,4 @@ M2.12 — done; gate green (make check; tests/adapter 141 passed/2 documented n/
 M3.1 — done; inspect_repo() in verification/detect.py returns new domain RepoFacts (ADR-0009, schema exported); reads markers/metadata only, command resolution stays M4.1.
 M3.2 — done; core/intent/engine.py RulesIntentEngine (ordered kind rules, high/medium/low risk keywords, target path extraction); Jev classify hook deferred to M6 via the IntentEngine protocol.
 M3.3 — done; skills/{schema,loader,registry}.py + builtin/<name>/ (4 files each, packaged data); workflow steps carry file_scope, capabilities and when_risk_at_least for the M3.4 TemplatePlanner; skill models are not in the domain schema export (skills-tier, not a wire type).
+M3.4 — done; core/planner/{base,template}.py: Planner protocol, select_skill (kind + bugfix/write-tests goal heuristics, --skill override), risk-gated steps rewired past dropped ones; write tasks carry the skill verification spec (defaults added in M3.6).
