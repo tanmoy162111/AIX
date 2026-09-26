@@ -150,6 +150,20 @@ class ArtifactsConfig(DomainModel):
     )
 
 
+class ModelPrice(DomainModel):
+    """USD per million tokens."""
+
+    input_per_mtok: float = Field(ge=0)
+    output_per_mtok: float = Field(ge=0)
+
+
+class PricingConfig(DomainModel):
+    """Price table used to estimate cost when an agent CLI reports tokens but no cost (§22)."""
+
+    models: dict[str, ModelPrice] = Field(default_factory=dict[str, ModelPrice])
+    """Model id (or id prefix) to price. Empty by default: aix ships no guessed prices."""
+
+
 class AixConfig(DomainModel):
     """The fully merged configuration."""
 
@@ -162,3 +176,4 @@ class AixConfig(DomainModel):
     budget: BudgetConfig = Field(default_factory=BudgetConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
     artifacts: ArtifactsConfig = Field(default_factory=ArtifactsConfig)
+    pricing: PricingConfig = Field(default_factory=PricingConfig)

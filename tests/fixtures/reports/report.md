@@ -12,7 +12,7 @@ Security     deps: skipped, secrets: passed
 Review       passed: 0 high, 1 medium
 Decisions    9 recorded  (jev: 2, rules: 7)   final: accept
 Agents       claude (design), codex (implement x2)
-Cost         $1.84 (estimated)   Duration 14m12s
+Cost         $1.84 (reported $1.61 + estimated $0.23)   Duration 14m12s
 
 Artifacts    .aix/artifacts/bundles/run_01ARZ3NDEKTSV4RRFFQ69G5FAV.zip
   plan.json · patch/task_2.diff

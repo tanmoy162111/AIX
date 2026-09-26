@@ -26,6 +26,7 @@ from aix.core.context.compaction import compact_context
 from aix.core.context.facts import ProjectFacts, load_project_facts
 from aix.core.context.handoff import build_handoff
 from aix.core.context.prompt import render_task_prompt
+from aix.core.cost import estimate_usage
 from aix.core.escalation import Step as EscStep
 from aix.core.failure import Classified, candidates_for, classify_attempt, classify_verification
 from aix.core.orchestrator.attempt import (
@@ -746,6 +747,15 @@ class _Driver:
                 adapter, agent_req, rec.emit, task.id, attempt_id, tool_calls, normalized, register
             )
             self._live.pop(attempt_id, None)
+            outcome = outcome.model_copy(
+                update={
+                    "usage": estimate_usage(
+                        outcome.usage,
+                        attempt.model or self._spec(agent_id).default_model,
+                        config.pricing,
+                    )
+                }
+            )
             self.book[task.id].usage = _add_usage(self.book[task.id].usage, outcome.usage)
             cancelled = outcome.status == "cancelled"
             if outcome.status in ("failed", "timeout"):

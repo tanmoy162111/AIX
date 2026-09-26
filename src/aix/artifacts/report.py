@@ -46,7 +46,8 @@ class RunReport(DomainModel):
     final_decision: str | None
     agents: list[str]
     cost_usd: float | None
-    cost_estimated: bool
+    cost_estimated_usd: float = 0.0
+    """Part of ``cost_usd`` that was estimated from tokens rather than reported."""
     duration_s: float | None
     artifacts: list[str] = Field(default_factory=list[str])
     bundle: str | None = None
@@ -75,7 +76,7 @@ async def build_report(
     review: list[str] = []
     per_agent: dict[str, Counter[str]] = {}
     costs: list[float] = []
-    estimated = False
+    estimated_costs: list[float] = []
     for task in tasks:
         attempts = await store.get_attempts(task.id)
         total_attempts += len(attempts)
@@ -90,7 +91,8 @@ async def build_report(
             per_agent.setdefault(a.agent_id, Counter())[task.type.value] += 1
             if (res := await store.get_result(a.id)) is not None and res.usage.cost_usd is not None:
                 costs.append(res.usage.cost_usd)
-                estimated = estimated or res.usage.estimated
+                if res.usage.estimated:
+                    estimated_costs.append(res.usage.cost_usd)
         if last is not None:
             for c in await store.get_checks(last.id):
                 if c.kind is CheckKind.TESTS:
@@ -117,7 +119,8 @@ async def build_report(
         decisions_by_provider=dict(sorted(Counter(d.provider for d in decisions).items())),
         final_decision=decisions[-1].outcome.value if decisions else None,
         agents=agents, cost_usd=round(sum(costs), 6) if costs else None,
-        cost_estimated=estimated, duration_s=duration, artifacts=list(artifact_names),
+        cost_estimated_usd=round(sum(estimated_costs), 6), duration_s=duration,
+        artifacts=list(artifact_names),
     )  # fmt: skip
 
 
@@ -138,11 +141,15 @@ def _fmt_duration(seconds: float | None) -> str:
 
 def _context(r: RunReport) -> dict[str, object]:
     by_provider = ", ".join(f"{k}: {v}" for k, v in r.decisions_by_provider.items())
-    cost = (
-        "n/a"
-        if r.cost_usd is None
-        else f"${r.cost_usd:.2f}" + (" (estimated)" if r.cost_estimated else "")
-    )
+    if r.cost_usd is None:
+        cost = "n/a"
+    elif r.cost_estimated_usd > 0:
+        reported = r.cost_usd - r.cost_estimated_usd
+        cost = (
+            f"${r.cost_usd:.2f} (reported ${reported:.2f} + estimated ${r.cost_estimated_usd:.2f})"
+        )
+    else:
+        cost = f"${r.cost_usd:.2f}"
     return {
         "r": r,
         "retries": f"{r.retries} retr{'y' if r.retries == 1 else 'ies'}",

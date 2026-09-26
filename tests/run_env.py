@@ -11,6 +11,7 @@ import repos
 from aix.agents.adapters.fake.script import FakeMatch, FakeScript, FakeStep
 from aix.agents.fakes import make_fake_entry
 from aix.agents.registry import AdapterRegistry
+from aix.config.schema import AixConfig
 from aix.core.orchestrator.executor import execute_graph
 from aix.core.orchestrator.plan import record_plan
 from aix.core.orchestrator.recorder import RunRecorder, new_run
@@ -25,12 +26,21 @@ from verif_env import fast_config
 C = Capability
 
 
-async def finished_run(tmp_path: Path, claim: str = "Done.") -> tuple[Path, str, EventStore]:
+async def finished_run(
+    tmp_path: Path,
+    claim: str = "Done.",
+    *,
+    cfg: AixConfig | None = None,
+    usage: dict[str, object] | None = None,
+    expect: RunStatus = RunStatus.COMPLETED,
+) -> tuple[Path, str, EventStore]:
     repo = repos.materialize_sample_py(tmp_path / "proj")
     (repo / ".aix").mkdir()
-    cfg = fast_config()
+    cfg = cfg or fast_config()
     registry = AdapterRegistry(cfg, builtin_ids=())
-    step = FakeStep(write_files={"a.py": "x = 1\n"}, claim=claim)
+    step = FakeStep.model_validate(
+        {"write_files": {"a.py": "x = 1\n"}, "claim": claim, "usage": usage}
+    )
     registry.register(
         make_fake_entry(
             "fake-a", scripts=[FakeScript(match=FakeMatch(task_type="implement"), attempts=[step])],
@@ -55,5 +65,5 @@ async def finished_run(tmp_path: Path, claim: str = "Done.") -> tuple[Path, str,
         outcome = await execute_graph(
             rec, wm, graph, registry=registry, config=cfg, backoff_scale=0
         )
-    assert outcome.status is RunStatus.COMPLETED, outcome
+    assert outcome.status is expect, outcome
     return repo, run_id, store

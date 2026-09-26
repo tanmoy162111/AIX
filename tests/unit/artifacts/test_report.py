@@ -26,7 +26,7 @@ def report(**kw: object) -> RunReport:
         retries=1, tests_passed=42, tests_total=42, security=["deps: skipped", "secrets: passed"],
         review=["passed: 0 high, 1 medium"], decisions_total=9,
         decisions_by_provider={"jev": 2, "rules": 7}, final_decision="accept",
-        agents=["claude (design)", "codex (implement x2)"], cost_usd=1.84, cost_estimated=True,
+        agents=["claude (design)", "codex (implement x2)"], cost_usd=1.84, cost_estimated_usd=0.23,
         duration_s=852.0, artifacts=["plan.json", "patch/task_2.diff", "manifest.json"],
         bundle=".aix/artifacts/bundles/run_01ARZ3NDEKTSV4RRFFQ69G5FAV.zip",
     )  # fmt: skip
