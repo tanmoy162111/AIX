@@ -71,11 +71,15 @@ class WorkspaceManager:
         """
         res = await git(self.root, "rev-parse", "--is-inside-work-tree", check=False)
         if res.code != 0 or res.stdout.strip() != "true":
-            raise ToolFailure(f"{self.root} is not a git repository (run `git init`)")
+            raise ToolFailure(
+                f"{self.root} is not a git repository (run `git init`)",
+                details={"reason": "not_git"},
+            )
         if not allow_dirty and await self._is_dirty():
             raise ToolFailure(
                 "the working tree has uncommitted changes to tracked files; commit or stash them, "
-                "or pass --allow-dirty"
+                "or pass --allow-dirty",
+                details={"reason": "dirty"},
             )
 
     async def create_run_branch(self, run_id: str, *, allow_dirty: bool = False) -> RunBranch:

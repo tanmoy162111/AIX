@@ -1,0 +1,3 @@
+attempts:
+  - apply_patch: patches/outside_scope.diff
+    claim: "Added version endpoint and deploy config."

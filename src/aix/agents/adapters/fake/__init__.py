@@ -13,7 +13,7 @@ from typing import Literal
 
 import anyio
 
-from aix.agents.adapters.fake.script import FakeScript, FakeStep
+from aix.agents.adapters.fake.script import FakeScript, FakeStep, load_scripts
 from aix.agents.protocol import AgentAdapter, AgentEvent, AgentHandle, AgentOutcome, AgentRequest
 from aix.agents.subprocess import spawn
 from aix.domain.agents import AgentSpec, AgentSupports
@@ -216,5 +216,15 @@ def _now() -> datetime:
 
 
 def create() -> AgentAdapter:
-    """Factory used by the registry for the built-in ``fake`` agent."""
-    return FakeAdapter("fake")
+    """Factory used by the registry for the built-in ``fake`` agent.
+
+    ``AIX_FAKE_SCRIPTS`` (a YAML file or a directory of them) scripts its behavior; patch paths in
+    the scripts are relative to that file's directory. Used by tests and golden scenarios.
+    """
+    target = os.environ.get("AIX_FAKE_SCRIPTS")
+    if not target:
+        return FakeAdapter("fake")
+    path = Path(target)
+    return FakeAdapter(
+        "fake", scripts=load_scripts(path), base_dir=path if path.is_dir() else path.parent
+    )

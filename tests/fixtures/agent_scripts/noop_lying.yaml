@@ -1,0 +1,4 @@
+# Claims success but changes nothing.
+attempts:
+  - claim: "Done. All tests pass."
+    exit_code: 0

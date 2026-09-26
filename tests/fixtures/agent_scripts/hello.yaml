@@ -1,0 +1,10 @@
+# Fake agent script: implement the hello endpoint (used by CLI and integration tests).
+match: { task_type: implement }
+attempts:
+  - events:
+      - {kind: text, data: {text: "Adding the hello endpoint"}}
+      - {kind: tool_call, data: {name: Edit, id: t1, input: "app/handler.py"}}
+    apply_patch: patches/hello.diff
+    claim: "Done. All tests pass."
+    exit_code: 0
+    usage: {input_tokens: 100, output_tokens: 40, cost_usd: 0.02}

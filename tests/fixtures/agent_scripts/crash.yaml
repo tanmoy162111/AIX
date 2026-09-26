@@ -1,0 +1,4 @@
+attempts:
+  - exit_code: 1
+    stderr: "segfault"
+    claim: "I crashed"

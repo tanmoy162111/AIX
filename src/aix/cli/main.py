@@ -14,6 +14,7 @@ from aix.cli.config import config_app
 from aix.cli.dev import dev_app
 from aix.cli.doctor import doctor
 from aix.cli.init import init
+from aix.cli.run import run
 
 app = typer.Typer(
     name="aix",
@@ -24,6 +25,7 @@ app = typer.Typer(
 
 app.command("init")(init)
 app.command("doctor")(doctor)
+app.command("run")(run)
 app.add_typer(agent_app)
 app.command("agents", help="Alias for `aix agent list`.")(list_agents)
 app.add_typer(config_app)

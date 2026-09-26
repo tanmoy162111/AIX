@@ -1,0 +1,3 @@
+attempts:
+  - sleep_s: 30
+    claim: "never finishes in time"

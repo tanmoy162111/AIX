@@ -43,7 +43,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M2.8 `codex` adapter: same deliverables as M2.7.
 - [x] M2.9 Adapter test matrix (§10.5) for fake, claude, codex using fake binaries on PATH.
 - [x] M2.10 CLI: `aix agent list|inspect|test|enable|disable`, `aix doctor`.
-- [ ] M2.11 Single-task orchestration: `aix run "<goal>" --agent <id>` → worktree → execute → diff → events → run branch commit; `tests/integration/test_single_task_run.py`.
+- [x] M2.11 Single-task orchestration: `aix run "<goal>" --agent <id>` → worktree → execute → diff → events → run branch commit; `tests/integration/test_single_task_run.py`.
 - [ ] M2.12 Run M2 Exit Gate; tag `m2-done`.
 
 ## M3 — Planning, routing, scheduling (§12–§14, §16)
@@ -172,3 +172,4 @@ M2.7 — done; claude adapter: manifest, probe (real `claude --help` 2.1.283 ver
 M2.8 — done; codex adapter (real `codex exec --help` 0.147.0 verified flags; approval via -c approval_policy=never; write_scope not expressible -> documented for M8.3), synthetic recordings, parser, classifier, live tests, docs/adapters/codex.md. Refactor: shared agents/stream_adapter.py (StreamingCliAdapter) now backs claude and codex.
 M2.9 — done; tests/adapter/test_matrix.py runs the 11 §10.5 rows identically against fake, claude, codex (rigs in tests/adapter_matrix.py); 2 explicit n/a (fake: malformed stream, permission flags) with reasons; a guard test keeps rows and reasons complete.
 M2.10 — done; `aix agent list|inspect|test|enable|disable` (+ alias `aix agents`) and `aix doctor` (fail = python/git/config -> exit 5; everything else warns). `agent test` only probes unless --live or fake. Verified on this machine: real claude 2.1.283 and codex 0.147.0 both probe 'ready' (manifest required_flags exist). Tests use a hermetic PATH (tests/unit/conftest.py env fixture + tests/cli_env.py).
+M2.11 — done; core/orchestrator/single.py + `aix run "<goal>" --agent <id> [--scope] [--allow-dirty] [--keep-worktrees] [--json]`: run branch -> worktree -> agent -> control-plane diff -> scope check -> accept/reject stand-in (replaced by M4 verification / M5 decisions) -> commit + checkout-free merge -> cleanup; full event trail, replay-equal projections, exit codes 0/1/2/5. Interim prompt (B.2 template in M6.4); fake agent scriptable via AIX_FAKE_SCRIPTS. Single attempt, no retries yet (max_attempts=1).
