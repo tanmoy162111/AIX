@@ -116,7 +116,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M8.1 Policy engine with versioned hash; permissions translation per adapter snapshot-tested. — ADR-0027; `security/policy.py`, snapshots in tests/fixtures/permissions.
 - [x] M8.2 Env filtering (base + manifest allowlist) + redactor applied to logs/streams/events/artifacts/prompts; leak test. — ADR-0028; the leak test fails when the registry is disabled (verified).
 - [x] M8.3 Agent-ineligibility when CLI cannot enforce required restriction for high-risk tasks. — implemented with M8.1 (`supports.enforces`); a high-risk scoped write only routes to claude/fake in local mode.
-- [ ] M8.4 Container sandbox mode (docker/podman), egress allowlist; tests skipped if no runtime.
+- [x] M8.4 Container sandbox mode (docker/podman), egress allowlist; tests skipped if no runtime. — ADR-0029; real-docker test with bash:latest. **Egress allowlist NOT implemented** (network none|bridge only).
 - [ ] M8.5 `test_prompt_cannot_bypass_policy.py` (fake agent tries `aix approve`, reads token path, writes outside scope, edits `.aix/`).
 - [ ] M8.6 `ollama` adapter (text-only, research/review/summarize).
 - [ ] M8.7 `docs/security.md` (threat model, residual risks).
