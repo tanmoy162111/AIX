@@ -123,7 +123,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M8.8 Run M8 Exit Gate; tag `m8-done`. — gate green: make check (1726 tests), tests/security (10), test_prompt_cannot_bypass_policy.
 
 ## M9 — API and plugins (§24, §25)
-- [ ] M9.1 FastAPI app, endpoints, SSE events, token scopes, `aix serve` (127.0.0.1).
+- [x] M9.1 FastAPI app, endpoints, SSE events, token scopes, `aix serve` (127.0.0.1). — ADR-0030; api_token (read+run) and approval token (read+approve) are separate; SSE stream closes after the manifest artifact; request_cancel moved into core.
 - [ ] M9.2 CLI/API equivalence contract test on G1.
 - [ ] M9.3 Plugin entry points + manifest validation + semver range; builtins migrated; broken plugin reported by doctor.
 - [ ] M9.4 Sample external plugin fixture (adapter + check) loaded in tests.
