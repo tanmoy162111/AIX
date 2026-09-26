@@ -1,0 +1,29 @@
+RUN {{ r.run_id }} {{ r.status.upper() }}    branch: {{ r.branch }}
+Goal: {{ r.goal }}
+
+Tasks        {{ r.completed }}/{{ r.tasks | length }} completed   ({{ retries }})
+{% for t in r.tasks %}
+  - {{ "%-16s" | format(t.type) }} {{ "%-10s" | format(t.status) }}{% if t.agent %}  ({{ t.agent }}){% endif %}{% if t.failure %}  [{{ t.failure }}]{% endif %}
+
+{% endfor %}
+{% if r.failure %}
+Failure      {{ r.failure }}
+{% endif %}
+Tests        {{ tests }}
+Security     {{ security }}
+{% if r.review %}
+Review       {{ r.review | join("; ") }}
+{% endif %}
+Decisions    {{ decisions }}{% if r.final_decision %}   final: {{ r.final_decision }}{% endif %}
+
+Agents       {{ r.agents | join(", ") or "none" }}
+Cost         {{ cost }}   Duration {{ duration }}
+{% if r.artifacts %}
+
+Artifacts    .aix/artifacts/objects (manifest.json lists every file)
+  {{ r.artifacts | select("ne", "manifest.json") | list | length }} files recorded
+{% endif %}
+{% if r.status == "completed" %}
+
+Next: git merge {{ r.branch }}
+{% endif %}

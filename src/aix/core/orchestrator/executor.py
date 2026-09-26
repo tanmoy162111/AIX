@@ -55,6 +55,7 @@ from aix.domain.agents import AgentSpec
 from aix.domain.context import Handoff
 from aix.domain.decisions import Approval, DecisionRecord
 from aix.domain.enums import (
+    ArtifactType,
     AttemptStatus,
     DecisionOutcome,
     DecisionPoint,
@@ -1186,7 +1187,8 @@ async def execute_graph(
 async def write_run_artifacts(rec: RunRecorder, root: Path) -> None:
     """Persist the run's standard artifacts and manifest (§21.3) under ``.aix/``."""
     from aix import __version__
-    from aix.artifacts.standard import write_manifest, write_standard_artifacts
+    from aix.artifacts.report import build_report, render_html, render_markdown
+    from aix.artifacts.standard import write_manifest, write_named, write_standard_artifacts
     from aix.artifacts.store import ArtifactWriter, ObjectStore
 
     run_id = rec.run.id
@@ -1195,6 +1197,18 @@ async def write_run_artifacts(rec: RunRecorder, root: Path) -> None:
     )
     entries = await write_standard_artifacts(
         rec.store, writer, run_id, runs_dir=root / ".aix" / "runs" / run_id
+    )
+    report = await build_report(rec.store, run_id, artifact_names=[e.name for e in entries])
+    entries.append(
+        await write_named(
+            writer, "report.md", ArtifactType.REPORT, render_markdown(report).encode(),
+            "text/markdown",
+        )
+    )  # fmt: skip
+    entries.append(
+        await write_named(
+            writer, "report.html", ArtifactType.REPORT, render_html(report).encode(), "text/html"
+        )
     )
     await write_manifest(writer, run_id, entries)
 

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>aix run {{ r.run_id }}</title>
+<style>
+:root { color-scheme: light dark; --bg:#fff; --fg:#1b1f24; --mut:#57606a; --line:#d0d7de; --ok:#1a7f37; --bad:#cf222e; }
+@media (prefers-color-scheme: dark) { :root { --bg:#0d1117; --fg:#e6edf3; --mut:#8b949e; --line:#30363d; --ok:#3fb950; --bad:#f85149; } }
+body { background:var(--bg); color:var(--fg); font:15px/1.5 system-ui,sans-serif; margin:0 auto; max-width:60rem; padding:1rem 16px 3rem; }
+h1 { font-size:1.3rem; } h2 { font-size:1.05rem; margin-top:2rem; }
+.status { font-weight:600; } .completed { color:var(--ok); } .failed { color:var(--bad); }
+dl { display:grid; grid-template-columns:8rem 1fr; gap:.25rem 1rem; }
+dt { color:var(--mut); } dd { margin:0; }
+table { border-collapse:collapse; width:100%; display:block; overflow-x:auto; }
+th, td { border-bottom:1px solid var(--line); padding:.35rem .6rem; text-align:left; white-space:nowrap; }
+code { font-family:ui-monospace,monospace; }
+</style>
+</head>
+<body>
+<h1>Run <code>{{ r.run_id }}</code> <span class="status {{ r.status }}">{{ r.status }}</span></h1>
+<p>{{ r.goal }}</p>
+<dl>
+<dt>Branch</dt><dd><code>{{ r.branch }}</code></dd>
+<dt>Tasks</dt><dd>{{ r.completed }}/{{ r.tasks | length }} completed ({{ retries }})</dd>
+<dt>Tests</dt><dd>{{ tests }}</dd>
+<dt>Security</dt><dd>{{ security }}</dd>
+{% if r.review %}
+<dt>Review</dt><dd>{{ r.review | join("; ") }}</dd>
+{% endif %}
+<dt>Decisions</dt><dd>{{ decisions }}{% if r.final_decision %}, final: {{ r.final_decision }}{% endif %}</dd>
+<dt>Agents</dt><dd>{{ r.agents | join(", ") or "none" }}</dd>
+<dt>Cost</dt><dd>{{ cost }}</dd>
+<dt>Duration</dt><dd>{{ duration }}</dd>
+</dl>
+<h2>Tasks</h2>
+<table>
+<tr><th>Task</th><th>Type</th><th>Status</th><th>Agent</th><th>Attempts</th><th>Failure</th></tr>
+{% for t in r.tasks %}
+<tr><td>{{ t.title }}</td><td>{{ t.type }}</td><td>{{ t.status }}</td><td>{{ t.agent or "-" }}</td><td>{{ t.attempts }}</td><td>{{ t.failure or "-" }}</td></tr>
+{% endfor %}
+</table>
+<h2>Artifacts</h2>
+<ul>
+{% for a in r.artifacts %}
+<li><code>{{ a }}</code></li>
+{% else %}
+<li>none</li>
+{% endfor %}
+</ul>
+<p>Agent claims are unverified and are not part of this report; every figure comes from executed checks and recorded events.</p>
+</body>
+</html>

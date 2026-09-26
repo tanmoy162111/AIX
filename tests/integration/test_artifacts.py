@@ -71,7 +71,7 @@ async def test_standard_artifacts_and_manifest(tmp_path: Path) -> None:
         assert {
             ArtifactType.PLAN, ArtifactType.PATCH, ArtifactType.VERIFICATION,
             ArtifactType.DECISION_LOG, ArtifactType.AGENT_TRACE, ArtifactType.MANIFEST,
-            ArtifactType.PROMPT, ArtifactType.STREAM,
+            ArtifactType.PROMPT, ArtifactType.STREAM, ArtifactType.REPORT,
         } <= by_type  # fmt: skip
         assert arts[-1].type is ArtifactType.MANIFEST  # written last
 
@@ -84,6 +84,10 @@ async def test_standard_artifacts_and_manifest(tmp_path: Path) -> None:
             assert entry["sha256"] == art.sha256 and await objects.verify(art.sha256)
         names = {e["name"] for e in manifest["artifacts"]}
         assert {"plan.json", "decision-log.json", "agent-trace.json"} <= names
+        assert {"report.md", "report.html"} <= names
+        md_sha = next(e["sha256"] for e in manifest["artifacts"] if e["name"] == "report.md")
+        md = (await objects.get(md_sha)).decode()
+        assert "COMPLETED" in md and "aix/run/" in md and "trust me" not in md
         assert any(n.startswith("patch/task_") and n.endswith(".diff") for n in names)
         assert set(arts[-1].provenance.inputs) == set(listed)
     finally:

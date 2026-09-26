@@ -219,7 +219,7 @@ def _routed(
         max_parallel=max_parallel,
     )
 
-    async def _go() -> RunOutcome:
+    async def _go() -> tuple[RunOutcome, str | None]:
         cancel = anyio.Event()
         outcome: RunOutcome | None = None
         store = await EventStore.open(root / ".aix" / "aix.db")
@@ -236,13 +236,15 @@ def _routed(
                     request, registry=registry, store=store, config=resolved.config, cancel=cancel
                 )
                 tg.cancel_scope.cancel()
+            assert outcome is not None
+            summary = await _summary(store, root, outcome.run_id)
         finally:
             await store.close()
         assert outcome is not None
-        return outcome
+        return outcome, summary
 
     try:
-        outcome = anyio.run(_go)
+        outcome, summary = anyio.run(_go)
     except ConfigError as exc:
         fail(str(exc))
     except ToolFailure as exc:
@@ -259,9 +261,28 @@ def _routed(
             t["status"] = t["status"].value
             t["failure"] = t["failure"].value if t["failure"] else None
         typer.echo(json.dumps(doc, indent=2))
+    elif summary is not None:
+        typer.echo(summary)
+        for approval_id in outcome.pending_approvals:
+            typer.echo(
+                f"Waiting      approval needed: aix approve {approval_id}  (or: aix deny ...)"
+            )
     else:
         print_outcome(outcome, goal)
     raise typer.Exit(outcome.exit_code)
+
+
+async def _summary(store, root: Path, run_id: str) -> str | None:  # type: ignore[no-untyped-def]
+    """The §23.3 block, or ``None`` when it cannot be built (the interim summary is used)."""
+    from aix.artifacts.report import artifact_names, build_report, render_summary
+
+    try:
+        report = await build_report(
+            store, run_id, artifact_names=await artifact_names(store, root, run_id)
+        )
+    except (LookupError, OSError, ValueError):
+        return None
+    return render_summary(report).rstrip("\n")
 
 
 def print_outcome(outcome, goal: str) -> None:  # type: ignore[no-untyped-def]

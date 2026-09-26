@@ -170,6 +170,14 @@ async def write_standard_artifacts(
     return entries
 
 
+async def write_named(
+    writer: ArtifactWriter, name: str, type_: ArtifactType, data: bytes, media: str
+) -> ManifestEntry:
+    """Write one control-plane artifact and return its manifest entry."""
+    art = await writer.write(type_, data, media, producer=_CONTROL)
+    return ManifestEntry(name, art.id, art.type.value, art.sha256, art.size)
+
+
 async def write_manifest(
     writer: ArtifactWriter, run_id: str, entries: Sequence[ManifestEntry]
 ) -> Artifact:

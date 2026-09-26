@@ -1,0 +1,24 @@
+# Run {{ r.run_id }}
+
+```text
+{% include "summary.txt.j2" %}
+```
+
+## Tasks
+
+| Task | Type | Status | Agent | Attempts | Failure |
+|---|---|---|---|---|---|
+{% for t in r.tasks %}
+| {{ t.title }} | {{ t.type }} | {{ t.status }} | {{ t.agent or "-" }} | {{ t.attempts }} | {{ t.failure or "-" }} |
+{% endfor %}
+
+## Artifacts
+
+{% for a in r.artifacts %}
+- `{{ a }}`
+{% else %}
+- none
+{% endfor %}
+
+Agent claims are unverified statements and are not part of this report; every figure above comes
+from executed checks and recorded events.
