@@ -82,7 +82,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M5.3 DecisionService: gates → provider → outcome mapping → DecisionRecord with `inputs_hash`; provider fallback on error/timeout.
 - [x] M5.4 `rules` provider for all decision points.
 - [x] M5.5 `JevClient` protocol, `FakeJevClient`, real client using `typesafe-sdk` (optional extra; verify SDK surface by introspection; ADR with verified signature).
-- [ ] M5.6 Jev question catalog (Appendix A) + answer→outcome mappings + per-risk thresholds.
+- [x] M5.6 Jev question catalog (Appendix A) + answer→outcome mappings + per-risk thresholds.
 - [ ] M5.7 Eval harness `aix dev eval-decisions` + ≥40 task_completion and ≥20 failure_triage labeled cases incl. adversarial; `--fail-under`; `--replay <bundle>` (bundle part completes in M7).
 - [ ] M5.8 Failure classification (adapter patterns + generic); `failure_triage` point.
 - [ ] M5.9 Retry mutations (§19.2) incl. non-consuming retries, identical-retry assertion, `split_task` via planner.
@@ -205,3 +205,4 @@ M5.2 — done; decision/gates.py evaluate_gates(point, GateFacts) -> GateResult;
 M5.3 — done; decision/{provider,service}.py. Forced gate outcome skips providers (recorded as rules). Provider error/timeout/disallowed outcome/invalid choice -> fallback with `<name>:unavailable|outcome_not_allowed|invalid_choice`; nothing valid -> ask_human + decision:no_valid_answer. policy_version is an argument until the policy engine (M8.3) supplies its hash.
 M5.4 — done; decision/providers/rules.py (table per point; _pick never leaves the allowed set). Added RoutingFacts/build_routing_state so the routing tie-break has candidates. Tool classes vocabulary: read_only, local_write, local_delete, git_push, deploy, db_migration_apply, secrets_write, external_network; unknown => ask_human.
 M5.5 — done; ADR-0019 (SDK surface verified by introspection). decision/jev.py neutral types + FakeJevClient, providers/jev.py TypeSafeJevClient (only SDK importer; SDK failures -> JevError). Live test tests/live/test_jev_live.py skipped without AIX_LIVE/TYPESAFE_API_KEY; no key here so nothing was called against the real service.
+M5.6 — done; decision/questions/{__init__,mapping}.py (A.1-A.6), thresholds.py (per-risk `<key>_high` override), providers/jev_provider.py. Jev low confidence / incomplete answers / points without a catalog entry defer to rules, keeping Jev questions+answers in the record. Extra default thresholds added to config (additive). FailureFacts gained `mutations`.
