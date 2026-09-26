@@ -39,6 +39,13 @@ from aix.core.orchestrator.attempt import (
 )
 from aix.core.orchestrator.plan import PlanRunRequest, PlanRunResult, choose, plan_into
 from aix.core.orchestrator.recorder import RunRecorder, new_run
+from aix.core.orchestrator.recovery import (
+    INTERRUPTED_MUTATION,
+    clear_pid,
+    orchestrator_alive,
+    recover_interrupted_run,
+    write_pid,
+)
 from aix.core.orchestrator.task_policy import NextAction, TaskPolicy
 from aix.core.planner.agent import make_adapter_runner
 from aix.core.retry import RetryFingerprint, RetryLedger, remaining_mutations, split_task
@@ -57,6 +64,7 @@ from aix.domain.agents import AgentSpec
 from aix.domain.context import Handoff
 from aix.domain.decisions import Approval, DecisionRecord
 from aix.domain.enums import (
+    RUN_TERMINAL,
     ArtifactType,
     AttemptStatus,
     DecisionOutcome,
@@ -237,6 +245,7 @@ class _Driver:
         self._cancelled = False
         self._authors: dict[str, str] = {}
         self._handoffs: dict[str, Handoff] = {}
+        self._resume_notes: dict[str, str] = {}
         self._router_stats: dict[tuple[str, TaskType], AgentStat] = {}
         self._facts: ProjectFacts | None = None
         self._skills: SkillRegistry | None = None
@@ -285,6 +294,10 @@ class _Driver:
                         await live.adapter.cancel(live.handle, CANCEL_GRACE_S)
                 await anyio.sleep(0.05)
 
+    def set_resume_notes(self, notes: dict[str, str]) -> None:
+        """Tasks whose first attempt after a crash restarts interrupted work."""
+        self._resume_notes = notes
+
     def set_router_stats(self, stats: dict[tuple[str, TaskType], AgentStat]) -> None:
         """Observed history from earlier runs, loaded once when the run starts."""
         self._router_stats = stats
@@ -323,6 +336,9 @@ class _Driver:
         ledger = self._ledgers[task.id]
         notes: list[str] = []
         mutation: RetryMutation | None = None
+        if (note := self._resume_notes.get(task.id)) is not None:
+            notes.append(note)
+            mutation = INTERRUPTED_MUTATION
         exclude: set[str] = set[str]()
         force: str | None = None
         model: str | None = None
@@ -1007,6 +1023,10 @@ class ResumeState:
     """task id -> agent that authored its merged change (reviewer independence)."""
     superseded: frozenset[str] = frozenset()
     """Tasks replaced by ``split_task`` (recorded in their cancel reason)."""
+    crashed: bool = False
+    """The orchestrator died: the run is still ``executing`` (or ``finalizing``), not waiting."""
+    notes: dict[str, str] = field(default_factory=dict[str, str])
+    """task id -> control-plane note for its next attempt (interrupted attempts)."""
 
 
 def _add_usage(a: Usage, b: Usage) -> Usage:
@@ -1108,9 +1128,12 @@ async def execute_graph(
                 driver.book[task_id].attempts = n
         driver.restore_authors(resume.authors)
         driver.superseded |= set(resume.superseded)
-        await rec.run_to(RunEvent.APPROVAL_GRANTED)
+        driver.set_resume_notes(resume.notes)
+        if not resume.crashed:
+            await rec.run_to(RunEvent.APPROVAL_GRANTED)
     else:
         await rec.run_to(RunEvent.START_EXECUTION)
+    write_pid(wm.root, run_id)
     marker = cancel_marker(wm.root, run_id)
 
     async def watch_cancel() -> None:
@@ -1133,6 +1156,8 @@ async def execute_graph(
         with anyio.CancelScope(shield=True):
             await driver.cancel_running()
         raise
+    finally:
+        clear_pid(wm.root, run_id)
 
     final = driver.tasks()
     live = [t for t in final if t.id not in driver.superseded]
@@ -1142,7 +1167,8 @@ async def execute_graph(
     if waiting and driver.stop_reason is None and not cancel.is_set():
         await rec.run_to(RunEvent.AWAIT_APPROVAL)
     else:
-        await rec.run_to(RunEvent.ALL_TASKS_TERMINAL)
+        if rec.run.status is not RunStatus.FINALIZING:  # a crash may have left it finalizing
+            await rec.run_to(RunEvent.ALL_TASKS_TERMINAL)
         if driver.stop_reason is not None:
             failure = driver.stop_reason
             await rec.run_to(RunEvent.FAIL)
@@ -1360,12 +1386,86 @@ async def resume_run(
     Raises:
         ConfigError: unknown run, or the run is not waiting for approval.
     """
+    return await _resume(
+        run_id, project_root=project_root, registry=registry, store=store, config=config,
+        clock=clock, cancel=cancel, decisions=decisions, keep_worktrees=keep_worktrees,
+        backoff_scale=backoff_scale, crashed=False,
+    )  # fmt: skip
+
+
+async def resume_interrupted_run(
+    run_id: str,
+    *,
+    project_root: Path,
+    registry: AdapterRegistry,
+    store: EventStore,
+    config: AixConfig,
+    clock: Callable[[], datetime] = _utc,
+    cancel: anyio.Event | None = None,
+    decisions: DecisionService | None = None,
+    keep_worktrees: bool = False,
+    backoff_scale: float = 1.0,
+) -> RunOutcome:
+    """Continue a run whose orchestrator died (``aix run --resume``), PLAYBOOK §8.2.
+
+    Attempts that were mid-flight become ``failed`` with ``INTERRUPTED`` (their worktrees are
+    removed), stranded tasks return to ``ready`` and normal retry logic continues; work already
+    merged into the run branch is kept. A ``planned`` run that never started simply executes.
+
+    Raises:
+        ConfigError: unknown run; already finished; waiting for approval (use ``aix approve``);
+            interrupted while planning (start a new run); or its orchestrator is still alive.
+    """
     from aix.domain.errors import ConfigError
 
     run = await store.get_run(run_id)
     if run is None:
         raise ConfigError(f"unknown run {run_id!r}")
-    if run.status is not RunStatus.WAITING_APPROVAL:
+    if run.status in RUN_TERMINAL:
+        raise ConfigError(f"run {run_id} already {run.status.value}; nothing to resume")
+    if run.status is RunStatus.WAITING_APPROVAL:
+        raise ConfigError(
+            f"run {run_id} is waiting for approval: use `aix approvals` / `aix approve`"
+        )
+    if run.status in (RunStatus.CREATED, RunStatus.PLANNING):
+        raise ConfigError(f"run {run_id} was interrupted while planning; start a new run")
+    if (pid := orchestrator_alive(project_root, run_id)) is not None:
+        raise ConfigError(f"run {run_id} is still being executed by process {pid}")
+    return await _resume(
+        run_id, project_root=project_root, registry=registry, store=store, config=config,
+        clock=clock, cancel=cancel, decisions=decisions, keep_worktrees=keep_worktrees,
+        backoff_scale=backoff_scale, crashed=True,
+    )  # fmt: skip
+
+
+async def _resume(
+    run_id: str,
+    *,
+    project_root: Path,
+    registry: AdapterRegistry,
+    store: EventStore,
+    config: AixConfig,
+    clock: Callable[[], datetime],
+    cancel: anyio.Event | None,
+    decisions: DecisionService | None,
+    keep_worktrees: bool,
+    backoff_scale: float,
+    crashed: bool,
+) -> RunOutcome:
+    from aix.domain.errors import ConfigError
+
+    run = await store.get_run(run_id)
+    if run is None:
+        raise ConfigError(f"unknown run {run_id!r}")
+    wm = WorkspaceManager(project_root)
+    rec = RunRecorder(store, run, clock)
+    notes: dict[str, str] = {}
+    if crashed:
+        if run.status is RunStatus.PLANNED:
+            crashed = False  # never started: a plain execution of the recorded plan
+        else:
+            notes = (await recover_interrupted_run(rec, wm)).notes
+    elif run.status is not RunStatus.WAITING_APPROVAL:
         raise ConfigError(f"run {run_id} is {run.status.value}, not waiting for approval")
     tasks = await store.get_tasks(run_id)
     counts: dict[str, int] = {}
@@ -1394,8 +1494,11 @@ async def resume_run(
         ]
     assert run.graph_id is not None
     graph = TaskGraph(id=run.graph_id, run_id=run_id, tasks=tasks)
-    wm = WorkspaceManager(project_root)
-    rec = RunRecorder(store, run, clock)
+    resume = None
+    if crashed or run.status is RunStatus.WAITING_APPROVAL:
+        resume = ResumeState(
+            total_attempts, total_cost, counts, authors, frozenset(superseded), crashed, notes
+        )
     return await execute_graph(
         rec,
         wm,
@@ -1407,5 +1510,5 @@ async def resume_run(
         cancel=cancel,
         decisions=decisions,
         backoff_scale=backoff_scale,
-        resume=ResumeState(total_attempts, total_cost, counts, authors, frozenset(superseded)),
+        resume=resume,
     )

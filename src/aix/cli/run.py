@@ -14,7 +14,7 @@ from aix.cli.common import EXIT_ENVIRONMENT, fail, load_or_exit, registry_or_exi
 
 
 def run(
-    goal: Annotated[str, typer.Argument(help="What you want done.")],
+    goal: Annotated[str | None, typer.Argument(help="What you want done.")] = None,
     agent: Annotated[
         str | None,
         typer.Option(
@@ -26,6 +26,10 @@ def run(
     ] = False,
     skill: Annotated[
         str | None, typer.Option("--skill", help="Use this skill instead of choosing one.")
+    ] = None,
+    resume: Annotated[
+        str | None,
+        typer.Option("--resume", help="Continue a run whose orchestrator died (crash recovery)."),
     ] = None,
     budget_usd: Annotated[
         float | None, typer.Option("--budget-usd", min=0.0, help="Cost limit for this run.")
@@ -62,6 +66,13 @@ def run(
     if not (root / ".aix" / "config.yaml").exists():
         fail("not initialized: run `aix init` first")
     registry = registry_or_exit(resolved)
+    if resume is not None:
+        if goal is not None or plan_only or agent is not None:
+            fail("--resume takes only a run id (no goal, --plan-only or --agent)")
+        _resume(root, resume, keep_worktrees, as_json, resolved, registry)
+        return
+    if goal is None:
+        fail('missing goal: `aix run "<goal>"` or `aix run --resume <run_id>`')
     if plan_only:
         _plan_only(root, goal, agent, skill, allow_dirty, as_json, resolved, registry)
         return
@@ -244,7 +255,7 @@ def _routed(
         return outcome, summary
 
     try:
-        outcome, summary = anyio.run(_go)
+        outcome, summary = _run(_go)
     except ConfigError as exc:
         fail(str(exc))
     except ToolFailure as exc:
@@ -261,6 +272,71 @@ def _routed(
             )
     else:
         print_outcome(outcome, goal)
+    raise typer.Exit(outcome.exit_code)
+
+
+def _run(fn):  # type: ignore[no-untyped-def]
+    """``anyio.run`` that re-raises a config/tool error hidden inside a task-group group."""
+    from aix.domain.errors import ConfigError, ToolFailure
+
+    try:
+        return anyio.run(fn)
+    except BaseExceptionGroup as group:
+        for exc in group.exceptions:
+            if isinstance(exc, ConfigError | ToolFailure):
+                raise exc from None
+        raise
+
+
+def _resume(root, run_id, keep_worktrees, as_json, resolved, registry) -> None:  # type: ignore[no-untyped-def]
+    """Recover an interrupted run and continue it; Ctrl-C cancels gracefully."""
+    import signal
+
+    from aix.core.orchestrator.executor import RunOutcome, resume_interrupted_run
+    from aix.domain.errors import ConfigError, ToolFailure
+    from aix.store.db import EventStore
+
+    async def _go() -> tuple[RunOutcome, str | None]:
+        cancel = anyio.Event()
+        outcome: RunOutcome | None = None
+        store = await EventStore.open(root / ".aix" / "aix.db")
+        try:
+            async with anyio.create_task_group() as tg:
+
+                async def watch_signals() -> None:
+                    with anyio.open_signal_receiver(signal.SIGINT, signal.SIGTERM) as signals:
+                        async for _ in signals:
+                            cancel.set()
+
+                tg.start_soon(watch_signals)
+                outcome = await resume_interrupted_run(
+                    run_id, project_root=root, registry=registry, store=store,
+                    config=resolved.config, cancel=cancel, keep_worktrees=keep_worktrees,
+                )  # fmt: skip
+                tg.cancel_scope.cancel()
+            assert outcome is not None
+            summary = await _summary(store, root, outcome.run_id)
+        finally:
+            await store.close()
+        return outcome, summary
+
+    try:
+        outcome, summary = _run(_go)
+    except ConfigError as exc:
+        fail(str(exc))
+    except ToolFailure as exc:
+        reason = exc.details.get("reason")
+        fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
+    if as_json:
+        typer.echo(json.dumps(outcome_document(outcome), indent=2))
+    elif summary is not None:
+        typer.echo(summary)
+        for approval_id in outcome.pending_approvals:
+            typer.echo(
+                f"Waiting      approval needed: aix approve {approval_id}  (or: aix deny ...)"
+            )
+    else:
+        print_outcome(outcome, "")
     raise typer.Exit(outcome.exit_code)
 
 
