@@ -84,6 +84,14 @@ async def test_g2_multi_agent_jwt(repo: Path) -> None:
         assert by_type["review"] == "fake-reviewer" != by_type["implement"]
         assert by_type["security_review"] == "fake-reviewer"  # auth goal is medium risk
 
+        # the design task's handoff reaches the implementer, via the captured prompt (M6.6, §15.2)
+        design_id = next(t.task_id for t in outcome.tasks if t.type == "design")
+        prompts = [
+            p.read_text() for p in (repo / ".aix" / "runs" / outcome.run_id).glob("*.prompt.txt")
+        ]
+        implement = next(p for p in prompts if p.startswith("TASK TYPE: implement"))
+        assert "DEPENDENCY HANDOFFS" in implement and design_id in implement
+
         # the integrated branch is real and green
         with tempfile.TemporaryDirectory() as tmp:
             wt = Path(tmp) / "wt"
