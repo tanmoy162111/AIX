@@ -77,6 +77,8 @@ class FailureFacts(DomainModel):
     failure_class: Label = Field(serialization_alias="class")
     sub_kind: Label | None = None
     candidates: list[Label] = Field(default_factory=list[Label])
+    mutations: list[Label] = Field(default_factory=list[Label])
+    """Remaining retry mutations for this class, in the §19.2 sequence."""
 
 
 class PlanFacts(DomainModel):
@@ -201,6 +203,7 @@ def build_failure_triage_state(
     failure: FailureClass,
     sub_kind: str | None,
     candidates: Sequence[FailureClass],
+    mutations: Sequence[str] = (),
     report: VerificationReport | None,
     previous_failures: Sequence[tuple[FailureClass, str | None]] = (),
     agent_switched: bool = False,
@@ -219,6 +222,7 @@ def build_failure_triage_state(
             failure_class=failure.value,
             sub_kind=sub_kind,
             candidates=[c.value for c in candidates],
+            mutations=list(mutations),
         ),
     )
 

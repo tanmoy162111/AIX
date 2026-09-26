@@ -73,8 +73,18 @@ class JevConfig(DomainModel):
 def _default_thresholds() -> dict[str, float]:
     return {
         "task_completion.accept_confidence": 0.85,
+        "task_completion.accept_confidence_high": 0.92,
+        "task_completion.low_confidence": 0.5,
+        "task_completion.max_blocking_noul": 0.3,
+        "task_completion.max_residual_risk": 1.5,
         "failure_triage.min_confidence": 0.6,
         "tool_risk.deny_if_p_risky_above": 0.3,
+        "tool_risk.deny_risk_score": 2.5,
+        "tool_risk.ask_risk_score": 1.5,
+        "plan_review.side_effect_noul": 0.5,
+        "plan_review.missing_verification_noul": 0.5,
+        "plan_review.ask_risk_score": 1.5,
+        "routing.min_confidence": 0.5,
     }
 
 

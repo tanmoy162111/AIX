@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 import pytest
+from pydantic import JsonValue
 
 from aix.decision.jev import choice_q, noul_q
 from aix.decision.providers.jev import TypeSafeJevClient
@@ -20,7 +21,7 @@ def _need_key() -> None:
 
 async def test_tiny_choice_and_noul() -> None:
     client = TypeSafeJevClient(timeout_s=20)
-    state = {"verification": {"overall": "passed"}, "task": {"risk": "low"}}
+    state: dict[str, JsonValue] = {"verification": {"overall": "passed"}, "task": {"risk": "low"}}
     resp = await client.system_one(
         state,
         {

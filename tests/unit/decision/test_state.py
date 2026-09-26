@@ -116,7 +116,8 @@ def test_failure_triage_state() -> None:
     )  # fmt: skip
     wire = st.to_wire()
     assert wire["failure"] == {"class": "verification_failure", "sub_kind": "tests",
-                               "candidates": ["verification_failure", "agent_failure"]}  # fmt: skip
+                               "candidates": ["verification_failure", "agent_failure"],
+                               "mutations": []}  # fmt: skip
     assert "verification" in wire
 
 
