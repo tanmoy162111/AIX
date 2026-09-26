@@ -106,7 +106,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M7.2 Standard artifacts (plan, patches, verification, decision-log, agent-trace, manifest). — `artifacts/standard.py`; written at COMPLETED/FAILED/CANCELLED (not while waiting_approval). Also captures prompts, streams and raw verification files. `report.*` joins before the manifest in M7.3. Legacy single-agent `--agent` path does not write artifacts yet. `artifact.created` events now follow the terminal run event.
 - [x] M7.3 `report.md` + `report.html` (jinja2, deterministic) + snapshot tests; §23.3 summary on stdout. — `artifacts/report.py` + `templates/`; report.* written before the manifest; `aix run` prints the §23.3 block (Artifacts line shows a file count, not the bundle path: bundles arrive in M7.4). Cost is "estimated" only when adapters flag it (M7.5).
 - [x] M7.4 Bundle export + `aix artifact verify`. — `artifacts/bundle.py`, `cli/artifact.py`; deterministic zip with manifest.sha256, written automatically at run end when `artifacts.bundle`. Limit: an attacker who rewrites both manifest files is undetectable without a signature (documented in verify_bundle).
-- [ ] M7.5 Cost accounting (reported vs estimated), price table in config; budget enforcement uses it.
+- [x] M7.5 Cost accounting (reported vs estimated), price table in config; budget enforcement uses it. — ADR-0025; `pricing.models` is empty by default (no guessed prices), so codex/gemini stay uncounted until the user adds prices.
 - [ ] M7.6 `agent_stats` projection; router uses Bayesian observed rate; `aix stats agents`.
 - [ ] M7.7 `aix trace`, `aix logs [--follow]`, `--json` everywhere.
 - [ ] M7.8 Crash resume (`--resume`, INTERRUPTED) + `test_resume.py`; golden G9.
