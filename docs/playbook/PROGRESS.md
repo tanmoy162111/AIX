@@ -56,7 +56,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M3.7 Router (rules strategy): eligibility, scoring formula, penalties, static pins, fallbacks, reason codes; table tests incl. NO_ELIGIBLE_AGENT.
 - [x] M3.8 Scheduler: ready set, `max_parallel`, dependency blocking, cancellation (`aix cancel`, SIGINT).
 - [x] M3.9 Integration: serialized merges into run branch, conflict detection → MERGE_CONFLICT; `test_merge_conflict.py`.
-- [ ] M3.10 `gemini` adapter (as M2.7).
+- [x] M3.10 `gemini` adapter (as M2.7).
 - [ ] M3.11 `opencode` adapter (as M2.7).
 - [ ] M3.12 `aix status` live table.
 - [ ] M3.13 Golden G2, G5 passing (verification may be stubbed to "passed" behind a clearly named test-only flag removed in M4).
@@ -183,3 +183,4 @@ M3.6 — done; ADR-0011; core/planner/{postprocess,select}.py, core/orchestrator
 M3.7 — done; ADR-0012; core/router/rules.py (pure route(RoutingContext) -> RoutingDecision, NoEligibleAgent with per-agent reasons); 28 table tests. Not yet wired into an orchestrator: the scheduler (M3.8) calls it and emits agent.selected.
 M3.9 — done; core/orchestrator/executor.py execute_graph/execute_run (per-attempt worktrees, merges serialized by WorkspaceManager lock, conflict -> workspace.conflict + rebase_and_retry up to task.max_attempts, then STOP -> MERGE_CONFLICT; ADR-0013 adds integrating--stop-->failed). Acceptance is the STUB_VERIFICATION rule (in scope, write tasks change something), removed in M4.11.
 M3.8 — done; ADR-0014; core/scheduler/engine.py (TaskDriver protocol; driver owns state), executor `_Driver`, cli/cancel.py + core/orchestrator/cancel.py; e2e tests send real SIGINT and run `aix cancel` against a live subprocess. Budget checks deferred to M5.10; handoff-in-prompt to M6 (so G2 in M3.13 asserts routing/independence only).
+M3.10 — done; adapters/gemini/ (gemini-cli 0.55.1 installed here: probes ready; event schema read from its bundle source, no paid call). Recordings synthetic. Prompt on stdin with a fixed -p instruction; write mode = --approval-mode auto_edit (no shell approval; ADR-0015 with opencode). Resume by session id unverified live. Matrix now has 4 kinds; docs/adapters/gemini.md.
