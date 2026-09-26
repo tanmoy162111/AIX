@@ -120,7 +120,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M8.5 `test_prompt_cannot_bypass_policy.py` (fake agent tries `aix approve`, reads token path, writes outside scope, edits `.aix/`). — detection is after-the-fact from the agent stream (records + POLICY_FAILURE, no retry); the guard refuses `aix approve` in agent context. The approval token is now registered as a known secret at run start (a real leak the test found). Same-user token reads remain possible in local mode (see security.md).
 - [x] M8.6 `ollama` adapter (text-only, research/review/summarize). — tested against a scripted local HTTP server only (no real Ollama available); not in default agents.enabled.
 - [x] M8.7 `docs/security.md` (threat model, residual risks). — docs/security.md states residual risks including: no egress allowlist, same-user token access in local mode, stream-based detection only.
-- [ ] M8.8 Run M8 Exit Gate; tag `m8-done`.
+- [x] M8.8 Run M8 Exit Gate; tag `m8-done`. — gate green: make check (1726 tests), tests/security (10), test_prompt_cannot_bypass_policy.
 
 ## M9 — API and plugins (§24, §25)
 - [ ] M9.1 FastAPI app, endpoints, SSE events, token scopes, `aix serve` (127.0.0.1).
