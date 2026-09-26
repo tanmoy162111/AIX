@@ -11,7 +11,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
 ## M0 — Scaffold (§4, §5, §26)
 - [x] M0.1 Probe environment (`which`/`--version` for every tool above); record results in "Environment notes"; ADR-0002 if anything required is missing.
-- [ ] M0.2 `git init`, `.gitignore` (incl. `.env*`, `.aix/`, `__pycache__`, `.venv`), initial commit of playbook docs.
+- [x] M0.2 `git init`, `.gitignore` (incl. `.env*`, `.aix/`, `__pycache__`, `.venv`), initial commit of playbook docs.
 - [ ] M0.3 `pyproject.toml` (src layout, extras `jev`,`api`,`security`,`dev`), `uv lock`, console script `aix = aix.cli.main:app`.
 - [ ] M0.4 Package tree per §5.1 with `__init__.py` files and module docstrings.
 - [ ] M0.5 Tooling configs: ruff, pyright (strict on core/domain/decision), `.importlinter` contracts from §5.3.
@@ -144,3 +144,4 @@ _(item id · problem · attempts made · stub left in place · revisit when)_
 ## Notes log
 _(one line per completed item: `M1.4 — done; hypothesis found X, fixed`)_
 M0.1 — done; all required tools present. Missing optional: podman, semgrep, gitleaks, pip-audit, TYPESAFE_API_KEY → container tests skip, security checks use fallbacks (§17.2/M4.5), Jev uses FakeJevClient. No ADR needed (nothing required missing).
+M0.2 — done; .claude/ hooks+agent committed with the initial commit.
