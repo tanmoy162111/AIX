@@ -80,7 +80,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M5.1 `DecisionState` builders per point with the §18.6 restrictions + tests (reject claim-sourced / long free text).
 - [x] M5.2 Hard gates (§18.3) + exhaustive tests.
 - [x] M5.3 DecisionService: gates → provider → outcome mapping → DecisionRecord with `inputs_hash`; provider fallback on error/timeout.
-- [ ] M5.4 `rules` provider for all decision points.
+- [x] M5.4 `rules` provider for all decision points.
 - [ ] M5.5 `JevClient` protocol, `FakeJevClient`, real client using `typesafe-sdk` (optional extra; verify SDK surface by introspection; ADR with verified signature).
 - [ ] M5.6 Jev question catalog (Appendix A) + answer→outcome mappings + per-risk thresholds.
 - [ ] M5.7 Eval harness `aix dev eval-decisions` + ≥40 task_completion and ≥20 failure_triage labeled cases incl. adversarial; `--fail-under`; `--replay <bundle>` (bundle part completes in M7).
@@ -203,3 +203,4 @@ M4.12 — done; exit gate green: make check (1360 passed, 10 live skipped), test
 M5.1 — done; decision/state.py (pyright strict). Free text is blocked structurally: Label = ^[a-z0-9_:.-]{1,64}$, metric allowlist, builders take no ExecutionResult/claim (tested by signature inspection). Full suite now ~110s: run make check in the background.
 M5.2 — done; decision/gates.py evaluate_gates(point, GateFacts) -> GateResult; BASE_OUTCOMES per §18.2. Precedence: verification gates, attempts, budget (narrows to stop/ask_human), then approval forcing ask_human only if still allowed. A forced reject cannot survive an exhausted budget. Exhaustive product test over 9 report kinds x flags.
 M5.3 — done; decision/{provider,service}.py. Forced gate outcome skips providers (recorded as rules). Provider error/timeout/disallowed outcome/invalid choice -> fallback with `<name>:unavailable|outcome_not_allowed|invalid_choice`; nothing valid -> ask_human + decision:no_valid_answer. policy_version is an argument until the policy engine (M8.3) supplies its hash.
+M5.4 — done; decision/providers/rules.py (table per point; _pick never leaves the allowed set). Added RoutingFacts/build_routing_state so the routing tie-break has candidates. Tool classes vocabulary: read_only, local_write, local_delete, git_push, deploy, db_migration_apply, secrets_write, external_network; unknown => ask_human.
