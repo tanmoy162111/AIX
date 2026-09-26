@@ -181,3 +181,7 @@ def classify(exc: BaseException) -> FailureClass:
     if isinstance(exc, OSError) and exc.errno in (errno.ENOSPC, errno.EDQUOT, errno.EMFILE):
         return FailureClass.RESOURCE_FAILURE
     return FailureClass.TOOL_FAILURE
+
+
+class IdenticalRetry(PolicyViolation):
+    """A retry would repeat an earlier attempt exactly: same agent, prompt, base commit (§19.2)."""
