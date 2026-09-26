@@ -68,7 +68,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M4.3 Parsers: JUnit XML, SARIF, gitleaks JSON, pip-audit/npm-audit JSON.
 - [x] M4.4 Check kinds: build/tests/lint/typecheck; missing tool → skipped → report incomplete.
 - [x] M4.5 Security checks: secrets (gitleaks or builtin regex fallback — ADR), sast (semgrep/bandit when present), deps.
-- [ ] M4.6 Policy check (scope, forbidden files, large binaries).
+- [x] M4.6 Policy check (scope, forbidden files, large binaries).
 - [ ] M4.7 Baseline run + pre_existing handling.
 - [ ] M4.8 `ai_review` check: independent reviewer routing, B.3 prompt, findings JSON parse, error on unparseable.
 - [ ] M4.9 `VerificationReport.overall` rule with property tests.
@@ -193,3 +193,4 @@ M4.2 — done; verification/runner.py run_command (own anyio runner: contract fo
 M4.3 — done; verification/parsers.py, ParseError on malformed input; junit rejects DTD/entities; gitleaks findings drop the secret text; pip-audit has no severity so every vuln is `high` (conservative; baseline M4.7 protects pre-existing ones).
 M4.4 — done; verification/checks.py run_command_check -> CheckResult{check,outcome}. pytest gets --junitxml; exit 5 (no tests) = warning. Evidence ArtifactRefs stay empty until the artifact store (M7.1); output files are returned via outcome paths.
 M4.5 — done; ADR-0016; verification/security.py. External tools (gitleaks/semgrep/bandit/pip-audit/npm audit) are exercised only through fake binaries (none installed here): real output shapes are unconfirmed until a machine has them.
+M4.6 — done; verification/policy.py run_policy_check (reuses core scope glob rules; .env/.env.* except .example/.sample/.template/.dist, *.pem/*.key/*.p12/*.pfx/*.keystore, id_rsa, .aws/credentials; binary > 1 MiB = NUL in first 8 KiB).
