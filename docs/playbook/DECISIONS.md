@@ -35,3 +35,10 @@ Template:
   8. Web dashboard, swarm, remote workers, long-term memory are out of scope for this build (§32).
 - Consequences: The whole system is buildable and testable offline with fakes. Live behavior of
   each vendor CLI and Jev is validated in M10 and documented, not assumed.
+
+## ADR-0002: Dependency set and build backend
+- Date: 2026-09-26 · Milestone/item: M0.3 · Status: accepted
+- Context: CLAUDE.md §3 requires an ADR for every added dependency; PLAYBOOK §4 names the stack.
+- Options: hatchling / setuptools / uv_build as build backend; `ulid-py` / `python-ulid` for prefixed ULIDs; bandit+pip-audit in `security` extra vs. leaving them as external tools.
+- Decision: hatchling (src layout, no config). Runtime: typer, rich, pydantic, pydantic-settings, anyio, aiosqlite, pyyaml, jinja2, structlog, python-ulid. Extras: `jev` (typesafe-sdk, verified resolvable on PyPI 2026-09-26), `api` (fastapi, uvicorn), `security` (bandit, pip-audit; semgrep and gitleaks are external binaries, not Python deps), `dev` (pytest, pytest-asyncio, pytest-cov, hypothesis, syrupy, ruff, pyright, import-linter, types-pyyaml). Interpreter pinned to 3.12 via `.python-version` (system default is 3.14; 3.12 is the playbook floor and what uv provides).
+- Consequences: `uv sync --all-extras` installs everything for development. Version floors are loose; `uv.lock` is the source of reproducibility. Adding any further dependency needs a new ADR.
