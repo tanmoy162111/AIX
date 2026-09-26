@@ -12,6 +12,7 @@ import anyio
 from aix.agents.registry import AdapterRegistry
 from aix.config.schema import AixConfig
 from aix.core.intent.engine import RulesIntentEngine
+from aix.core.orchestrator.recorder import RunRecorder, new_run
 from aix.core.planner.agent import AgentPlanner, make_adapter_runner
 from aix.core.planner.postprocess import postprocess_plan
 from aix.core.planner.select import choose_planner
@@ -19,8 +20,7 @@ from aix.core.planner.template import TemplatePlanner
 from aix.core.workspace.manager import WorkspaceManager
 from aix.domain.errors import classify
 from aix.domain.ids import IdPrefix, new_id
-from aix.domain.runs import Budget, Run
-from aix.domain.state import RunEvent, transition_run
+from aix.domain.state import RunEvent
 from aix.domain.tasks import Intent, TaskGraph
 from aix.skills.registry import SkillRegistry
 from aix.store import events as ev
@@ -51,78 +51,56 @@ def _utc() -> datetime:
     return datetime.now(UTC)
 
 
-async def plan_run(
-    req: PlanRunRequest,
-    *,
-    registry: AdapterRegistry,
-    store: EventStore,
-    config: AixConfig,
-    skills: SkillRegistry | None = None,
-    clock: Callable[[], datetime] = _utc,
-) -> PlanRunResult:
-    """Create a run, plan it and stop in status ``planned`` (``aix run --plan-only``).
+@dataclass(frozen=True)
+class PlannerSetup:
+    """Planner decision made before the run exists (an agent planner needs the run branch)."""
 
-    Contract: emits ``run.created``, ``run.state_changed`` (planning), ``run.planned`` with the
-    post-processed graph, one ``task.created`` per task, then ``run.state_changed`` (planned). The
-    template planner needs no git repository; an agent planner runs read-only in a throwaway
-    worktree of the run branch, which is created only in that case. If planning itself raises,
-    the run is failed (``run.failed``) and the error propagates.
+    agent_id: str | None
+    warnings: list[str]
 
-    Raises:
-        ConfigError: ``planner.provider`` names an unknown agent, or ``req.skill`` is unknown.
-        ToolFailure: an agent planner is used but the project is not a clean git repository.
-    """
-    skills = skills or SkillRegistry.builtin()
+
+async def choose(
+    req: PlanRunRequest, registry: AdapterRegistry, config: AixConfig, skills: SkillRegistry
+) -> PlannerSetup:
+    """Validate the skill override and resolve the planner provider (may raise ``ConfigError``)."""
     if req.skill is not None:
         skills.get(req.skill)  # fail fast on a typo, whichever planner runs
-    wm = WorkspaceManager(req.project_root)
     provider = (
         config.planner.model_copy(update={"provider": f"agent:{req.planner_agent}"})
         if req.planner_agent
         else config.planner
     )
     choice = await choose_planner(provider, registry)
-    warnings = list(choice.warnings)
+    return PlannerSetup(choice.agent_id, list(choice.warnings))
 
-    run_id = new_id(IdPrefix.RUN)
-    if choice.agent_id is not None:
-        await wm.create_run_branch(run_id, allow_dirty=req.allow_dirty)
 
-    async def emit(etype: str, payload: ev.Payload, *, task_id: str | None = None) -> None:
-        await store.append(etype, payload, run_id=run_id, task_id=task_id, ts=clock())
+async def plan_into(
+    rec: RunRecorder,
+    req: PlanRunRequest,
+    setup: PlannerSetup,
+    *,
+    wm: WorkspaceManager,
+    registry: AdapterRegistry,
+    config: AixConfig,
+    skills: SkillRegistry,
+) -> PlanRunResult:
+    """Plan inside an already-started run (status ``planning``) and end in ``planned``.
 
-    run = Run(
-        id=run_id,
-        project_root=wm.root,
-        goal=req.goal,
-        budget=Budget(
-            max_cost_usd=config.budget.max_cost_usd_per_run,
-            max_attempts_total=config.budget.max_attempts_per_run,
-            max_wall_seconds=config.budget.max_wall_seconds_per_run,
-        ),
-        created_at=clock(),
-    )
-
-    async def run_to(event: RunEvent) -> None:
-        nonlocal run
-        new = transition_run(run, event, at=clock())
-        await emit(
-            "run.state_changed",
-            ev.RunStateChangedPayload(from_status=run.status, to_status=new.status, event=event),
-        )
-        run = new
-
-    await emit("run.created", ev.RunCreatedPayload(run=run))
-    await run_to(RunEvent.START_PLANNING)
+    Contract: emits ``run.planned`` with the post-processed graph, one ``task.created`` per task,
+    then ``run.state_changed`` (planned). If planning itself raises, the run is failed
+    (``run.failed``) and the error propagates. An agent planner needs the run branch to exist.
+    """
+    warnings = list(setup.warnings)
     try:
         facts = await anyio.to_thread.run_sync(inspect_repo, wm.root)
         intent = RulesIntentEngine().parse(req.goal, facts)
         template = TemplatePlanner(skills)
         planner_name = "template"
-        if choice.agent_id is None:
+        run_id = rec.run.id
+        if setup.agent_id is None:
             graph = await template.plan(intent, facts, run_id, req.skill)
         else:
-            agent_id = choice.agent_id
+            agent_id = setup.agent_id
             override = config.agents.overrides.get(agent_id)
             runner = make_adapter_runner(
                 registry.get(agent_id),
@@ -153,17 +131,46 @@ async def plan_run(
         )
         warnings += post_warnings
     except Exception as exc:
-        await run_to(RunEvent.FAIL)
-        await emit("run.failed", ev.RunFailedPayload(failure=classify(exc), reason=str(exc)))
+        await rec.run_to(RunEvent.FAIL)
+        await rec.emit("run.failed", ev.RunFailedPayload(failure=classify(exc), reason=str(exc)))
         raise
 
-    await emit(
+    await rec.emit(
         "run.planned",
         ev.RunPlannedPayload(intent=intent, graph=graph, planner=planner_name, warnings=warnings),
     )
     for task in graph.tasks:
-        await emit("task.created", ev.TaskCreatedPayload(task=task), task_id=task.id)
-    await run_to(RunEvent.PLANNED)
+        await rec.emit("task.created", ev.TaskCreatedPayload(task=task), task_id=task.id)
+    await rec.run_to(RunEvent.PLANNED)
     return PlanRunResult(
         run_id=run_id, intent=intent, graph=graph, planner=planner_name, warnings=warnings
     )
+
+
+async def plan_run(
+    req: PlanRunRequest,
+    *,
+    registry: AdapterRegistry,
+    store: EventStore,
+    config: AixConfig,
+    skills: SkillRegistry | None = None,
+    clock: Callable[[], datetime] = _utc,
+) -> PlanRunResult:
+    """Create a run, plan it and stop in status ``planned`` (``aix run --plan-only``).
+
+    The template planner needs no git repository; an agent planner runs read-only in a throwaway
+    worktree of the run branch, which is created only in that case.
+
+    Raises:
+        ConfigError: ``planner.provider`` names an unknown agent, or ``req.skill`` is unknown.
+        ToolFailure: an agent planner is used but the project is not a clean git repository.
+    """
+    skills = skills or SkillRegistry.builtin()
+    wm = WorkspaceManager(req.project_root)
+    setup = await choose(req, registry, config, skills)
+    run_id = new_id(IdPrefix.RUN)
+    if setup.agent_id is not None:
+        await wm.create_run_branch(run_id, allow_dirty=req.allow_dirty)
+    rec = RunRecorder(store, new_run(run_id, wm.root, req.goal, config, clock()), clock)
+    await rec.start()
+    return await plan_into(rec, req, setup, wm=wm, registry=registry, config=config, skills=skills)

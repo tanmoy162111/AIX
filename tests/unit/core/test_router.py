@@ -186,7 +186,10 @@ def test_independence_penalty_can_be_disabled_and_covers_security_review() -> No
     other = agent("other", {C.SECURITY: 0.7})
     t = task(TaskType.SECURITY_REVIEW, [C.SECURITY])
     off = RoutingConfig(prefer_independent_reviewer=False)
-    assert route(ctx([author, other], t, authored_by=frozenset({"author"}), config=off)).primary == "author"
+    assert (
+        route(ctx([author, other], t, authored_by=frozenset({"author"}), config=off)).primary
+        == "author"
+    )
     assert route(ctx([author, other], t, authored_by=frozenset({"author"}))).primary == "other"
 
 
