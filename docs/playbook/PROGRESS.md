@@ -34,7 +34,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
 ## M2 — Adapters, registry, single-task run (§10, §11, §14.3 partial, §23 partial)
 - [x] M2.1 `AgentAdapter` protocol, `AgentRequest/Event/Outcome/Handle`, `AgentPermissions`.
-- [ ] M2.2 Shared subprocess runner: process groups, streaming, timeout→TERM→KILL, stderr ring buffer; tests with tiny scripts.
+- [x] M2.2 Shared subprocess runner: process groups, streaming, timeout→TERM→KILL, stderr ring buffer; tests with tiny scripts.
 - [ ] M2.3 Adapter manifest schema + registry (discover via builtin list now; entry points in M9), health, enable/disable persisted in config.
 - [ ] M2.4 `fake` adapter + YAML script format (§27.1); multiple fake ids.
 - [ ] M2.5 Fixture repo `sample_py` + patches (§27.2) + helper to materialize it in tmp with git.
@@ -163,3 +163,4 @@ M1.8 — done; AixConfig schema (extra=forbid) + load_config with per-leaf sourc
 M1.9 — done; `aix init [--force] [--json] [--project]` creates .aix/, commented config, migrated DB, .gitignore entries, toolchain summary; non-git warns; ADR-0007.
 M1.10 — done; gate green (make check; export-schemas + no drift; domain+store tests; init in fresh git repo); tagged m1-done.
 M2.1 — done; AgentAdapter (runtime-checkable Protocol), AgentRequest/Event/Outcome/Handle/Permissions in agents/protocol.py.
+M2.2 — done; agents/subprocess.py: spawn() async-context RunningProcess (own process group, exact env, line streaming + raw capture, 256KiB stderr ring, TERM->grace->KILL, group-wide cleanup, cancel from any task); ToolFailure if binary missing. 14 tests with tiny python scripts.
