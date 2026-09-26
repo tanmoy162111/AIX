@@ -1,0 +1,23 @@
+diff --git a/app/handler.py b/app/handler.py
+index acc26c0..7dd30aa 100644
+--- a/app/handler.py
++++ b/app/handler.py
+@@ -25,4 +25,6 @@ def handle_request(
+     """Route a request. Only ``GET /health`` exists at baseline."""
+     if method == "GET" and path == "/health":
+         return Response(200, {"status": "ok"})
++    if method == "GET" and path == "/hello":
++        return Response(200, {"message": "hello"})
+     return Response(404, {"error": "not found"})
+diff --git a/tests/test_hello.py b/tests/test_hello.py
+new file mode 100644
+index 0000000..23239b1
+--- /dev/null
++++ b/tests/test_hello.py
+@@ -0,0 +1,6 @@
++from app.handler import handle_request
++
++
++def test_hello() -> None:
++    r = handle_request("GET", "/hello")
++    assert r.status == 200 and r.body == {"message": "hello"}

@@ -1,0 +1,128 @@
+diff --git a/app/auth.py b/app/auth.py
+new file mode 100644
+index 0000000..15f60b8
+--- /dev/null
++++ b/app/auth.py
+@@ -0,0 +1,40 @@
++"""Minimal HS256 tokens (stdlib only)."""
++
++from __future__ import annotations
++
++import base64
++import hashlib
++import hmac
++import json
++
++SECRET = b"dev-secret-not-for-production"
++
++
++def _b64(data: bytes) -> str:
++    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
++
++
++def _unb64(text: str) -> bytes:
++    return base64.urlsafe_b64decode(text + "=" * (-len(text) % 4))
++
++
++def _sign(signing_input: str) -> str:
++    return _b64(hmac.new(SECRET, signing_input.encode(), hashlib.sha256).digest())
++
++
++def create_token(username: str, *, now: float, ttl: int = 3600) -> str:
++    header = _b64(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
++    payload = _b64(json.dumps({"sub": username, "exp": int(now) + ttl}).encode())
++    return f"{header}.{payload}.{_sign(header + '.' + payload)}"
++
++
++def verify_token(token: str, *, now: float) -> str | None:
++    """Return the username for a valid token, else ``None``."""
++    try:
++        header, payload, signature = token.split(".")
++    except ValueError:
++        return None
++    if not hmac.compare_digest(signature, _sign(header + "." + payload)):
++        return None
++    claims = json.loads(_unb64(payload))
++    return str(claims["sub"])
+diff --git a/app/handler.py b/app/handler.py
+index acc26c0..ba1af38 100644
+--- a/app/handler.py
++++ b/app/handler.py
+@@ -2,9 +2,11 @@
+ 
+ from __future__ import annotations
+ 
++import time
+ from dataclasses import dataclass, field
+ from typing import Any
+ 
++from app.auth import create_token, verify_token
+ from app.users import UserStore
+ 
+ 
+@@ -25,4 +27,15 @@ def handle_request(
+     """Route a request. Only ``GET /health`` exists at baseline."""
+     if method == "GET" and path == "/health":
+         return Response(200, {"status": "ok"})
++    if method == "POST" and path == "/login":
++        creds = body or {}
++        if store is not None and store.verify(creds.get("username", ""), creds.get("password", "")):
++            return Response(200, {"token": create_token(creds["username"], now=time.time())})
++        return Response(401, {"error": "invalid credentials"})
++    if method == "GET" and path == "/me":
++        auth = (headers or {}).get("Authorization", "")
++        user = verify_token(auth.removeprefix("Bearer "), now=time.time()) if auth else None
++        if user is None:
++            return Response(401, {"error": "unauthorized"})
++        return Response(200, {"user": user})
+     return Response(404, {"error": "not found"})
+diff --git a/tests/test_auth.py b/tests/test_auth.py
+new file mode 100644
+index 0000000..fb040b6
+--- /dev/null
++++ b/tests/test_auth.py
+@@ -0,0 +1,44 @@
++import time
++
++from app.auth import create_token, verify_token
++from app.handler import handle_request
++from app.users import UserStore
++
++
++def test_round_trip() -> None:
++    now = time.time()
++    assert verify_token(create_token("ann", now=now), now=now) == "ann"
++
++
++def test_tampered_token_rejected() -> None:
++    now = time.time()
++    token = create_token("ann", now=now)
++    assert verify_token(token[:-2] + "xx", now=now) is None
++
++
++def test_expired_token_rejected() -> None:
++    now = time.time()
++    token = create_token("ann", now=now, ttl=10)
++    assert verify_token(token, now=now + 11) is None
++
++
++def test_login_and_me() -> None:
++    store = UserStore()
++    store.add("ann", "pw")
++    login = handle_request(
++        "POST", "/login", body={"username": "ann", "password": "pw"}, store=store
++    )
++    assert login.status == 200
++    me = handle_request("GET", "/me", headers={"Authorization": "Bearer " + login.body["token"]})
++    assert me.status == 200 and me.body == {"user": "ann"}
++
++
++def test_login_rejects_bad_password() -> None:
++    store = UserStore()
++    store.add("ann", "pw")
++    r = handle_request("POST", "/login", body={"username": "ann", "password": "x"}, store=store)
++    assert r.status == 401
++
++
++def test_me_requires_token() -> None:
++    assert handle_request("GET", "/me").status == 401

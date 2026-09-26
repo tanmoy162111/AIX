@@ -1,0 +1,16 @@
+[project]
+name = "sample-py"
+version = "0.1.0"
+description = "Tiny web-free app used as the aix fixture repository"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

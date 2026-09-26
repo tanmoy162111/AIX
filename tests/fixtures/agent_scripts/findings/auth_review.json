@@ -1,0 +1,28 @@
+{
+  "findings": [
+    {
+      "severity": "high",
+      "file": "app/auth.py",
+      "line": 38,
+      "title": "Token expiry is not enforced",
+      "detail": "verify_token accepts tokens whose exp claim is in the past.",
+      "confidence": 0.9
+    },
+    {
+      "severity": "medium",
+      "file": "app/auth.py",
+      "line": 11,
+      "title": "Hard-coded signing secret",
+      "detail": "SECRET is a constant in source; load it from the environment.",
+      "confidence": 0.7
+    },
+    {
+      "severity": "low",
+      "file": "app/handler.py",
+      "line": 30,
+      "title": "Login does not rate-limit attempts",
+      "detail": "Repeated failures are not throttled.",
+      "confidence": 0.5
+    }
+  ]
+}

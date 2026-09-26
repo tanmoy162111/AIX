@@ -248,3 +248,18 @@ async def test_builtin_fake_and_extra_fakes_in_registry() -> None:
 
 def test_git_available_for_patch_tests() -> None:
     assert subprocess.run(["git", "--version"], capture_output=True).returncode == 0
+
+
+async def test_fake_agent_applies_a_real_fixture_patch(tmp_path: Path) -> None:
+    import repos
+
+    repo = repos.materialize_sample_py(tmp_path / "r")
+    a = FakeAdapter(
+        "fake",
+        scripts=[script(apply_patch="patches/hello.diff")],
+        base_dir=repos.FIXTURES / "agent_scripts",
+    )
+    _, out = await run(a, req(repo))
+    assert out.status == "completed"  # type: ignore[attr-defined]
+    assert (repo / "tests" / "test_hello.py").exists()
+    assert repos.run_pytest(repo).returncode == 0

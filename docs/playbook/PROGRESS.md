@@ -37,7 +37,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M2.2 Shared subprocess runner: process groups, streaming, timeout→TERM→KILL, stderr ring buffer; tests with tiny scripts.
 - [x] M2.3 Adapter manifest schema + registry (discover via builtin list now; entry points in M9), health, enable/disable persisted in config.
 - [x] M2.4 `fake` adapter + YAML script format (§27.1); multiple fake ids.
-- [ ] M2.5 Fixture repo `sample_py` + patches (§27.2) + helper to materialize it in tmp with git.
+- [x] M2.5 Fixture repo `sample_py` + patches (§27.2) + helper to materialize it in tmp with git.
 - [ ] M2.6 Workspace module: run branch, attempt worktree, diff capture (`DiffSummary` + patch), scope check, cleanup.
 - [ ] M2.7 `claude` adapter: probe via `--help` flag discovery, argv builder, stream-json parser, usage/session extraction, error classification; recordings in `tests/fixtures/recordings/claude/` (hand-authored from docs if CLI absent — mark `synthetic: true` in recording metadata); `docs/adapters/claude.md`.
 - [ ] M2.8 `codex` adapter: same deliverables as M2.7.
@@ -166,3 +166,4 @@ M2.1 — done; AgentAdapter (runtime-checkable Protocol), AgentRequest/Event/Out
 M2.2 — done; agents/subprocess.py: spawn() async-context RunningProcess (own process group, exact env, line streaming + raw capture, 256KiB stderr ring, TERM->grace->KILL, group-wide cleanup, cancel from any task); ToolFailure if binary missing. 14 tests with tiny python scripts.
 M2.3 — done; AdapterManifest, probe_binary (version + required-flag discovery, never paid), AdapterRegistry (importlib builtin discovery, enable/disable overlay, probe never raises), config.edit.set_agent_enabled persists enablement; ADR-0008 adds AgentSpec.health_reason. BUILTIN_IDS is empty until M2.4.
 M2.4 — done; FakeAdapter + YAML FakeScript (events, apply_patch via git apply, write_files, write_outside_scope, claim, exit_code, stderr, sleep_s, usage, emit_findings, planner_output, failure); task type read from a 'TASK TYPE: <x>' prompt line (B.2 template must emit it, M6.4); attempts advance per script, last repeats; builtin 'fake' + make_fake_entry() for fake-a/fake-reviewer (fake and fake-* always enabled).
+M2.5 — done; tests/fixtures/repos/sample_py (users store + handler, 5 baseline tests, ruff cfg) + 5 complete-diff patches (hello, jwt broken/fixed, planted AWS-doc fake key, outside-scope) + review findings JSON; tests/repos.py materializes it as a git repo. Fixtures are excluded from outer ruff/pyright/pytest collection.
