@@ -1,0 +1,13 @@
+steps:
+  - id: inspect
+    type: inspect
+    title: "Inspect existing tests"
+    goal: "Survey code and tests for: {goal}"
+    required_capabilities: [research]
+  - id: test
+    type: test
+    title: "Write tests"
+    goal: "{goal}"
+    depends_on: [inspect]
+    file_scope: ["tests/**", "test/**", "**/test_*", "**/*_test.*", "**/*.test.*"]
+    required_capabilities: [test]

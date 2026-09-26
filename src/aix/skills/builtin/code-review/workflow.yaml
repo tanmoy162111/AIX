@@ -1,0 +1,6 @@
+steps:
+  - id: review
+    type: review
+    title: "Review the change"
+    goal: "Review: {goal}"
+    required_capabilities: [review]

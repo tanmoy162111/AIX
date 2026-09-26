@@ -1,0 +1,5 @@
+name: documentation
+description: "Write or update user and developer documentation."
+task_types: [inspect, document]
+required_capabilities: [document]
+inputs: [goal]

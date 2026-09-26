@@ -1,0 +1,3 @@
+required: [build, tests, lint]
+optional: [typecheck]
+requires_security_review: false

@@ -1,0 +1,26 @@
+steps:
+  - id: inspect
+    type: inspect
+    title: "Locate the defect"
+    goal: "Find the root cause of: {goal}"
+    required_capabilities: [debug]
+  - id: implement
+    type: implement
+    title: "Fix the defect"
+    goal: "{goal}"
+    depends_on: [inspect]
+    file_scope: ["**"]
+    required_capabilities: [debug, implement]
+  - id: test
+    type: test
+    title: "Add regression test"
+    goal: "Add a regression test for: {goal}"
+    depends_on: [implement]
+    file_scope: ["tests/**", "test/**", "**/test_*", "**/*_test.*", "**/*.test.*"]
+    required_capabilities: [test]
+  - id: review
+    type: review
+    title: "Review the fix"
+    goal: "Review the fix for: {goal}"
+    depends_on: [implement]
+    required_capabilities: [review]

@@ -1,0 +1,5 @@
+name: feature-implementation
+description: "Design, implement, test, review and document a new feature."
+task_types: [inspect, design, implement, test, review, security_review, document]
+required_capabilities: [implement, design]
+inputs: [goal]

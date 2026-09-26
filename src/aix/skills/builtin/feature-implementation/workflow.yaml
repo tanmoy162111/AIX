@@ -1,0 +1,46 @@
+steps:
+  - id: inspect
+    type: inspect
+    title: "Inspect repository"
+    goal: "Survey the code relevant to: {goal}"
+    required_capabilities: [research]
+  - id: design
+    type: design
+    title: "Design the change"
+    goal: "Design the approach for: {goal}"
+    depends_on: [inspect]
+    required_capabilities: [design]
+  - id: implement
+    type: implement
+    title: "Implement the change"
+    goal: "{goal}"
+    depends_on: [design]
+    file_scope: ["**"]
+    required_capabilities: [implement]
+  - id: test
+    type: test
+    title: "Write and run tests"
+    goal: "Add tests covering: {goal}"
+    depends_on: [implement]
+    file_scope: ["tests/**", "test/**", "**/test_*", "**/*_test.*", "**/*.test.*"]
+    required_capabilities: [test]
+  - id: review
+    type: review
+    title: "Review the change"
+    goal: "Review the implementation of: {goal}"
+    depends_on: [implement]
+    required_capabilities: [review]
+  - id: security_review
+    type: security_review
+    title: "Security review"
+    goal: "Review the security impact of: {goal}"
+    depends_on: [test, review]
+    required_capabilities: [security]
+    when_risk_at_least: medium
+  - id: document
+    type: document
+    title: "Update documentation"
+    goal: "Document the change for: {goal}"
+    depends_on: [test, review]
+    file_scope: ["docs/**", "*.md"]
+    required_capabilities: [document]

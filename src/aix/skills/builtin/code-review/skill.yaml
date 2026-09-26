@@ -1,0 +1,5 @@
+name: code-review
+description: "Independent review of a change that reports structured findings."
+task_types: [review]
+required_capabilities: [review]
+inputs: [goal]

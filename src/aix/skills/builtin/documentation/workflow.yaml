@@ -1,0 +1,13 @@
+steps:
+  - id: inspect
+    type: inspect
+    title: "Inspect the subject"
+    goal: "Survey the code and existing docs for: {goal}"
+    required_capabilities: [research]
+  - id: document
+    type: document
+    title: "Write documentation"
+    goal: "{goal}"
+    depends_on: [inspect]
+    file_scope: ["docs/**", "*.md"]
+    required_capabilities: [document]

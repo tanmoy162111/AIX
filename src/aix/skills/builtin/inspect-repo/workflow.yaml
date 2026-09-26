@@ -1,0 +1,6 @@
+steps:
+  - id: inspect
+    type: inspect
+    title: "Inspect repository"
+    goal: "Survey the repository for: {goal}"
+    required_capabilities: [research]

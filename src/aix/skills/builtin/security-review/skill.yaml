@@ -1,0 +1,5 @@
+name: security-review
+description: "Security-focused review that reports structured findings."
+task_types: [security_review]
+required_capabilities: [security]
+inputs: [goal]

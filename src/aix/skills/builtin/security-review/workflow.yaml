@@ -1,0 +1,6 @@
+steps:
+  - id: security_review
+    type: security_review
+    title: "Security review"
+    goal: "Security review: {goal}"
+    required_capabilities: [security]

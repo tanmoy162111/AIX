@@ -1,0 +1,5 @@
+name: inspect-repo
+description: "Read-only survey of a repository: layout, conventions, commands and risks."
+task_types: [inspect]
+required_capabilities: [research]
+inputs: [goal]

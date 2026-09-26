@@ -1,0 +1,5 @@
+name: bugfix
+description: "Reproduce, fix and verify a defect with a regression test."
+task_types: [inspect, implement, test, review]
+required_capabilities: [debug, implement]
+inputs: [goal]

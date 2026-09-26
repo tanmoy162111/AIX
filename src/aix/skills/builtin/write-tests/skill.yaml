@@ -1,0 +1,5 @@
+name: write-tests
+description: "Add or extend automated tests for existing behavior."
+task_types: [inspect, test]
+required_capabilities: [test]
+inputs: [goal]

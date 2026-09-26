@@ -1,0 +1,3 @@
+required: []
+optional: [security_sast, secrets, deps]
+requires_security_review: true
