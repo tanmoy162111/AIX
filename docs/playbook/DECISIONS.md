@@ -77,3 +77,10 @@ Template:
 - Options: write full defaults; write an empty file; write the defaults commented out.
 - Decision: write the defaults commented out (valid empty YAML, so resolution is unchanged and sources stay `default`). Ignore `.aix/worktrees/`, `.aix/runs/`, `.aix/artifacts/`, `.aix/aix.db`, `.aix/aix.db-wal`, `.aix/aix.db-shm`; `.aix/config.yaml` stays committable. `init` also creates/migrates the database so `aix dev rebuild-projections` works immediately. `--force` rewrites only the config, never the database.
 - Consequences: A superset of the spec's two entries; teams can share `.aix/config.yaml`. Toolchain detection is a minimal marker scan (`verification/detect.py`) to be extended in M3.1/M4.1.
+
+## ADR-0008: `AgentSpec.health_reason` and manifest extensions
+- Date: 2026-09-26 · Milestone/item: M2.3 · Status: accepted · Amends ADR-0005
+- Context: §11 requires "health = `degraded` with a reason", and §20.5 puts per-adapter env allowlists in the manifest; §6's `AgentSpec` has no place for the reason.
+- Options: keep the reason outside the model (side channel); add an optional field.
+- Decision: add `AgentSpec.health_reason: str | None = None` (schema change, exported and drift-tested). Manifest gains `required_flags`, `env_allowlist`, `models`, `default_model` and `probe.help_args`. `probe.auth_check` (a paid smoke call) is never run by default probing.
+- Consequences: `aix agent list` can explain non-ready health. The field is optional, so existing JSON stays valid.

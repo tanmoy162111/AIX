@@ -107,6 +107,18 @@
       "title": "Health",
       "type": "string"
     },
+    "health_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Health Reason"
+    },
     "id": {
       "minLength": 1,
       "title": "Id",

@@ -35,6 +35,8 @@ class AgentSpec(DomainModel):
     default_model: str | None = None
     cost_class: Literal["free", "low", "medium", "high"] = "medium"
     health: Literal["ready", "degraded", "unavailable", "disabled"] = "unavailable"
+    health_reason: str | None = None
+    """Why health is not ``ready`` (§11)."""
 
     @field_validator("capabilities")
     @classmethod

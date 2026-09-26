@@ -35,7 +35,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 ## M2 — Adapters, registry, single-task run (§10, §11, §14.3 partial, §23 partial)
 - [x] M2.1 `AgentAdapter` protocol, `AgentRequest/Event/Outcome/Handle`, `AgentPermissions`.
 - [x] M2.2 Shared subprocess runner: process groups, streaming, timeout→TERM→KILL, stderr ring buffer; tests with tiny scripts.
-- [ ] M2.3 Adapter manifest schema + registry (discover via builtin list now; entry points in M9), health, enable/disable persisted in config.
+- [x] M2.3 Adapter manifest schema + registry (discover via builtin list now; entry points in M9), health, enable/disable persisted in config.
 - [ ] M2.4 `fake` adapter + YAML script format (§27.1); multiple fake ids.
 - [ ] M2.5 Fixture repo `sample_py` + patches (§27.2) + helper to materialize it in tmp with git.
 - [ ] M2.6 Workspace module: run branch, attempt worktree, diff capture (`DiffSummary` + patch), scope check, cleanup.
@@ -164,3 +164,4 @@ M1.9 — done; `aix init [--force] [--json] [--project]` creates .aix/, commente
 M1.10 — done; gate green (make check; export-schemas + no drift; domain+store tests; init in fresh git repo); tagged m1-done.
 M2.1 — done; AgentAdapter (runtime-checkable Protocol), AgentRequest/Event/Outcome/Handle/Permissions in agents/protocol.py.
 M2.2 — done; agents/subprocess.py: spawn() async-context RunningProcess (own process group, exact env, line streaming + raw capture, 256KiB stderr ring, TERM->grace->KILL, group-wide cleanup, cancel from any task); ToolFailure if binary missing. 14 tests with tiny python scripts.
+M2.3 — done; AdapterManifest, probe_binary (version + required-flag discovery, never paid), AdapterRegistry (importlib builtin discovery, enable/disable overlay, probe never raises), config.edit.set_agent_enabled persists enablement; ADR-0008 adds AgentSpec.health_reason. BUILTIN_IDS is empty until M2.4.
