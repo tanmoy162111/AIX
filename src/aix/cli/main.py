@@ -11,6 +11,7 @@ import typer
 from aix import __version__
 from aix.cli.config import config_app
 from aix.cli.dev import dev_app
+from aix.cli.init import init
 
 app = typer.Typer(
     name="aix",
@@ -19,6 +20,7 @@ app = typer.Typer(
     add_completion=False,
 )
 
+app.command("init")(init)
 app.add_typer(config_app)
 app.add_typer(dev_app)
 

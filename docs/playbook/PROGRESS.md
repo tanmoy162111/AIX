@@ -29,7 +29,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M1.6 SQLite store: migrations, WAL, append-only trigger on `events`, event payload schemas per type (§8.3).
 - [x] M1.7 Projections updated transactionally; `aix dev rebuild-projections`; replay-equality test.
 - [x] M1.8 Layered config loader (§9) with source tracking; `aix config show --resolved`.
-- [ ] M1.9 `aix init` (creates `.aix/`, default config, gitignore entries, detects toolchain summary).
+- [x] M1.9 `aix init` (creates `.aix/`, default config, gitignore entries, detects toolchain summary).
 - [ ] M1.10 Run M1 Exit Gate; tag `m1-done`.
 
 ## M2 — Adapters, registry, single-task run (§10, §11, §14.3 partial, §23 partial)
@@ -160,3 +160,4 @@ M1.5 — done; 22 schemas (snake_case names) committed; drift test in tests/cont
 M1.6 — done; EventStore (aiosqlite, WAL, user_version migrations, append-only triggers, lock-serialized BEGIN IMMEDIATE appends); 32 payload models registered = §8.3 exactly and exported as schemas/event_*.json. Projection tables arrive in migration 002 (M1.7). Added StoreError (RESOURCE_FAILURE).
 M1.7 — done; migration 002 + projections applied inside the append transaction; rebuild clears rows (DELETE, not DROP — equivalent, keeps DDL in migrations) and replays; replay-equality + corruption-repair + atomicity tests; typed readers on EventStore. agent_stats table exists but is populated in M7.6.
 M1.8 — done; AixConfig schema (extra=forbid) + load_config with per-leaf sources; secret-looking keys refused in files; skill/task/cli layers take nested dicts (threshold names contain dots); `aix config show [--resolved] [--json] [--project]`. Caveat: pydantic-settings (ADR-0002) is not used by the loader — env is not a config layer in §9.
+M1.9 — done; `aix init [--force] [--json] [--project]` creates .aix/, commented config, migrated DB, .gitignore entries, toolchain summary; non-git warns; ADR-0007.
