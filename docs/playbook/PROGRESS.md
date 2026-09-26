@@ -118,7 +118,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M8.3 Agent-ineligibility when CLI cannot enforce required restriction for high-risk tasks. — implemented with M8.1 (`supports.enforces`); a high-risk scoped write only routes to claude/fake in local mode.
 - [x] M8.4 Container sandbox mode (docker/podman), egress allowlist; tests skipped if no runtime. — ADR-0029; real-docker test with bash:latest. **Egress allowlist NOT implemented** (network none|bridge only).
 - [x] M8.5 `test_prompt_cannot_bypass_policy.py` (fake agent tries `aix approve`, reads token path, writes outside scope, edits `.aix/`). — detection is after-the-fact from the agent stream (records + POLICY_FAILURE, no retry); the guard refuses `aix approve` in agent context. The approval token is now registered as a known secret at run start (a real leak the test found). Same-user token reads remain possible in local mode (see security.md).
-- [ ] M8.6 `ollama` adapter (text-only, research/review/summarize).
+- [x] M8.6 `ollama` adapter (text-only, research/review/summarize). — tested against a scripted local HTTP server only (no real Ollama available); not in default agents.enabled.
 - [ ] M8.7 `docs/security.md` (threat model, residual risks).
 - [ ] M8.8 Run M8 Exit Gate; tag `m8-done`.
 
