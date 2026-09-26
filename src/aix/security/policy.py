@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import Final
@@ -20,6 +21,18 @@ from aix.domain.tasks import Task
 POLICY_VERSION: Final = "policy-v2"
 _PROTECTED_ROOTS: Final = (".aix", ".git")
 _NETWORK_VALUES: Final = ("deny", "provider_default", "allow")
+_FORBIDDEN_CALLS: Final[tuple[tuple[str, re.Pattern[str]], ...]] = (
+    (
+        "approval_bypass",
+        re.compile(r"\baix\b.*\b(approve|deny|approvals)\b|aix\.cli\.main.*\b(approve|deny)\b"),
+    ),
+    ("secret_path", re.compile(r"approval_token|\.config/aix|/aix/approval")),
+    ("control_plane_state", re.compile(r"(^|[\s/'\"=])\.aix(/|\b)")),
+    (
+        "irreversible_action",
+        re.compile(r"\bgit\s+(push|config|remote)\b|--force-with-lease|\brm\s+-rf\s+/"),
+    ),
+)
 
 
 @dataclass(frozen=True)
@@ -96,6 +109,20 @@ class Policy:
         if exe not in self._sec.shell_allow:
             return Verdict(False, f"{exe} is not in security.shell_allow")
         return Verdict(True)
+
+    def inspect_tool_call(self, name: str, tool_input: str) -> tuple[str, str] | None:
+        """``(kind, detail)`` when an agent tool call touches something agents must never touch.
+
+        Covers granting approvals, the approval token, the aix state directory and irreversible
+        git actions. This is *detection after the fact* from the agent's own stream: it records
+        the attempt and fails it, but it cannot stop a same-user process in ``local`` mode
+        (see docs/security.md).
+        """
+        text = f"{name} {tool_input}"
+        for kind, pattern in _FORBIDDEN_CALLS:
+            if pattern.search(text):
+                return kind, f"{name}: {tool_input[:200]}"
+        return None
 
     def requires_approval(self, action: str) -> bool:
         return action in self._sec.approval_required_for

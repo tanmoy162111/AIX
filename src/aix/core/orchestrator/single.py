@@ -47,6 +47,7 @@ from aix.domain.ids import IdPrefix, new_id
 from aix.domain.runs import Budget, Run
 from aix.domain.state import RunEvent, TaskEvent, transition_run, transition_task
 from aix.domain.tasks import Intent, Task, TaskGraph, VerificationSpec
+from aix.security.policy import Policy
 from aix.security.sandbox import container_spec, ensure_container_ready
 from aix.store import events as ev
 from aix.store.db import EventStore
@@ -247,8 +248,9 @@ async def run_single_task(
             stream_path=stream_path,
         )
         outcome = await execute_agent(
-            adapter, agent_req, emit, task.id, attempt_id, tool_calls, normalized
-        )
+            adapter, agent_req, emit, task.id, attempt_id, tool_calls, normalized,
+            policy=Policy(config.security),
+        )  # fmt: skip
         cancelled = outcome.status == "cancelled"
         if outcome.status in ("failed", "timeout"):
             await emit(

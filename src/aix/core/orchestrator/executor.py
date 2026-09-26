@@ -82,7 +82,9 @@ from aix.domain.ids import IdPrefix, new_id
 from aix.domain.state import RunEvent, TaskEvent, transition_task
 from aix.domain.tasks import Task, TaskGraph
 from aix.domain.verification import Check, VerificationReport
+from aix.security.approvals import ensure_token
 from aix.security.policy import Policy
+from aix.security.redact import add_known_secrets
 from aix.security.sandbox import container_spec, ensure_container_ready
 from aix.skills.registry import SkillRegistry
 from aix.store import events as ev
@@ -771,9 +773,11 @@ class _Driver:
             def register(handle: AgentHandle) -> None:
                 self._live[attempt_id] = _Live(adapter, handle)
 
+            tool_violations: list[ev.PolicyViolationPayload] = []
             outcome = await execute_agent(
-                adapter, agent_req, rec.emit, task.id, attempt_id, tool_calls, normalized, register
-            )
+                adapter, agent_req, rec.emit, task.id, attempt_id, tool_calls, normalized,
+                register, self._policy, tool_violations,
+            )  # fmt: skip
             self._live.pop(attempt_id, None)
             outcome = outcome.model_copy(
                 update={
@@ -807,7 +811,7 @@ class _Driver:
                 violations = scope_violations(
                     capture.summary.paths, task.file_scope, read_only=not task.file_scope
                 )
-                for path in violations:
+                for path in violations:  # always recorded, even when a tool violation also fails it
                     await rec.emit(
                         "policy.violation",
                         ev.PolicyViolationPayload(
@@ -818,7 +822,9 @@ class _Driver:
                         task_id=task.id,
                         attempt_id=attempt_id,
                     )
-                if violations:
+                if tool_violations:  # the agent reached for something it must never touch
+                    failure = FailureClass.POLICY_FAILURE
+                elif violations:
                     failure = FailureClass.SCOPE_VIOLATION
                 elif task.file_scope and capture.summary.files_changed == 0:
                     failure = FailureClass.AGENT_NO_CHANGES
@@ -1105,6 +1111,7 @@ async def execute_graph(
     human decision grants another round. The user's checked-out branch is never touched.
     """
     t0 = time.monotonic()
+    add_known_secrets([ensure_token()])  # the approval token must never reach a written file
     cancel = cancel or anyio.Event()
     stop = anyio.Event()
     run_id = rec.run.id

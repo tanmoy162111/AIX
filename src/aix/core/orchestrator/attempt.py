@@ -6,6 +6,7 @@ into the store and persists the raw artifacts.
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
@@ -17,6 +18,7 @@ from aix.config.schema import AixConfig
 from aix.core.workspace.manager import DiffCapture
 from aix.domain.errors import MergeConflict, classify
 from aix.domain.execution import ToolCallRecord
+from aix.security.policy import Policy
 from aix.security.redact import redact_secrets
 from aix.store import events as ev
 
@@ -53,6 +55,8 @@ async def execute_agent(
     tool_calls: list[ToolCallRecord],
     normalized: list[str],
     on_handle: Callable[[AgentHandle], None] | None = None,
+    policy: Policy | None = None,
+    violations: list[ev.PolicyViolationPayload] | None = None,
 ) -> AgentOutcome:
     """Drive one adapter through start -> events -> wait, emitting milestone events.
 
@@ -76,6 +80,20 @@ async def execute_agent(
             if event.kind == "tool_call":
                 name = str(event.data.get("name", ""))
                 tool_calls.append(ToolCallRecord(name=name, ts=event.ts))
+                if policy is not None:
+                    raw_input = event.data.get("input", "")
+                    found = policy.inspect_tool_call(
+                        name, raw_input if isinstance(raw_input, str) else json.dumps(raw_input)
+                    )
+                    if found is not None:
+                        payload = ev.PolicyViolationPayload(
+                            kind=found[0], detail=redact_secrets(found[1])
+                        )
+                        if violations is not None:
+                            violations.append(payload)
+                        await emit(
+                            "policy.violation", payload, task_id=task_id, attempt_id=attempt_id
+                        )
                 await emit(
                     "agent.tool_called", ev.AgentToolCalledPayload(name=name),
                     task_id=task_id, attempt_id=attempt_id,

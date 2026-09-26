@@ -33,6 +33,9 @@ class FakeStep(DomainModel):
     """Unified diff path, relative to the adapter's ``base_dir``; applied with ``git apply``."""
     write_files: dict[str, str] = Field(default_factory=dict[str, str])
     write_outside_scope: list[str] = Field(default_factory=list[str])
+    run_commands: list[list[str]] = Field(default_factory=list[list[str]])
+    """Commands the scripted "agent" runs in its workspace with the real agent environment
+    (used by security tests: an agent attempting ``aix approve`` and the like)."""
     claim: str | None = "Done."
     exit_code: int = 0
     stderr: str = ""

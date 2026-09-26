@@ -51,6 +51,11 @@ def configure_known_secrets(values: Iterable[str]) -> None:
     _known = tuple(sorted({v for v in values if len(v) >= MIN_SECRET_LEN}, key=len, reverse=True))
 
 
+def add_known_secrets(values: Iterable[str]) -> None:
+    """Add to the registered secret values (see :func:`configure_known_secrets`)."""
+    configure_known_secrets([*_known, *values])
+
+
 def redact_secrets(text: str) -> str:
     """Replace secret-shaped substrings with ``[REDACTED]``.
 

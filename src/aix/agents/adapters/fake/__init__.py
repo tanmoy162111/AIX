@@ -14,6 +14,7 @@ from typing import Literal
 import anyio
 
 from aix.agents.adapters.fake.script import FakeScript, FakeStep, load_scripts
+from aix.agents.env import build_agent_env
 from aix.agents.protocol import AgentAdapter, AgentEvent, AgentHandle, AgentOutcome, AgentRequest
 from aix.agents.subprocess import spawn
 from aix.domain.agents import AgentSpec, AgentSupports
@@ -114,6 +115,22 @@ class FakeAdapter:
         yield AgentEvent(kind="started", ts=_now())
         for ev in run.step.events:
             yield AgentEvent(kind=ev.kind, ts=_now(), data=ev.data)
+        for argv in run.step.run_commands:
+            yield AgentEvent(
+                kind="tool_call", ts=_now(), data={"name": "Bash", "input": " ".join(argv)}
+            )
+            res = await anyio.run_process(
+                argv, cwd=run.req.workspace, env=build_agent_env([], run.req.env), check=False
+            )
+            yield AgentEvent(
+                kind="tool_result",
+                ts=_now(),
+                data={
+                    "exit_code": res.returncode,
+                    "stdout": res.stdout.decode(errors="replace")[-500:],
+                    "stderr": res.stderr.decode(errors="replace")[-500:],
+                },
+            )
         outcome = await self._execute(run)
         if run.step.usage is not None:
             yield AgentEvent(kind="usage", ts=_now(), data=run.step.usage.model_dump(mode="json"))
