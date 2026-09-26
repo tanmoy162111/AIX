@@ -1,0 +1,3 @@
+{"type":"thread.started","thread_id":"t-rate"}
+{"type":"turn.started"}
+{"type":"turn.failed","error":{"message":"429 Too Many Requests: rate limit reached for gpt in organization"}}

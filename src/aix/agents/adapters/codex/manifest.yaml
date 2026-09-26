@@ -1,0 +1,34 @@
+id: codex
+name: Codex CLI
+kind: cli
+binary: codex
+probe:
+  version_args: ["--version"]
+  help_args: ["exec", "--help"]
+  auth_check: exec_smoke
+required_flags:
+  - --json
+  - --sandbox
+  - --model
+  - --cd
+  - --config
+  - resume        # subcommand, checked as a substring of `codex exec --help`
+capabilities:
+  implement: 0.85
+  debug: 0.8
+  test: 0.7
+  review: 0.6
+  design: 0.5
+  research: 0.3
+cost_class: medium
+supports:
+  streaming: true
+  sessions: true
+  non_interactive: true
+  cancel: true
+  cost_reporting: partial
+  model_select: true
+env_allowlist:
+  - OPENAI_API_KEY
+  - OPENAI_BASE_URL
+  - CODEX_HOME

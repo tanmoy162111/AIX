@@ -1,0 +1,7 @@
+{"type":"thread.started","thread_id":"t-mal"}
+not json {{{
+{"type":"item.completed","item":{"id":"i","type":"agent_message","text":"ok after garbage"}
+42
+{"type":"item.completed","item":{"id":"i","type":"agent_message","text":"ok after garbage"}}
+{"type":"something.new","x":1}
+{"type":"turn.completed","usage":{"input_tokens":10,"cached_input_tokens":0,"output_tokens":3}}

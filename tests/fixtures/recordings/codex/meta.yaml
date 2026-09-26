@@ -1,0 +1,16 @@
+# `synthetic: true`: hand-authored from the documented `codex exec --json` event schema because no
+# live capture was possible; replace via `aix dev record codex` (M10.1).
+agent: codex
+synthetic: true
+cli_version_documented_against: "0.147.0"
+authored: "2026-09-26"
+invocation: "codex exec --json -C <ws> -s <sandbox> -c approval_policy=\"never\" - (prompt on stdin)"
+files:
+  success.jsonl: "command + file change + final message, turn.completed with usage"
+  read_only.jsonl: "message only"
+  auth_failure.jsonl: "error + turn.failed with 401"
+  rate_limit.jsonl: "turn.failed with 429 / rate limit"
+  network.jsonl: "turn.failed with a disconnected stream"
+  context.jsonl: "turn.failed with context_length_exceeded"
+  malformed.jsonl: "garbage lines mixed into a valid stream"
+  no_completion.jsonl: "stream ends without turn.completed"
