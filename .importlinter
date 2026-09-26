@@ -1,0 +1,116 @@
+# Layering contract, PLAYBOOK §5.3. See ADR-0003 for how the prose was interpreted.
+[importlinter]
+root_package = aix
+include_external_packages = True
+
+[importlinter:contract:domain-is-pure]
+name = domain imports nothing else from aix
+type = forbidden
+source_modules =
+    aix.domain
+forbidden_modules =
+    aix.store
+    aix.config
+    aix.core
+    aix.agents
+    aix.skills
+    aix.tools
+    aix.verification
+    aix.decision
+    aix.security
+    aix.artifacts
+    aix.observability
+    aix.plugins
+    aix.api
+    aix.cli
+
+[importlinter:contract:core-never-imports-adapters]
+name = core-tier packages never import vendor adapters or the shared subprocess runner
+type = forbidden
+source_modules =
+    aix.core
+    aix.verification
+    aix.decision
+    aix.artifacts
+    aix.security
+    aix.observability
+    aix.skills
+    aix.tools
+    aix.store
+    aix.config
+    aix.domain
+forbidden_modules =
+    aix.agents.adapters
+    aix.agents.subprocess
+
+[importlinter:contract:adapters-are-isolated]
+name = adapters may import only domain, agents.protocol, agents.subprocess, config
+type = forbidden
+source_modules =
+    aix.agents.adapters
+forbidden_modules =
+    aix.core
+    aix.store
+    aix.skills
+    aix.tools
+    aix.verification
+    aix.decision
+    aix.security
+    aix.artifacts
+    aix.observability
+    aix.plugins
+    aix.agents.registry
+    aix.api
+    aix.cli
+
+[importlinter:contract:nothing-imports-cli]
+name = no module imports the CLI
+type = forbidden
+source_modules =
+    aix.domain
+    aix.store
+    aix.config
+    aix.core
+    aix.agents
+    aix.skills
+    aix.tools
+    aix.verification
+    aix.decision
+    aix.security
+    aix.artifacts
+    aix.observability
+    aix.plugins
+    aix.api
+forbidden_modules =
+    aix.cli
+
+[importlinter:contract:lower-layers-never-import-api]
+name = only the CLI may import the API layer
+type = forbidden
+source_modules =
+    aix.domain
+    aix.store
+    aix.config
+    aix.core
+    aix.agents
+    aix.skills
+    aix.tools
+    aix.verification
+    aix.decision
+    aix.security
+    aix.artifacts
+    aix.observability
+    aix.plugins
+forbidden_modules =
+    aix.api
+
+[importlinter:contract:jev-sdk-is-quarantined]
+name = typesafe_sdk is imported only by decision/providers/jev.py
+type = forbidden
+source_modules =
+    aix
+forbidden_modules =
+    typesafe_sdk
+ignore_imports =
+    aix.decision.providers.jev -> typesafe_sdk
+unmatched_ignore_imports_alerting = none

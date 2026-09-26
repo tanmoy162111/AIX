@@ -14,7 +14,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M0.2 `git init`, `.gitignore` (incl. `.env*`, `.aix/`, `__pycache__`, `.venv`), initial commit of playbook docs.
 - [x] M0.3 `pyproject.toml` (src layout, extras `jev`,`api`,`security`,`dev`), `uv lock`, console script `aix = aix.cli.main:app`.
 - [x] M0.4 Package tree per §5.1 with `__init__.py` files and module docstrings.
-- [ ] M0.5 Tooling configs: ruff, pyright (strict on core/domain/decision), `.importlinter` contracts from §5.3.
+- [x] M0.5 Tooling configs: ruff, pyright (strict on core/domain/decision), `.importlinter` contracts from §5.3.
 - [ ] M0.6 pytest config: anyio, markers (`live`, `slow`), socket blocker plugin, `AIX_LIVE` gate, coverage config.
 - [ ] M0.7 Makefile targets: `fmt`, `fmt-check`, `lint`, `typecheck`, `layers`, `test`, `golden`, `test-live`, `check`.
 - [ ] M0.8 Minimal typer app with `--version` and `--help`; smoke test.
@@ -147,3 +147,4 @@ M0.1 — done; all required tools present. Missing optional: podman, semgrep, gi
 M0.2 — done; .claude/ hooks+agent committed with the initial commit.
 M0.3 — done; ADR-0002 records deps; typesafe-sdk resolves on PyPI (surface still to be verified in M5.5).
 M0.4 — done; 32 packages + py.typed; agents/protocol.py, registry.py, subprocess.py, decision/service.py etc. are created in the milestones that implement them.
+M0.5 — done; ruff/pyright configured in pyproject; 6 import contracts verified with deliberate violations (ADR-0003).
