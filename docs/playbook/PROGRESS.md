@@ -33,7 +33,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M1.10 Run M1 Exit Gate; tag `m1-done`.
 
 ## M2 — Adapters, registry, single-task run (§10, §11, §14.3 partial, §23 partial)
-- [ ] M2.1 `AgentAdapter` protocol, `AgentRequest/Event/Outcome/Handle`, `AgentPermissions`.
+- [x] M2.1 `AgentAdapter` protocol, `AgentRequest/Event/Outcome/Handle`, `AgentPermissions`.
 - [ ] M2.2 Shared subprocess runner: process groups, streaming, timeout→TERM→KILL, stderr ring buffer; tests with tiny scripts.
 - [ ] M2.3 Adapter manifest schema + registry (discover via builtin list now; entry points in M9), health, enable/disable persisted in config.
 - [ ] M2.4 `fake` adapter + YAML script format (§27.1); multiple fake ids.
@@ -162,3 +162,4 @@ M1.7 — done; migration 002 + projections applied inside the append transaction
 M1.8 — done; AixConfig schema (extra=forbid) + load_config with per-leaf sources; secret-looking keys refused in files; skill/task/cli layers take nested dicts (threshold names contain dots); `aix config show [--resolved] [--json] [--project]`. Caveat: pydantic-settings (ADR-0002) is not used by the loader — env is not a config layer in §9.
 M1.9 — done; `aix init [--force] [--json] [--project]` creates .aix/, commented config, migrated DB, .gitignore entries, toolchain summary; non-git warns; ADR-0007.
 M1.10 — done; gate green (make check; export-schemas + no drift; domain+store tests; init in fresh git repo); tagged m1-done.
+M2.1 — done; AgentAdapter (runtime-checkable Protocol), AgentRequest/Event/Outcome/Handle/Permissions in agents/protocol.py.
