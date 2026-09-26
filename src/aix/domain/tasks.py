@@ -101,3 +101,15 @@ class TaskGraph(DomainModel):
     def topological_order(self) -> list[Task]:
         """Return tasks so that every task appears after all of its dependencies."""
         return self._toposort()
+
+
+class RepoFacts(DomainModel):
+    """Cheap, local facts about a repository (§13.1, §15.1). No agent prose, no file contents."""
+
+    languages: list[str] = Field(default_factory=list)
+    package_managers: list[str] = Field(default_factory=list)
+    test_commands: list[str] = Field(default_factory=list)
+    convention_files: list[str] = Field(default_factory=list)
+    file_count: int = 0
+    total_bytes: int = 0
+    is_git_repo: bool = False

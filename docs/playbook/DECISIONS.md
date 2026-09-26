@@ -84,3 +84,10 @@ Template:
 - Options: keep the reason outside the model (side channel); add an optional field.
 - Decision: add `AgentSpec.health_reason: str | None = None` (schema change, exported and drift-tested). Manifest gains `required_flags`, `env_allowlist`, `models`, `default_model` and `probe.help_args`. `probe.auth_check` (a paid smoke call) is never run by default probing.
 - Consequences: `aix agent list` can explain non-ready health. The field is optional, so existing JSON stays valid.
+
+## ADR-0009: `RepoFacts` domain model for the repo-facts inspector
+- Date: 2026-09-26 · Milestone/item: M3.1 · Status: accepted
+- Context: §13.1/§15.1 need repo facts (languages, package managers, test commands, size) as input to the intent engine, planner and context fabric, but §6 defines no model. Core must consume it under pyright strict without importing `verification`.
+- Options: return a `verification`-owned model; return a bare dict; add a domain model.
+- Decision: add `aix.domain.tasks.RepoFacts{languages, package_managers, test_commands, convention_files, file_count, total_bytes, is_git_repo}` (a new exported schema `schemas/repo_facts.json`). `verification.detect.inspect_repo(root)` builds it from `detect_toolchain` plus lockfiles and a size walk that skips `.git`, `.aix`, `node_modules`, venvs and symlinks. It reads marker files and metadata only, never source contents.
+- Consequences: New schema after M1 (additive). Command resolution for build/lint/typecheck stays in M4.1; `test_commands` here is a hint for prompts, not the verification command source of truth.

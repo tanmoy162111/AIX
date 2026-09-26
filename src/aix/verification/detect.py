@@ -1,4 +1,4 @@
-"""Toolchain detection (PLAYBOOK §17.1).
+"""Toolchain detection (PLAYBOOK §17.1) and the repo-facts inspector (§13.1).
 
 This first slice only reports *which* ecosystems and entry points exist; command resolution
 (build/test/lint/typecheck) is added in M4.1 and the repo-facts inspector in M3.1.
@@ -6,12 +6,14 @@ This first slice only reports *which* ecosystems and entry points exist; command
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 from pathlib import Path
 from typing import Literal
 
 from aix.domain.base import DomainModel
+from aix.domain.tasks import RepoFacts
 
 Ecosystem = Literal["python", "node", "go", "rust"]
 
@@ -67,4 +69,84 @@ def detect_toolchain(root: Path) -> ToolchainSummary:
         if "package.json" in present
         else [],
         is_git_repo=(root / ".git").exists(),
+    )
+
+
+_LOCKFILES: tuple[tuple[str, str], ...] = (
+    ("uv.lock", "uv"),
+    ("poetry.lock", "poetry"),
+    ("Pipfile.lock", "pipenv"),
+    ("requirements.txt", "pip"),
+    ("pnpm-lock.yaml", "pnpm"),
+    ("yarn.lock", "yarn"),
+    ("package-lock.json", "npm"),
+    ("go.mod", "go"),
+    ("Cargo.lock", "cargo"),
+)
+_CONVENTION_FILES = ("AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md", "README.md")
+_SKIP_DIRS = frozenset({".git", ".aix", "node_modules", ".venv", "venv", "__pycache__", "target"})
+
+
+def _configures_pytest(root: Path) -> bool:
+    for name in ("pytest.ini", "tox.ini"):
+        if (root / name).is_file():
+            return True
+    try:
+        text = (root / "pyproject.toml").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return "pytest" in text
+
+
+def _size(root: Path) -> tuple[int, int]:
+    count = total = 0
+    stack = [root]
+    while stack:
+        current = stack.pop()
+        try:
+            entries = list(current.iterdir())
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.is_symlink():
+                continue
+            if entry.is_dir():
+                if entry.name not in _SKIP_DIRS:
+                    stack.append(entry)
+            elif entry.is_file():
+                count += 1
+                with contextlib.suppress(OSError):
+                    total += entry.stat().st_size
+    return count, total
+
+
+def inspect_repo(root: Path) -> RepoFacts:
+    """Cheap local inspection of ``root`` (§13.1): languages, managers, test commands, size.
+
+    Reads only marker files and directory metadata; never raises for a missing directory.
+    """
+    tc = detect_toolchain(root)
+    managers = [tool for name, tool in _LOCKFILES if (root / name).is_file()]
+    if "node" in tc.ecosystems and not any(m in managers for m in ("pnpm", "yarn", "npm")):
+        managers.append("npm")
+    tests: list[str] = []
+    if "test" in tc.make_targets:
+        tests.append("make test")
+    if "test" in tc.package_scripts:
+        tests.append("npm test")
+    if "python" in tc.ecosystems and _configures_pytest(root):
+        tests.append("pytest -q")
+    if "go" in tc.ecosystems:
+        tests.append("go test ./...")
+    if "rust" in tc.ecosystems:
+        tests.append("cargo test")
+    count, total = _size(root) if root.is_dir() else (0, 0)
+    return RepoFacts(
+        languages=list(tc.ecosystems),
+        package_managers=managers,
+        test_commands=tests,
+        convention_files=[n for n in _CONVENTION_FILES if (root / n).is_file()],
+        file_count=count,
+        total_bytes=total,
+        is_git_repo=tc.is_git_repo,
     )

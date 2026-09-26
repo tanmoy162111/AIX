@@ -1,0 +1,51 @@
+{
+  "additionalProperties": false,
+  "description": "Cheap, local facts about a repository (\u00a713.1, \u00a715.1). No agent prose, no file contents.",
+  "properties": {
+    "convention_files": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Convention Files",
+      "type": "array"
+    },
+    "file_count": {
+      "default": 0,
+      "title": "File Count",
+      "type": "integer"
+    },
+    "is_git_repo": {
+      "default": false,
+      "title": "Is Git Repo",
+      "type": "boolean"
+    },
+    "languages": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Languages",
+      "type": "array"
+    },
+    "package_managers": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Package Managers",
+      "type": "array"
+    },
+    "test_commands": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Test Commands",
+      "type": "array"
+    },
+    "total_bytes": {
+      "default": 0,
+      "title": "Total Bytes",
+      "type": "integer"
+    }
+  },
+  "title": "RepoFacts",
+  "type": "object"
+}
