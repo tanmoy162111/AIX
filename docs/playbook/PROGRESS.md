@@ -4,7 +4,7 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial (see Blocked) · IDs are stabl
 Rule: work the **first unchecked item of the current milestone**. A milestone is done only when its
 PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
-**Current milestone:** M4
+**Current milestone:** M5
 **Environment notes (M0.1, probed 2026-09-26):** python=3.14.4 system, 3.12.13 via uv (project pins 3.12), uv=0.11.17, git=2.53.0, docker=29.5.2, podman=missing, claude=2.1.283, codex=0.147.0, gemini=0.55.1, opencode=1.18.26, ollama=0.24.0, TYPESAFE_API_KEY present=no, semgrep=missing, gitleaks=missing, pip-audit=missing (auth state of agent CLIs not probed; live tests gated by AIX_LIVE)
 
 ---
@@ -74,7 +74,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M4.9 `VerificationReport.overall` rule with property tests.
 - [x] M4.10 `aix verify`, `aix review`.
 - [x] M4.11 Remove M3 verification stub flag; golden G1, G6, G7.
-- [ ] M4.12 Run M4 Exit Gate; tag `m4-done`.
+- [x] M4.12 Run M4 Exit Gate; tag `m4-done`.
 
 ## M5 — Decisions, Jev, retries, approvals (§18, §19, §20.4 partial)
 - [ ] M5.1 `DecisionState` builders per point with the §18.6 restrictions + tests (reject claim-sourced / long free text).
@@ -199,3 +199,4 @@ M4.8 — done; verification/ai_review.py + core/prompts/review.j2 (snapshot-test
 M4.9 — done; hypothesis properties: order independence, monotonicity, required failure => failed, required skipped never passes, optional-only can only warn, AI review cannot rescue, report validator accepts only the computed overall. Rule itself was already implemented in M1.
 M4.10 — done; verification/engine.py run_verification (single composition point, also for M4.11), tree.py (tracked diff + untracked files as added lines; .aix/ ignored), cli/verify.py. Found+fixed: aix-own .aix/ counted as a change. verify exits 1 for failed AND incomplete. Custom skill checks (skill verification.yaml `custom`) are not yet run by the engine.
 M4.11 — done; ADR-0018. Executor runs run_verification per write attempt (baseline once per run, optional independent ai_review), STUB removed; tests/verif_env.py gives no-op commands for orchestrator tests, goldens G1/G6/G7 use the real toolchain. security/redact.py + EventStore redaction (found by G7: key leaked via the agent claim). Raw adapter stream files are not redacted yet (M8).
+M4.12 — done; exit gate green: make check (1360 passed, 10 live skipped), tests/unit/verification + tests/integration/test_verification.py (149 passed), goldens G1/G6/G7 (3 passed). Tagged m4-done.
