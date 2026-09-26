@@ -4,7 +4,7 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial (see Blocked) · IDs are stabl
 Rule: work the **first unchecked item of the current milestone**. A milestone is done only when its
 PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
-**Current milestone:** M1
+**Current milestone:** M2
 **Environment notes (M0.1, probed 2026-09-26):** python=3.14.4 system, 3.12.13 via uv (project pins 3.12), uv=0.11.17, git=2.53.0, docker=29.5.2, podman=missing, claude=2.1.283, codex=0.147.0, gemini=0.55.1, opencode=1.18.26, ollama=0.24.0, TYPESAFE_API_KEY present=no, semgrep=missing, gitleaks=missing, pip-audit=missing (auth state of agent CLIs not probed; live tests gated by AIX_LIVE)
 
 ---
@@ -30,7 +30,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M1.7 Projections updated transactionally; `aix dev rebuild-projections`; replay-equality test.
 - [x] M1.8 Layered config loader (§9) with source tracking; `aix config show --resolved`.
 - [x] M1.9 `aix init` (creates `.aix/`, default config, gitignore entries, detects toolchain summary).
-- [ ] M1.10 Run M1 Exit Gate; tag `m1-done`.
+- [x] M1.10 Run M1 Exit Gate; tag `m1-done`.
 
 ## M2 — Adapters, registry, single-task run (§10, §11, §14.3 partial, §23 partial)
 - [ ] M2.1 `AgentAdapter` protocol, `AgentRequest/Event/Outcome/Handle`, `AgentPermissions`.
@@ -161,3 +161,4 @@ M1.6 — done; EventStore (aiosqlite, WAL, user_version migrations, append-only 
 M1.7 — done; migration 002 + projections applied inside the append transaction; rebuild clears rows (DELETE, not DROP — equivalent, keeps DDL in migrations) and replays; replay-equality + corruption-repair + atomicity tests; typed readers on EventStore. agent_stats table exists but is populated in M7.6.
 M1.8 — done; AixConfig schema (extra=forbid) + load_config with per-leaf sources; secret-looking keys refused in files; skill/task/cli layers take nested dicts (threshold names contain dots); `aix config show [--resolved] [--json] [--project]`. Caveat: pydantic-settings (ADR-0002) is not used by the loader — env is not a config layer in §9.
 M1.9 — done; `aix init [--force] [--json] [--project]` creates .aix/, commented config, migrated DB, .gitignore entries, toolchain summary; non-git warns; ADR-0007.
+M1.10 — done; gate green (make check; export-schemas + no drift; domain+store tests; init in fresh git repo); tagged m1-done.
