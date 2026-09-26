@@ -20,7 +20,7 @@ from aix.config.schema import AixConfig
 from aix.domain.agents import AgentSpec
 from aix.domain.errors import ConfigError
 
-BUILTIN_IDS: tuple[str, ...] = ()
+BUILTIN_IDS: tuple[str, ...] = ("fake",)
 """Built-in adapter ids; extended as each adapter lands (M2.4 fake, M2.7 claude, ...)."""
 
 ALWAYS_ENABLED: frozenset[str] = frozenset({"fake"})
@@ -89,8 +89,12 @@ class AdapterRegistry:
         return self._entry(agent_id).manifest
 
     def is_enabled(self, agent_id: str) -> bool:
-        """Enabled by config (``agents.enabled``) or always-on (``fake``)."""
-        return agent_id in ALWAYS_ENABLED or agent_id in self._config.agents.enabled
+        """Enabled by config (``agents.enabled``); ``fake`` and ``fake-*`` are always on."""
+        return (
+            agent_id in ALWAYS_ENABLED
+            or agent_id.startswith("fake-")
+            or agent_id in self._config.agents.enabled
+        )
 
     async def probe(self, agent_id: str) -> AgentSpec:
         """Probe one agent. Never raises for a broken adapter: that becomes ``unavailable``."""

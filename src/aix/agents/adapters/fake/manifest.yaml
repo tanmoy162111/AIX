@@ -1,0 +1,12 @@
+id: fake
+name: Fake agent
+kind: local
+cost_class: free
+capabilities: { implement: 0.6, debug: 0.6, test: 0.6, review: 0.6, design: 0.6, research: 0.6, summarize: 0.6 }
+supports:
+  streaming: true
+  sessions: false
+  non_interactive: true
+  cancel: true
+  cost_reporting: full
+  model_select: false
