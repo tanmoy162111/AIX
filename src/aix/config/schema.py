@@ -47,6 +47,10 @@ class ExecutionConfig(DomainModel):
     max_parallel: int = Field(default=3, ge=1)
     attempt_timeout_s: int = Field(default=1800, ge=1)
     workspace: Literal["worktree", "inplace"] = "worktree"
+    escalation_ladder: list[
+        Literal["stronger_model", "different_agent", "multi_agent", "human"]
+    ] = Field(default_factory=lambda: ["stronger_model", "different_agent", "multi_agent", "human"])
+    """Escalation steps in order (§19.3)."""
 
 
 class SecurityChecksConfig(DomainModel):
