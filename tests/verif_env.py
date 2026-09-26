@@ -32,12 +32,14 @@ def fast_config(**kw: object) -> AixConfig:
     )
 
 
-def write_fast_config(project: Path, **commands: list[str]) -> None:
+def write_fast_config(
+    project: Path, *, ladder: list[str] | None = None, **commands: list[str]
+) -> None:
     """Write the same setup into ``<project>/.aix/config.yaml`` (for CLI tests)."""
     cmds = {k.value: v for k, v in COMMANDS.items()} | commands
     doc = {
         "verification": {"commands": cmds},
         "security": {"shell_allow": [PY, "git"]},
-        "execution": {"escalation_ladder": []},
+        "execution": {"escalation_ladder": ladder or []},
     }
     (project / ".aix" / "config.yaml").write_text(yaml.safe_dump(doc))

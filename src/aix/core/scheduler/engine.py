@@ -60,7 +60,8 @@ class Scheduler:
 
     @staticmethod
     def _is_ready(task: Task, by_id: dict[str, Task]) -> bool:
-        return task.status is TaskStatus.CREATED and all(
+        """Startable: ``created`` (or ``ready`` after a resume) with every dependency completed."""
+        return task.status in (TaskStatus.CREATED, TaskStatus.READY) and all(
             by_id[d].status is TaskStatus.COMPLETED for d in task.depends_on
         )
 
@@ -106,7 +107,9 @@ class Scheduler:
                         task = by_id[task_id]
                         if task_id in self._running or not self._is_ready(task, by_id):
                             continue
-                        ready = await self._driver.apply(task_id, TaskEvent.DEPS_SATISFIED)
+                        ready = task
+                        if task.status is TaskStatus.CREATED:
+                            ready = await self._driver.apply(task_id, TaskEvent.DEPS_SATISFIED)
                         self._running.add(task_id)
                         tg.start_soon(self._worker, ready)
                 if not self._running:

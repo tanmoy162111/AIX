@@ -499,6 +499,10 @@ class _Driver:
             detail=detail,
         )
 
+    def restore_authors(self, authors: dict[str, str]) -> None:
+        """Re-seed who authored which merged task after a resume."""
+        self._authors.update(authors)
+
     def _authors_for(self, task: Task) -> set[str]:
         """Agents that authored write tasks this task (transitively) depends on."""
         seen: set[str] = set()
@@ -886,6 +890,19 @@ class _Driver:
         return _End("completed")
 
 
+@dataclass(frozen=True)
+class ResumeState:
+    """What a resumed run remembers from before it waited."""
+
+    prior_attempts: int = 0
+    prior_cost_usd: float = 0.0
+    attempt_counts: dict[str, int] = field(default_factory=dict[str, int])
+    authors: dict[str, str] = field(default_factory=dict[str, str])
+    """task id -> agent that authored its merged change (reviewer independence)."""
+    superseded: frozenset[str] = frozenset()
+    """Tasks replaced by ``split_task`` (recorded in their cancel reason)."""
+
+
 def _add_usage(a: Usage, b: Usage) -> Usage:
     def add(x: float | None, y: float | None) -> float | None:
         return None if x is None and y is None else (x or 0.0) + (y or 0.0)
@@ -940,6 +957,7 @@ async def execute_graph(
     cancel: anyio.Event | None = None,
     decisions: DecisionService | None = None,
     backoff_scale: float = 1.0,
+    resume: ResumeState | None = None,
 ) -> RunOutcome:
     """Execute a planned run (``rec.run.status == planned``) until it ends or must wait.
 
@@ -951,13 +969,19 @@ async def execute_graph(
     dependents. ``cancel`` (or the ``aix cancel`` marker file) stops live agents and ends the run
     ``cancelled``. An exceeded budget records ``budget.exceeded``, asks the ``budget`` decision
     point and ends the run failed with ``BUDGET_EXCEEDED`` (exit 6). A task waiting for a human
-    leaves the run ``waiting_approval`` (exit 3). The user's checked-out branch is never touched.
+    leaves the run ``waiting_approval`` (exit 3). With ``resume`` the run continues from a
+    ``waiting_approval`` state: prior attempts and cost still count against the budget, tasks keep
+    their statuses (granted ones are ``ready``) and per-task retry counters start fresh, because a
+    human decision grants another round. The user's checked-out branch is never touched.
     """
     t0 = time.monotonic()
     cancel = cancel or anyio.Event()
     stop = anyio.Event()
     run_id = rec.run.id
     specs = await registry.probe_all()
+    tracker = BudgetTracker(rec.run.budget)
+    if resume is not None:
+        tracker.attempts, tracker.cost_usd = resume.prior_attempts, resume.prior_cost_usd
     driver = _Driver(
         rec,
         wm,
@@ -967,11 +991,19 @@ async def execute_graph(
         config=config,
         keep_worktrees=keep_worktrees,
         service=decisions or default_decision_service(config),
-        tracker=BudgetTracker(rec.run.budget),
+        tracker=tracker,
         on_stop=stop.set,
         backoff_scale=backoff_scale,
     )
-    await rec.run_to(RunEvent.START_EXECUTION)
+    if resume is not None:
+        for task_id, n in resume.attempt_counts.items():
+            if task_id in driver.book:
+                driver.book[task_id].attempts = n
+        driver.restore_authors(resume.authors)
+        driver.superseded |= set(resume.superseded)
+        await rec.run_to(RunEvent.APPROVAL_GRANTED)
+    else:
+        await rec.run_to(RunEvent.START_EXECUTION)
     marker = cancel_marker(wm.root, run_id)
 
     async def watch_cancel() -> None:
@@ -1108,4 +1140,73 @@ async def execute_run(
         keep_worktrees=req.keep_worktrees,
         max_parallel=req.max_parallel,
         cancel=cancel,
+    )
+
+
+async def resume_run(
+    run_id: str,
+    *,
+    project_root: Path,
+    registry: AdapterRegistry,
+    store: EventStore,
+    config: AixConfig,
+    clock: Callable[[], datetime] = _utc,
+    cancel: anyio.Event | None = None,
+    decisions: DecisionService | None = None,
+    keep_worktrees: bool = False,
+    backoff_scale: float = 1.0,
+) -> RunOutcome:
+    """Continue a ``waiting_approval`` run after its approvals were resolved (``aix approve``).
+
+    Raises:
+        ConfigError: unknown run, or the run is not waiting for approval.
+    """
+    from aix.domain.errors import ConfigError
+
+    run = await store.get_run(run_id)
+    if run is None:
+        raise ConfigError(f"unknown run {run_id!r}")
+    if run.status is not RunStatus.WAITING_APPROVAL:
+        raise ConfigError(f"run {run_id} is {run.status.value}, not waiting for approval")
+    tasks = await store.get_tasks(run_id)
+    counts: dict[str, int] = {}
+    authors: dict[str, str] = {}
+    total_attempts, total_cost = 0, 0.0
+    for t in tasks:
+        attempts = await store.get_attempts(t.id)
+        counts[t.id] = len(attempts)
+        total_attempts += len(attempts)
+        for a in attempts:
+            result = await store.get_result(a.id)
+            total_cost += (result.usage.cost_usd or 0.0) if result else 0.0
+        if attempts and t.status is TaskStatus.COMPLETED and t.file_scope:
+            authors[t.id] = attempts[-1].agent_id
+    superseded: dict[str, list[str]] = {}
+    for e in await store.events(run_id=run_id, types=["task.state_changed"]):
+        codes = getattr(e.payload, "reason_codes", [])
+        for code in codes:
+            if code.startswith("split_into:") and e.task_id:
+                superseded[e.task_id] = code.removeprefix("split_into:").split(",")
+    if superseded:  # dependents were re-wired in memory only; rebuild that from the record
+        last = {orig: subs[-1] for orig, subs in superseded.items()}
+        tasks = [
+            t.model_copy(update={"depends_on": [last.get(d, d) for d in t.depends_on]})
+            for t in tasks
+        ]
+    assert run.graph_id is not None
+    graph = TaskGraph(id=run.graph_id, run_id=run_id, tasks=tasks)
+    wm = WorkspaceManager(project_root)
+    rec = RunRecorder(store, run, clock)
+    return await execute_graph(
+        rec,
+        wm,
+        graph,
+        registry=registry,
+        config=config,
+        planner="resumed",
+        keep_worktrees=keep_worktrees,
+        cancel=cancel,
+        decisions=decisions,
+        backoff_scale=backoff_scale,
+        resume=ResumeState(total_attempts, total_cost, counts, authors, frozenset(superseded)),
     )

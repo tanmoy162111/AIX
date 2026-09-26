@@ -239,11 +239,11 @@ def _routed(
             t["failure"] = t["failure"].value if t["failure"] else None
         typer.echo(json.dumps(doc, indent=2))
     else:
-        _print_outcome(outcome, goal)
+        print_outcome(outcome, goal)
     raise typer.Exit(outcome.exit_code)
 
 
-def _print_outcome(outcome, goal: str) -> None:  # type: ignore[no-untyped-def]
+def print_outcome(outcome, goal: str) -> None:  # type: ignore[no-untyped-def]
     """Interim summary (the full §23.3 layout arrives with reports in M7.3)."""
     tasks = outcome.tasks
     done = sum(1 for t in tasks if t.status.value == "completed")
@@ -264,6 +264,8 @@ def _print_outcome(outcome, goal: str) -> None:  # type: ignore[no-untyped-def]
     typer.echo(f"Cost         {cost}   Duration {outcome.duration_ms / 1000:.1f}s")
     for w in outcome.warnings:
         typer.echo(f"Note         {w}")
+    for approval_id in outcome.pending_approvals:
+        typer.echo(f"Waiting      approval needed: aix approve {approval_id}  (or: aix deny ...)")
     if outcome.status.value == "completed":
         typer.echo("")
         typer.echo(f"Next: git merge {outcome.branch}")

@@ -22,4 +22,5 @@ def build_agent_env(
     src = os.environ if source is None else source
     env = {k: src[k] for k in (*BASE_ENV_KEYS, *allowlist) if k in src}
     env.update(extra)
+    env["AIX_AGENT_CONTEXT"] = "1"  # marks the process as an agent; `aix approve` refuses (§20.4)
     return env
