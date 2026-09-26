@@ -16,8 +16,8 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M0.4 Package tree per §5.1 with `__init__.py` files and module docstrings.
 - [x] M0.5 Tooling configs: ruff, pyright (strict on core/domain/decision), `.importlinter` contracts from §5.3.
 - [x] M0.6 pytest config: anyio, markers (`live`, `slow`), socket blocker plugin, `AIX_LIVE` gate, coverage config.
-- [ ] M0.7 Makefile targets: `fmt`, `fmt-check`, `lint`, `typecheck`, `layers`, `test`, `golden`, `test-live`, `check`.
-- [ ] M0.8 Minimal typer app with `--version` and `--help`; smoke test.
+- [x] M0.7 Makefile targets: `fmt`, `fmt-check`, `lint`, `typecheck`, `layers`, `test`, `golden`, `test-live`, `check`.
+- [x] M0.8 Minimal typer app with `--version` and `--help`; smoke test.
 - [ ] M0.9 Run M0 Exit Gate; tag `m0-done`.
 
 ## M1 — Domain, store, config (§6–§9)
@@ -149,3 +149,5 @@ M0.3 — done; ADR-0002 records deps; typesafe-sdk resolves on PyPI (surface sti
 M0.4 — done; 32 packages + py.typed; agents/protocol.py, registry.py, subprocess.py, decision/service.py etc. are created in the milestones that implement them.
 M0.5 — done; ruff/pyright configured in pyproject; 6 import contracts verified with deliberate violations (ADR-0003).
 M0.6 — done; plugin in tests/aix_pytest_plugin.py (socket blocker, AIX_LIVE gate, anyio=asyncio); ADR-0004 drops pytest-asyncio. Coverage config present, threshold enforced from M3.
+M0.7 — done; `make golden` tolerates pytest exit 5 (no tests) until G-scenarios land in M3.
+M0.8 — done; `aix --version/--help` with smoke tests; committed together with M0.7 so every commit passes `make check`.
