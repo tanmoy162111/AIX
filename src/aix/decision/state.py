@@ -109,6 +109,12 @@ class RunFacts(DomainModel):
     risk: Risk
 
 
+class RoutingFacts(DomainModel):
+    task_type: Label
+    candidates: list[Label] = Field(min_length=1)
+    """Agent ids tied within the routing margin (§12)."""
+
+
 class DecisionState(DomainModel):
     """The compact, typed facts a decision provider may see. Sections are point specific."""
 
@@ -122,6 +128,7 @@ class DecisionState(DomainModel):
     budget: BudgetFacts | None = None
     tool: ToolFacts | None = None
     run: RunFacts | None = None
+    routing: RoutingFacts | None = None
 
     def to_wire(self) -> dict[str, JsonValue]:
         """Sparse JSON form sent to providers and stored in ``DecisionRecord.state``."""
@@ -268,4 +275,11 @@ def build_run_completion_state(
         run=RunFacts(
             completed=completed, failed=failed, cancelled=cancelled, blocked=blocked, risk=risk
         )
+    )
+
+
+def build_routing_state(task_type: TaskType, candidates: Sequence[str]) -> DecisionState:
+    """State for the ``routing`` tie-break: the task type and the tied agent ids."""
+    return DecisionState(
+        routing=RoutingFacts(task_type=task_type.value, candidates=list(candidates))
     )

@@ -4,7 +4,7 @@ import anyio
 import pytest
 
 from aix.decision.gates import GateFacts
-from aix.decision.provider import ProviderAnswer
+from aix.decision.provider import ProviderAnswer, ProviderName
 from aix.decision.service import DecisionService, canonical_hash
 from aix.decision.state import DecisionState, TaskFacts
 from aix.domain.enums import DecisionOutcome as O
@@ -18,9 +18,9 @@ FACTS = GateFacts(attempt=1, max_attempts=3)
 
 
 class Stub:
-    def __init__(self, name: str, outcome: O = O.ACCEPT, *, choice: str | None = None,
+    def __init__(self, name: ProviderName, outcome: O = O.ACCEPT, *, choice: str | None = None,
                  boom: bool = False, sleep: float = 0.0) -> None:  # fmt: skip
-        self.name = name
+        self.name: ProviderName = name
         self.outcome, self.choice, self.boom, self.sleep = outcome, choice, boom, sleep
         self.calls = 0
 
