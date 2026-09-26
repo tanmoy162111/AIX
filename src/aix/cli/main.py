@@ -22,6 +22,7 @@ from aix.cli.run import run
 from aix.cli.skill import skill_app
 from aix.cli.stats import stats_app
 from aix.cli.status import status
+from aix.cli.trace import logs, trace
 from aix.cli.verify import review, verify
 
 app = typer.Typer(
@@ -41,6 +42,8 @@ app.command("deny")(deny)
 app.command("status")(status)
 app.command("verify")(verify)
 app.command("review")(review)
+app.command("trace")(trace)
+app.command("logs")(logs)
 app.add_typer(agent_app)
 app.add_typer(artifact_app)
 app.command("agents", help="Alias for `aix agent list`.")(list_agents)

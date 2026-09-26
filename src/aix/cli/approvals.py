@@ -97,6 +97,7 @@ def approve(
     no_resume: Annotated[
         bool, typer.Option("--no-resume", help="Record the grant but do not continue the run.")
     ] = False,
+    as_json: Annotated[bool, typer.Option("--json", help="Machine-readable output.")] = False,
     project: ProjectOpt = Path(),
 ) -> None:
     """Grant a pending approval (interactive confirmation or --token) and resume the run."""
@@ -152,6 +153,21 @@ def approve(
         fail(str(exc))
     except ToolFailure as exc:
         fail(str(exc), EXIT_ENVIRONMENT)
+    if as_json:
+        from aix.cli.run import outcome_document
+
+        typer.echo(
+            json.dumps(
+                {
+                    "approval_id": res.approval.id,
+                    "granted": True,
+                    "run_id": res.run_id,
+                    "outcome": outcome_document(outcome) if outcome else None,
+                },
+                indent=2,
+            )
+        )
+        raise typer.Exit(outcome.exit_code if outcome else 0)
     typer.echo(f"Approval {res.approval.id} granted.")
     if outcome is None:
         typer.echo(f"Resume with: aix run --resume {res.run_id}")
@@ -164,6 +180,7 @@ def deny(
     ref: Annotated[str, typer.Argument(help="Approval id or the task/run id it concerns.")],
     reason: Annotated[str | None, typer.Option("--reason", help="Why it is denied.")] = None,
     token: TokenOpt = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Machine-readable output.")] = False,
     project: ProjectOpt = Path(),
 ) -> None:
     """Deny a pending approval; the run fails."""
@@ -202,6 +219,18 @@ def deny(
             await store.close()
 
     res = anyio.run(_go)
+    if as_json:
+        typer.echo(
+            json.dumps(
+                {
+                    "approval_id": res.approval.id,
+                    "denied": True,
+                    "run_id": res.run_id,
+                    "run_failed": res.run_failed,
+                }
+            )
+        )
+        raise typer.Exit(1 if res.run_failed else 0)
     typer.echo(f"Approval {res.approval.id} denied.")
     if res.run_failed:
         typer.echo(f"Run {res.run_id} FAILED: approval denied.")

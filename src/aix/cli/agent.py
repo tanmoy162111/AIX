@@ -75,6 +75,7 @@ def test_agent(
     live: Annotated[
         bool, typer.Option("--live", help="Make a real (possibly paid) call to the agent.")
     ] = False,
+    as_json: JsonOpt = False,
     project: ProjectOpt = Path(),
 ) -> None:
     """Probe an agent; with --live (or for `fake`) also run a tiny read-only smoke prompt."""
@@ -89,14 +90,26 @@ def test_agent(
     except ConfigError as exc:
         fail(str(exc))
     spec = anyio.run(registry.probe, agent_id)
-    typer.echo(
-        f"{agent_id}: health={spec.health}"
-        + (f" ({spec.health_reason})" if spec.health_reason else "")
-    )
+    doc: dict[str, object] = {
+        "agent": agent_id,
+        "health": spec.health,
+        "health_reason": spec.health_reason,
+        "smoke": None,
+    }
+    if not as_json:
+        typer.echo(
+            f"{agent_id}: health={spec.health}"
+            + (f" ({spec.health_reason})" if spec.health_reason else "")
+        )
     if spec.health in ("unavailable",):
+        if as_json:
+            typer.echo(json.dumps(doc))
         raise typer.Exit(EXIT_ENVIRONMENT)
     if not live and agent_id != "fake" and not agent_id.startswith("fake-"):
-        typer.echo("probe only; pass --live to run a real smoke prompt (may cost money)")
+        if as_json:
+            typer.echo(json.dumps(doc))
+        else:
+            typer.echo("probe only; pass --live to run a real smoke prompt (may cost money)")
         return
 
     adapter = registry.get(agent_id)
@@ -117,13 +130,17 @@ def test_agent(
             return out.status, out.failure.value if out.failure else None, out.claim or ""
 
     status, failure, claim = anyio.run(smoke)
+    if as_json:
+        doc["smoke"] = {"status": status, "failure": failure, "claim_unverified": claim[:200]}
+        typer.echo(json.dumps(doc))
+        raise typer.Exit(0 if status == "completed" else 1)
     typer.echo(f"smoke: status={status}" + (f" failure={failure}" if failure else ""))
     if status != "completed":
         raise typer.Exit(1)
     typer.echo(f"claim (unverified): {claim[:200]}")
 
 
-def _toggle(agent_id: str, enabled: bool, project: Path) -> None:
+def _toggle(agent_id: str, enabled: bool, project: Path, as_json: bool = False) -> None:
     from aix.config.edit import set_agent_enabled
     from aix.domain.errors import ConfigError
 
@@ -137,17 +154,28 @@ def _toggle(agent_id: str, enabled: bool, project: Path) -> None:
         updated = set_agent_enabled(project.resolve(), agent_id, enabled)
     except ConfigError as exc:
         fail(str(exc))
+    if as_json:
+        typer.echo(json.dumps({"agent": agent_id, "enabled": enabled, "agents_enabled": updated}))
+        return
     verb = "enabled" if enabled else "disabled"
     typer.echo(f"{agent_id} {verb}; agents.enabled = {', '.join(updated) or '(none)'}")
 
 
 @agent_app.command("enable")
-def enable(agent_id: Annotated[str, typer.Argument()], project: ProjectOpt = Path()) -> None:
+def enable(
+    agent_id: Annotated[str, typer.Argument()],
+    as_json: JsonOpt = False,
+    project: ProjectOpt = Path(),
+) -> None:
     """Add an agent to `agents.enabled` in .aix/config.yaml."""
-    _toggle(agent_id, True, project)
+    _toggle(agent_id, True, project, as_json)
 
 
 @agent_app.command("disable")
-def disable(agent_id: Annotated[str, typer.Argument()], project: ProjectOpt = Path()) -> None:
+def disable(
+    agent_id: Annotated[str, typer.Argument()],
+    as_json: JsonOpt = False,
+    project: ProjectOpt = Path(),
+) -> None:
     """Remove an agent from `agents.enabled` in .aix/config.yaml."""
-    _toggle(agent_id, False, project)
+    _toggle(agent_id, False, project, as_json)

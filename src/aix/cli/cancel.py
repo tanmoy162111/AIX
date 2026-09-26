@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -20,6 +21,7 @@ def cancel(
     timeout: Annotated[
         float, typer.Option("--timeout", help="Seconds to wait for a live orchestrator.")
     ] = 15.0,
+    as_json: Annotated[bool, typer.Option("--json", help="Machine-readable output.")] = False,
     project: Annotated[Path, typer.Option("--project", help="Project root.")] = Path(),
 ) -> None:
     """Cancel a run: live agents are stopped, pending tasks cancelled, partial results kept."""
@@ -68,7 +70,9 @@ def cancel(
     kind, detail = anyio.run(_go)
     if kind == "unknown":
         fail(f"unknown run {run_id!r}")
-    if kind == "already":
+    if kind in ("already", "cancelled") and as_json:
+        typer.echo(json.dumps({"run_id": run_id, "result": kind, "status": detail}))
+    elif kind == "already":
         typer.echo(f"Run {run_id} is already {detail}.")
     elif kind == "cancelled":
         typer.echo(f"Run {run_id} cancelled.")

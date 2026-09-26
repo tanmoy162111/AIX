@@ -252,15 +252,7 @@ def _routed(
         fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
 
     if as_json:
-        doc = asdict(outcome)
-        doc["status"] = outcome.status.value
-        doc["failure"] = outcome.failure.value if outcome.failure else None
-        doc["usage"] = outcome.usage.model_dump(mode="json")
-        doc["exit_code"] = outcome.exit_code
-        for t in doc["tasks"]:
-            t["status"] = t["status"].value
-            t["failure"] = t["failure"].value if t["failure"] else None
-        typer.echo(json.dumps(doc, indent=2))
+        typer.echo(json.dumps(outcome_document(outcome), indent=2))
     elif summary is not None:
         typer.echo(summary)
         for approval_id in outcome.pending_approvals:
@@ -270,6 +262,19 @@ def _routed(
     else:
         print_outcome(outcome, goal)
     raise typer.Exit(outcome.exit_code)
+
+
+def outcome_document(outcome) -> dict:  # type: ignore[no-untyped-def,type-arg]
+    """The machine-readable multi-task outcome (`--json`), shared with `aix approve --json`."""
+    doc = asdict(outcome)
+    doc["status"] = outcome.status.value
+    doc["failure"] = outcome.failure.value if outcome.failure else None
+    doc["usage"] = outcome.usage.model_dump(mode="json")
+    doc["exit_code"] = outcome.exit_code
+    for t in doc["tasks"]:
+        t["status"] = t["status"].value
+        t["failure"] = t["failure"].value if t["failure"] else None
+    return doc
 
 
 async def _summary(store, root: Path, run_id: str) -> str | None:  # type: ignore[no-untyped-def]
