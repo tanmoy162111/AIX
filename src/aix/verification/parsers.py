@@ -226,6 +226,31 @@ def parse_pip_audit(text: str) -> Findings:
     return Findings(out)
 
 
+_BANDIT: Final[dict[str, Severity]] = {"HIGH": "high", "MEDIUM": "medium", "LOW": "low"}
+
+
+def parse_bandit(text: str) -> Findings:
+    """``bandit -f json`` output."""
+    doc = _json(text, "bandit")
+    results = _d(doc).get("results")
+    if not isinstance(results, list):
+        raise ParseError("bandit: expected an object with a 'results' list")
+    out: list[Finding] = []
+    for item in _l(results):
+        i = _d(item)
+        line = i.get("line_number")
+        out.append(
+            Finding(
+                _BANDIT.get(str(i.get("issue_severity")), "medium"),
+                str(i.get("test_id", "bandit")),
+                str(i.get("issue_text", "")),
+                i.get("filename") if isinstance(i.get("filename"), str) else None,
+                line if isinstance(line, int) else None,
+            )
+        )
+    return Findings(out)
+
+
 _NPM: Final[dict[str, Severity]] = {
     "critical": "critical", "high": "high", "moderate": "medium", "low": "low", "info": "info",
 }  # fmt: skip
