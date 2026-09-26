@@ -1,0 +1,15 @@
+# Fake agent script (G3): attempt 1 ships a broken auth module but claims success; attempt 2 fixes it.
+match: { task_type: implement }
+attempts:
+  - events:
+      - {kind: text, data: {text: "Adding auth"}}
+    apply_patch: patches/auth_v1_broken.diff
+    claim: "Done. All tests pass."
+    exit_code: 0
+    usage: {input_tokens: 100, output_tokens: 40, cost_usd: 0.02}
+  - events:
+      - {kind: text, data: {text: "Fixing the failing auth tests"}}
+    apply_patch: patches/auth_v2_fixed.diff
+    claim: "Fixed the failing tests."
+    exit_code: 0
+    usage: {input_tokens: 120, output_tokens: 50, cost_usd: 0.02}

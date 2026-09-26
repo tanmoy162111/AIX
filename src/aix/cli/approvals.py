@@ -19,6 +19,10 @@ TokenOpt = Annotated[
 ]
 
 
+def _isatty() -> bool:
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
 def _authenticate(approval_id: str, token: str | None) -> Channel:
     """Prove a human is deciding; returns the channel (``cli_tty`` or ``api_token``)."""
     from aix.security.approvals import (
@@ -33,7 +37,7 @@ def _authenticate(approval_id: str, token: str | None) -> Channel:
         if token is not None:
             verify_token(token)
             return "api_token"
-        confirm_tty(approval_id, isatty=sys.stdin.isatty() and sys.stdout.isatty())
+        confirm_tty(approval_id, isatty=_isatty())
         return "cli_tty"
     except ApprovalRefused as exc:
         fail(str(exc))

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Annotated
 
@@ -26,6 +26,12 @@ def run(
     ] = False,
     skill: Annotated[
         str | None, typer.Option("--skill", help="Use this skill instead of choosing one.")
+    ] = None,
+    budget_usd: Annotated[
+        float | None, typer.Option("--budget-usd", min=0.0, help="Cost limit for this run.")
+    ] = None,
+    decision_provider: Annotated[
+        str | None, typer.Option("--decision-provider", help="rules | jev (default from config).")
     ] = None,
     max_parallel: Annotated[
         int | None,
@@ -60,6 +66,21 @@ def run(
         _plan_only(root, goal, agent, skill, allow_dirty, as_json, resolved, registry)
         return
     if agent is None:
+        config = resolved.config
+        if budget_usd is not None:
+            config = config.model_copy(
+                update={
+                    "budget": config.budget.model_copy(update={"max_cost_usd_per_run": budget_usd})
+                }
+            )
+        if decision_provider is not None:
+            if decision_provider not in ("rules", "jev"):
+                fail("--decision-provider must be 'rules' or 'jev'")
+            config = config.model_copy(
+                update={
+                    "decision": config.decision.model_copy(update={"provider": decision_provider})
+                }
+            )
         _routed(
             root,
             goal,
@@ -68,7 +89,7 @@ def run(
             allow_dirty,
             keep_worktrees,
             as_json,
-            resolved,
+            replace(resolved, config=config),
             registry,
         )
         return
