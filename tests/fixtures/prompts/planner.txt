@@ -1,0 +1,206 @@
+TASK TYPE: plan
+
+ROLE
+You are a planner. You turn a goal into a task graph. You do not write code and you do not modify
+any files. Reply with JSON only.
+
+GOAL
+Add a retry option
+
+INTENT
+kind: coding
+risk: medium
+
+REPO FACTS
+languages: python
+package managers: uv
+test commands: pytest -q
+convention files: none
+files: 0, bytes: 0
+
+AVAILABLE TASK TYPES
+inspect, research, design, implement, test, review, security_review, document, integrate
+
+CAPABILITIES (use only these names)
+implement, debug, test, review, design, research, summarize, security, document
+
+AVAILABLE SKILLS
+- bugfix: Reproduce, fix and verify a defect with a regression test. (task types: inspect, implement, test, review)
+- code-review: Independent review of a change that reports structured findings. (task types: review)
+- documentation: Write or update user and developer documentation. (task types: inspect, document)
+- feature-implementation: Design, implement, test, review and document a new feature. (task types: inspect, design, implement, test, review, security_review, document)
+- inspect-repo: Read-only survey of a repository: layout, conventions, commands and risks. (task types: inspect)
+- security-review: Security-focused review that reports structured findings. (task types: security_review)
+- write-tests: Add or extend automated tests for existing behavior. (task types: inspect, test)
+
+RULES
+- Use at most 12 tasks. The graph must be acyclic.
+- Give every task a unique short `key`; refer to other tasks by key in `depends_on`.
+- A task that changes files must list `file_scope` globs covering only what it may touch. A task
+  with an empty `file_scope` is read-only.
+- Every task that changes files needs a `verification` block naming the checks that must pass.
+- Order tasks that touch the same files; independent tasks may run in parallel.
+- Name capabilities and skills only from the lists above. Never name a vendor or product.
+
+OUTPUT
+Reply with a single JSON object matching this schema and nothing after it:
+{
+  "$defs": {
+    "CheckKind": {
+      "description": "Kind of verification check (\u00a76, \u00a717.3).",
+      "enum": [
+        "build",
+        "tests",
+        "lint",
+        "typecheck",
+        "security_sast",
+        "secrets",
+        "deps",
+        "ai_review",
+        "policy",
+        "custom"
+      ],
+      "title": "CheckKind",
+      "type": "string"
+    },
+    "DraftTask": {
+      "additionalProperties": false,
+      "description": "One proposed task; ``depends_on`` lists other tasks' ``key`` values.",
+      "properties": {
+        "depends_on": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "file_scope": {
+          "items": {
+            "type": "string"
+          },
+          "title": "File Scope",
+          "type": "array"
+        },
+        "goal": {
+          "minLength": 1,
+          "title": "Goal",
+          "type": "string"
+        },
+        "key": {
+          "pattern": "^[A-Za-z0-9_.-]{1,40}$",
+          "title": "Key",
+          "type": "string"
+        },
+        "required_capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Required Capabilities",
+          "type": "array"
+        },
+        "risk": {
+          "anyOf": [
+            {
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Risk"
+        },
+        "skill": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skill"
+        },
+        "title": {
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/TaskType"
+        },
+        "verification": {
+          "$ref": "#/$defs/DraftVerification"
+        }
+      },
+      "required": [
+        "key",
+        "title",
+        "goal",
+        "type"
+      ],
+      "title": "DraftTask",
+      "type": "object"
+    },
+    "DraftVerification": {
+      "additionalProperties": false,
+      "description": "Checks proposed for a task.",
+      "properties": {
+        "optional": {
+          "items": {
+            "$ref": "#/$defs/CheckKind"
+          },
+          "title": "Optional",
+          "type": "array"
+        },
+        "required": {
+          "items": {
+            "$ref": "#/$defs/CheckKind"
+          },
+          "title": "Required",
+          "type": "array"
+        }
+      },
+      "title": "DraftVerification",
+      "type": "object"
+    },
+    "TaskType": {
+      "description": "Kind of work a task performs (\u00a76).",
+      "enum": [
+        "inspect",
+        "research",
+        "design",
+        "implement",
+        "test",
+        "review",
+        "security_review",
+        "document",
+        "integrate"
+      ],
+      "title": "TaskType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The JSON object an agent planner must return.",
+  "properties": {
+    "tasks": {
+      "items": {
+        "$ref": "#/$defs/DraftTask"
+      },
+      "title": "Tasks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "tasks"
+  ],
+  "title": "PlanDraft",
+  "type": "object"
+}
