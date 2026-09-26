@@ -25,12 +25,7 @@ def cancel(
     project: Annotated[Path, typer.Option("--project", help="Project root.")] = Path(),
 ) -> None:
     """Cancel a run: live agents are stopped, pending tasks cancelled, partial results kept."""
-    from aix.core.orchestrator.cancel import (
-        DIRECT_CANCEL_STATUSES,
-        TERMINAL_RUN_STATUSES,
-        force_cancel,
-    )
-    from aix.core.orchestrator.executor import cancel_marker
+    from aix.core.orchestrator.cancel import request_cancel
     from aix.store.db import EventStore
 
     root = project.resolve()
@@ -42,30 +37,10 @@ def cancel(
     async def _go() -> tuple[str, str]:
         store = await EventStore.open(db)
         try:
-            run = await store.get_run(run_id)
-            if run is None:
-                return "unknown", ""
-            if run.status in TERMINAL_RUN_STATUSES:
-                return "already", run.status.value
-            if run.status in DIRECT_CANCEL_STATUSES:
-                status = await force_cancel(store, run_id, reason="cancelled by user")
-                return "cancelled", status.value
-            marker = cancel_marker(root, run_id)
-            marker.parent.mkdir(parents=True, exist_ok=True)
-            marker.write_text("cancel\n", encoding="utf-8")
-            with anyio.move_on_after(timeout):
-                while True:
-                    current = await store.get_run(run_id)
-                    if current is not None and current.status in TERMINAL_RUN_STATUSES:
-                        done = current.status.value
-                        return ("cancelled" if done == "cancelled" else "already"), done
-                    await anyio.sleep(0.2)
-            if force:
-                status = await force_cancel(store, run_id, reason="cancelled by user (forced)")
-                return "cancelled", status.value
-            return "no_response", run.status.value
+            result = await request_cancel(store, root, run_id, wait_s=timeout, force=force)
         finally:
             await store.close()
+        return result.kind, result.status
 
     kind, detail = anyio.run(_go)
     if kind == "unknown":

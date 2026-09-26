@@ -113,6 +113,8 @@ class RunRequest:
     keep_worktrees: bool = False
     max_parallel: int | None = None
     """Overrides ``execution.max_parallel``."""
+    run_id: str | None = None
+    """Pre-chosen run id, so a caller (the API) can hand it out before planning finishes."""
 
 
 @dataclass(frozen=True)
@@ -1360,7 +1362,7 @@ async def execute_run(
         allow_dirty=req.allow_dirty,
     )
     setup = await choose(plan_req, registry, config, skills)
-    run_id = new_id(IdPrefix.RUN)
+    run_id = req.run_id or new_id(IdPrefix.RUN)
     await wm.create_run_branch(run_id, allow_dirty=req.allow_dirty)  # preflights too
     rec = RunRecorder(store, new_run(run_id, wm.root, req.goal, config, clock()), clock)
     await rec.start()

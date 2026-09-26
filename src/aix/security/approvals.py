@@ -28,13 +28,8 @@ def token_path() -> Path:
     return config_dir() / "approval_token"
 
 
-def ensure_token() -> str:
-    """Return the approval token, creating it (mode 0600) on first use.
-
-    The token lives only in the user config dir; it is never placed in an agent environment,
-    context or artifact.
-    """
-    path = token_path()
+def ensure_secret(path: Path) -> str:
+    """Return the secret stored at ``path``, creating it (mode 0600) on first use."""
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -42,6 +37,15 @@ def ensure_token() -> str:
             fh.write(secrets.token_urlsafe(32) + "\n")
     path.chmod(stat.S_IRUSR | stat.S_IWUSR)
     return path.read_text(encoding="utf-8").strip()
+
+
+def ensure_token() -> str:
+    """Return the approval token, creating it (mode 0600) on first use.
+
+    The token lives only in the user config dir; it is never placed in an agent environment,
+    context or artifact.
+    """
+    return ensure_secret(token_path())
 
 
 def guard_agent_context(env: dict[str, str] | None = None) -> None:

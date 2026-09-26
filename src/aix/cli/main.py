@@ -19,6 +19,7 @@ from aix.cli.doctor import doctor
 from aix.cli.init import init
 from aix.cli.plan import plan_app
 from aix.cli.run import run
+from aix.cli.serve import serve
 from aix.cli.skill import skill_app
 from aix.cli.stats import stats_app
 from aix.cli.status import status
@@ -36,6 +37,7 @@ app.command("init")(init)
 app.command("doctor")(doctor)
 app.command("run")(run)
 app.command("cancel")(cancel)
+app.command("serve")(serve)
 app.command("approvals")(approvals)
 app.command("approve")(approve)
 app.command("deny")(deny)
@@ -64,15 +66,19 @@ def _register_known_secrets() -> None:
     """Make credentials from the environment (and the approval token) unwritable (§20.5)."""
     import os
 
-    from aix.security.approvals import token_path
+    from aix.security.approvals import config_dir, token_path
     from aix.security.redact import configure_known_secrets, known_secret_values
 
     values = known_secret_values(os.environ)
-    try:
-        token = token_path().read_text(encoding="utf-8").strip()
-    except OSError:
-        token = ""
-    configure_known_secrets([*values, token] if token else values)
+    tokens: list[str] = []
+    for path in (token_path(), config_dir() / "api_token"):
+        try:
+            token = path.read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        if token:
+            tokens.append(token)
+    configure_known_secrets([*values, *tokens])
 
 
 @app.callback()

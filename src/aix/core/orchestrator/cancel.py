@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
+from typing import Literal
+
+import anyio
 
 from aix.domain.enums import RunStatus
 from aix.domain.errors import ConfigError
@@ -80,3 +85,54 @@ async def force_cancel(
         "run.cancelled", ev.RunCancelledPayload(reason=reason), run_id=run_id, ts=clock()
     )
     return final.status
+
+
+@dataclass(frozen=True)
+class CancelResult:
+    """Outcome of :func:`request_cancel`."""
+
+    kind: Literal["unknown", "already", "cancelled", "no_response"]
+    status: str
+    """The run's status after the request (empty for ``unknown``)."""
+
+
+async def request_cancel(
+    store: EventStore,
+    project_root: Path,
+    run_id: str,
+    *,
+    wait_s: float = 15.0,
+    force: bool = False,
+    poll_s: float = 0.2,
+) -> CancelResult:
+    """Cancel a run, asking its live orchestrator to stop when there is one.
+
+    Runs nobody drives (created, planned, waiting for approval) are cancelled directly. For a run
+    in flight a marker file is written and the run is watched for up to ``wait_s`` seconds; with
+    ``force`` a silent orchestrator is overridden by :func:`force_cancel`. Terminal runs are left
+    alone. Shared by ``aix cancel`` and ``POST /runs/{id}/cancel``.
+    """
+    from aix.core.orchestrator.executor import cancel_marker
+
+    run = await store.get_run(run_id)
+    if run is None:
+        return CancelResult("unknown", "")
+    if run.status in TERMINAL_RUN_STATUSES:
+        return CancelResult("already", run.status.value)
+    if run.status in DIRECT_CANCEL_STATUSES:
+        status = await force_cancel(store, run_id, reason="cancelled by user")
+        return CancelResult("cancelled", status.value)
+    marker = cancel_marker(project_root, run_id)
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text("cancel\n", encoding="utf-8")
+    with anyio.move_on_after(wait_s):
+        while True:
+            current = await store.get_run(run_id)
+            if current is not None and current.status in TERMINAL_RUN_STATUSES:
+                done = current.status.value
+                return CancelResult("cancelled" if done == "cancelled" else "already", done)
+            await anyio.sleep(poll_s)
+    if force:
+        status = await force_cancel(store, run_id, reason="cancelled by user (forced)")
+        return CancelResult("cancelled", status.value)
+    return CancelResult("no_response", run.status.value)
