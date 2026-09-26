@@ -20,6 +20,7 @@ from aix.cli.init import init
 from aix.cli.plan import plan_app
 from aix.cli.run import run
 from aix.cli.skill import skill_app
+from aix.cli.stats import stats_app
 from aix.cli.status import status
 from aix.cli.verify import review, verify
 
@@ -47,6 +48,7 @@ app.add_typer(config_app)
 app.add_typer(dev_app)
 app.add_typer(plan_app)
 app.add_typer(skill_app)
+app.add_typer(stats_app)
 
 
 def _version_callback(value: bool) -> None:

@@ -42,7 +42,8 @@ from aix.core.orchestrator.recorder import RunRecorder, new_run
 from aix.core.orchestrator.task_policy import NextAction, TaskPolicy
 from aix.core.planner.agent import make_adapter_runner
 from aix.core.retry import RetryFingerprint, RetryLedger, remaining_mutations, split_task
-from aix.core.router.rules import RoutingContext, RoutingDecision, route
+from aix.core.router.rules import AgentStat, RoutingContext, RoutingDecision, route
+from aix.core.router.stats import router_stats
 from aix.core.scheduler.engine import Scheduler
 from aix.core.toolrisk import SAFE_CLASSES, classify_command, gated_actions
 from aix.core.workspace.manager import DiffCapture, Workspace, WorkspaceManager
@@ -64,6 +65,7 @@ from aix.domain.enums import (
     RetryMutation,
     RunStatus,
     TaskStatus,
+    TaskType,
 )
 from aix.domain.enums import CheckKind as K
 from aix.domain.errors import AixError, MergeConflict, NoEligibleAgent, classify
@@ -235,6 +237,7 @@ class _Driver:
         self._cancelled = False
         self._authors: dict[str, str] = {}
         self._handoffs: dict[str, Handoff] = {}
+        self._router_stats: dict[tuple[str, TaskType], AgentStat] = {}
         self._facts: ProjectFacts | None = None
         self._skills: SkillRegistry | None = None
         self._baseline_lock = anyio.Lock()
@@ -282,6 +285,10 @@ class _Driver:
                         await live.adapter.cancel(live.handle, CANCEL_GRACE_S)
                 await anyio.sleep(0.05)
 
+    def set_router_stats(self, stats: dict[tuple[str, TaskType], AgentStat]) -> None:
+        """Observed history from earlier runs, loaded once when the run starts."""
+        self._router_stats = stats
+
     def _spec(self, agent_id: str) -> AgentSpec:
         return next(sp for sp in self._specs if sp.id == agent_id)
 
@@ -300,6 +307,7 @@ class _Driver:
             failed_agents=frozenset(policy.failed_agents),
             authored_by=frozenset(self._authors_for(task)),
             config=self._config.routing,
+            stats=self._router_stats,
         )
         try:
             decision = route(ctx)
@@ -1093,6 +1101,7 @@ async def execute_graph(
         on_stop=stop.set,
         backoff_scale=backoff_scale,
     )
+    driver.set_router_stats(router_stats(await rec.store.agent_stats(by_model=False)))
     if resume is not None:
         for task_id, n in resume.attempt_counts.items():
             if task_id in driver.book:

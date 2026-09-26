@@ -20,6 +20,7 @@ from aix.domain.decisions import Approval
 from aix.domain.enums import RUN_TERMINAL, AttemptStatus
 from aix.domain.execution import Attempt
 from aix.domain.runs import Run
+from aix.domain.state import TaskEvent
 from aix.domain.tasks import Task
 from aix.store import events as ev
 
@@ -261,21 +262,109 @@ async def _artifact_created(conn: aiosqlite.Connection, e: ev.Event) -> None:
     )
 
 
+# ---- agent stats (§22) ----------------------------------------------------------------------
+
+
+async def _stat_key(
+    conn: aiosqlite.Connection, attempt_id: str | None
+) -> tuple[str, str, str] | None:
+    """``(agent_id, model, task_type)`` of an attempt, or ``None`` when it is unknown."""
+    row = await _one(
+        conn,
+        "SELECT a.agent_id AS agent, a.data AS adata, t.data AS tdata FROM attempts a "
+        "JOIN tasks t ON t.id = a.task_id WHERE a.id = ?",
+        (attempt_id,),
+    )
+    if row is None:
+        return None
+    attempt = Attempt.model_validate_json(row["adata"])
+    task = Task.model_validate_json(row["tdata"])
+    return row["agent"], attempt.model or "", task.type.value
+
+
+async def _bump(conn: aiosqlite.Connection, key: tuple[str, str, str] | None, **add: float) -> None:
+    if key is None:
+        return
+    await conn.execute(
+        "INSERT OR IGNORE INTO agent_stats(agent_id, model, task_type) VALUES (?,?,?)", key
+    )
+    sets = ", ".join(f"{col} = {col} + ?" for col in add)
+    await conn.execute(
+        f"UPDATE agent_stats SET {sets} WHERE agent_id=? AND model=? AND task_type=?",
+        (*add.values(), *key),
+    )
+
+
+async def _last_attempt_id(conn: aiosqlite.Connection, task_id: str | None) -> str | None:
+    row = await _one(
+        conn, "SELECT id FROM attempts WHERE task_id = ? ORDER BY number DESC LIMIT 1", (task_id,)
+    )
+    return row["id"] if row else None
+
+
+async def _stats_attempt_created(conn: aiosqlite.Connection, e: ev.Event) -> None:
+    a: Attempt = _payload(e, ev.AttemptCreatedPayload).attempt
+    if a.number > 1:
+        await _bump(conn, await _stat_key(conn, a.id), retries=1)
+
+
+async def _stats_attempt_finished(conn: aiosqlite.Connection, e: ev.Event) -> None:
+    p = _payload(e, ev.AttemptFinishedPayload)
+    if p.result is None:
+        return
+    await _bump(
+        conn,
+        await _stat_key(conn, e.attempt_id),
+        attempts=1,
+        cost_usd=p.result.usage.cost_usd or 0.0,
+        duration_ms_total=p.result.duration_ms,
+    )
+
+
+async def _stats_verified(conn: aiosqlite.Connection, e: ev.Event) -> None:
+    p = _payload(e, ev.VerificationCompletedPayload)
+    if p.report.overall in ("passed", "warning"):
+        await _bump(conn, await _stat_key(conn, e.attempt_id), verification_passed=1)
+
+
+async def _stats_task_changed(conn: aiosqlite.Connection, e: ev.Event) -> None:
+    if _payload(e, ev.TaskStateChangedPayload).event is TaskEvent.ACCEPT:
+        key = await _stat_key(conn, await _last_attempt_id(conn, e.task_id))
+        await _bump(conn, key, accepted=1)
+
+
+async def _stats_human(conn: aiosqlite.Connection, e: ev.Event) -> None:
+    p = e.payload
+    assert isinstance(p, ev.ApprovalGrantedPayload | ev.ApprovalDeniedPayload)
+    row = await _one(conn, "SELECT subject FROM approvals WHERE id = ?", (p.approval_id,))
+    if row is not None and str(row["subject"]).startswith("task_"):
+        key = await _stat_key(conn, await _last_attempt_id(conn, row["subject"]))
+        await _bump(conn, key, human_interventions=1)
+
+
+def _chain(*handlers: Handler) -> Handler:
+    async def run(conn: aiosqlite.Connection, e: ev.Event) -> None:
+        for h in handlers:
+            await h(conn, e)
+
+    return run
+
+
 _HANDLERS: dict[str, Handler] = {
     "run.created": _run_created,
     "run.planned": _run_planned,
     "run.state_changed": _run_state_changed,
     "task.created": _task_created,
-    "task.state_changed": _task_state_changed,
-    "attempt.created": _attempt_created,
+    "task.state_changed": _chain(_task_state_changed, _stats_task_changed),
+    "attempt.created": _chain(_attempt_created, _stats_attempt_created),
     "attempt.started": _attempt_started,
-    "attempt.finished": _attempt_finished,
+    "attempt.finished": _chain(_attempt_finished, _stats_attempt_finished),
     "check.finished": _check_finished,
-    "verification.completed": _verification_completed,
+    "verification.completed": _chain(_verification_completed, _stats_verified),
     "decision.completed": _decision_completed,
     "approval.requested": _approval_requested,
-    "approval.granted": _approval_granted,
-    "approval.denied": _approval_denied,
+    "approval.granted": _chain(_approval_granted, _stats_human),
+    "approval.denied": _chain(_approval_denied, _stats_human),
     "approval.expired": _approval_expired,
     "artifact.created": _artifact_created,
 }

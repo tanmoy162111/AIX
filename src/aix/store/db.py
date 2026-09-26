@@ -6,6 +6,7 @@ event and its projection updates (M1.7) commit in one transaction.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -21,6 +22,7 @@ from aix.domain.errors import StoreError
 from aix.domain.execution import Attempt, ExecutionResult
 from aix.domain.ids import IdPrefix, new_id
 from aix.domain.runs import Run
+from aix.domain.stats import AgentStatsRow
 from aix.domain.tasks import Task
 from aix.domain.verification import Check, VerificationReport
 from aix.security.redact import redact_secrets
@@ -291,6 +293,64 @@ class EventStore:
             Artifact, "SELECT data FROM artifacts WHERE id = ?", (artifact_id,)
         )
         return found[0] if found else None
+
+    async def agent_stats(self, *, by_model: bool = True) -> list[AgentStatsRow]:
+        """Per (agent, model, task type) history from the ``agent_stats`` projection.
+
+        Latency percentiles (nearest rank) come from the recorded attempt durations, since the
+        projection only keeps totals. With ``by_model=False`` models are merged (``model`` is
+        empty), which is what routing uses. Rows are ordered by agent, model and task type.
+        """
+        rows = await self._query(
+            "SELECT * FROM agent_stats ORDER BY agent_id, model, task_type", ()
+        )
+        durations: dict[tuple[str, str, str], list[float]] = {}
+        for r in await self._query(
+            "SELECT a.agent_id AS agent, a.data AS adata, a.result AS result, t.data AS tdata "
+            "FROM attempts a JOIN tasks t ON t.id = a.task_id WHERE a.result IS NOT NULL",
+            (),
+        ):
+            attempt = Attempt.model_validate_json(r["adata"])
+            task = Task.model_validate_json(r["tdata"])
+            res = ExecutionResult.model_validate_json(r["result"])
+            key = (r["agent"], (attempt.model or "") if by_model else "", task.type.value)
+            durations.setdefault(key, []).append(res.duration_ms / 1000)
+
+        def pct(values: list[float], q: float) -> float | None:
+            if not values:
+                return None
+            ordered = sorted(values)
+            return ordered[max(0, math.ceil(q * len(ordered)) - 1)]
+
+        merged: dict[tuple[str, str, str], dict[str, Any]] = {}
+        for r in rows:
+            key = (r["agent_id"], r["model"] if by_model else "", r["task_type"])
+            acc = merged.setdefault(
+                key,
+                {"attempts": 0, "accepted": 0, "verification_passed": 0, "retries": 0,
+                 "human_interventions": 0, "cost_usd": 0.0},
+            )  # fmt: skip
+            for col in acc:
+                acc[col] += r[col]
+        out: list[AgentStatsRow] = []
+        for key in sorted(merged):
+            acc, ds = merged[key], durations.get(key, [])
+            out.append(
+                AgentStatsRow(
+                    agent_id=key[0],
+                    model=key[1],
+                    task_type=key[2],
+                    attempts=acc["attempts"],
+                    accepted=acc["accepted"],
+                    verification_passed=acc["verification_passed"],
+                    retries=acc["retries"],
+                    human_interventions=acc["human_interventions"],
+                    mean_cost_usd=acc["cost_usd"] / acc["attempts"] if acc["attempts"] else None,
+                    p50_latency_s=pct(ds, 0.5),
+                    p90_latency_s=pct(ds, 0.9),
+                )
+            )
+        return out
 
     @staticmethod
     def _decode(row: aiosqlite.Row) -> Event:
