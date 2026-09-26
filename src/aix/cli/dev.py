@@ -66,3 +66,89 @@ def rebuild_projections(
             await store.close()
 
     typer.echo(f"replayed {anyio.run(_run)} events")
+
+
+@dev_app.command("eval-decisions")
+def eval_decisions(
+    provider: Annotated[str, typer.Option("--provider", help="rules | jev")] = "rules",
+    cases: Annotated[Path, typer.Option("--cases", help="Case file or directory.")] = Path(
+        "tests/decision/eval_cases"
+    ),
+    fail_under: Annotated[
+        float | None, typer.Option("--fail-under", help="Exit 1 if accuracy is below this (0..1).")
+    ] = None,
+    replay: Annotated[
+        Path | None, typer.Option("--replay", help="JSON list of DecisionRecords to replay.")
+    ] = None,
+    save: Annotated[Path | None, typer.Option("--save", help="Write the JSON report here.")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Print the report as JSON.")] = False,
+) -> None:
+    """Evaluate a decision provider on labeled cases (accuracy, confusion, calibration)."""
+    import json
+    import os
+
+    import anyio
+
+    from aix.cli.common import EXIT_ENVIRONMENT, fail
+    from aix.config.schema import AixConfig
+    from aix.decision.eval import load_cases, replay_records, run_eval
+    from aix.decision.providers.rules import RulesProvider
+    from aix.domain.decisions import DecisionRecord
+
+    rules = RulesProvider()
+    if provider == "rules":
+        engine = rules
+    elif provider == "jev":
+        if os.environ.get("AIX_LIVE") != "1" or not os.environ.get("TYPESAFE_API_KEY"):
+            fail(
+                "the jev evaluation calls the live service: set AIX_LIVE=1 and TYPESAFE_API_KEY",
+                EXIT_ENVIRONMENT,
+            )
+        from aix.decision.providers.jev import TypeSafeJevClient
+        from aix.decision.providers.jev_provider import JevDecisionProvider
+        from aix.decision.thresholds import Thresholds
+
+        engine = JevDecisionProvider(
+            TypeSafeJevClient(timeout_s=20), rules, Thresholds(AixConfig().decision.thresholds)
+        )
+    else:
+        fail(f"unknown provider {provider!r}; use rules or jev")
+
+    if replay is not None:
+        raw = json.loads(replay.read_text(encoding="utf-8"))
+        records = [DecisionRecord.model_validate(r) for r in raw]
+        bad = anyio.run(lambda: replay_records(engine, records, policy_version="policy-v1"))
+        if as_json:
+            typer.echo(json.dumps([b.model_dump() for b in bad], indent=2))
+        else:
+            typer.echo(f"replayed {len(records)} decisions, {len(bad)} differ")
+            for b in bad:
+                typer.echo(
+                    f"  {b.decision_id}: recorded {b.recorded}, replayed {b.replayed}, "
+                    f"hash_ok={b.hash_ok}"
+                )
+        raise typer.Exit(1 if bad else 0)
+
+    try:
+        loaded = load_cases(cases)
+    except (OSError, ValueError) as exc:
+        fail(f"cannot load cases from {cases}: {exc}")
+    report = anyio.run(lambda: run_eval(engine, loaded))
+    if save is not None:
+        save.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+    if as_json:
+        typer.echo(report.model_dump_json(indent=2))
+    else:
+        typer.echo(
+            f"provider {provider}: {report.correct}/{report.total} correct ({report.accuracy:.1%})"
+        )
+        for point, row in report.per_point.items():
+            typer.echo(f"  {point:<16} n={int(row['n']):<4} accuracy={row['accuracy']:.1%}")
+        if report.adversarial_accuracy is not None:
+            typer.echo(f"  adversarial      accuracy={report.adversarial_accuracy:.1%}")
+        for b in report.calibration:
+            typer.echo(f"  confidence [{b.low:.2f},{b.high:.2f}) n={b.n} accuracy={b.accuracy:.1%}")
+        for f in report.failures:
+            typer.echo(f"  FAIL {f.id}: expected {f.expected}, got {f.actual} {f.reasons}")
+    if fail_under is not None and report.accuracy < fail_under:
+        raise typer.Exit(1)

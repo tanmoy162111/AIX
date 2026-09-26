@@ -287,3 +287,17 @@ def build_routing_state(task_type: TaskType, candidates: Sequence[str]) -> Decis
     return DecisionState(
         routing=RoutingFacts(task_type=task_type.value, candidates=list(candidates))
     )
+
+
+def state_from_wire(wire: Mapping[str, JsonValue]) -> DecisionState:
+    """Rebuild a :class:`DecisionState` from its wire form (``to_wire`` output).
+
+    The wire form renames ``failure.failure_class`` to ``class``; this undoes that.
+    """
+    data: dict[str, JsonValue] = dict(wire)
+    failure = data.get("failure")
+    if isinstance(failure, dict) and "class" in failure:
+        fixed = dict(failure)
+        fixed["failure_class"] = fixed.pop("class")
+        data["failure"] = fixed
+    return DecisionState.model_validate(data)

@@ -1,0 +1,868 @@
+# Labeled decision cases (PLAYBOOK §18.7). Expected outcomes follow §18.4 / §19.2, not the provider's output.
+- id: tc-001-passed-low
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-002-passed-low-last-attempt
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-003-passed-medium
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: medium
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-004-passed-medium-last-attempt
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: medium
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-005-passed-high
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-006-passed-high-last-attempt
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-007-passed-with-preexisting
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          pre_existing: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-008-warning-preexisting-only
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          pre_existing: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-009-warning-low-findings-low
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_low: 4.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-010-warning-low-findings-medium
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: medium
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_low: 4.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-011-warning-low-findings-high
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_low: 4.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-012-warning-low-findings-last
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_low: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-013-warning-medium-first-attempt
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_medium: 2.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-014-warning-medium-first-high-risk
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_medium: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-015-warning-medium-second-attempt
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_medium: 2.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-016-warning-medium-last-attempt
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_medium: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-017-warning-high-finding
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_high: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+  tags:
+  - adversarial
+- id: tc-018-warning-critical-finding
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_critical: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+  tags:
+  - adversarial
+- id: tc-019-warning-high-and-low
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_high: 1.0
+          findings_low: 5.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-020-failed-first
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-021-failed-first-high-risk
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-022-failed-second-same-agent
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures:
+      - verification_failure:tests
+      agent_switched: false
+  expected: switch_agent
+- id: tc-023-failed-second-after-switch
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures:
+      - verification_failure:tests
+      agent_switched: true
+  expected: retry
+- id: tc-024-failed-second-no-history
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-025-failed-last-attempt
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: escalate
+- id: tc-026-failed-last-attempt-high-risk
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: escalate
+- id: tc-027-failed-at-max-2
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 2
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: escalate
+- id: tc-028-failed-lint-first
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: lint
+        status: failed
+        required: true
+        metrics:
+          lint_errors: 3.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-029-failed-security-first
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: secrets
+        status: failed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-030-incomplete-first
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: incomplete
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-031-incomplete-second
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: incomplete
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-032-incomplete-last
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: incomplete
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: escalate
+- id: tc-033-incomplete-high-risk
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: incomplete
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-034-failed-third-of-five
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 5
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures:
+      - verification_failure:tests
+      - verification_failure:tests
+      agent_switched: true
+  expected: retry
+- id: tc-035-failed-third-of-five-not-switched
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 5
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures:
+      - verification_failure:build
+      agent_switched: false
+  expected: switch_agent
+- id: tc-036-empty-state
+  point: task_completion
+  state: {}
+  expected: ask_human
+  tags:
+  - adversarial
+- id: tc-037-no-verification
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+  expected: ask_human
+  tags:
+  - adversarial
+- id: tc-038-passed-many-checks
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: build
+        status: passed
+        required: true
+        metrics: {}
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+      - kind: lint
+        status: passed
+        required: true
+        metrics: {}
+      - kind: secrets
+        status: passed
+        required: true
+        metrics: {}
+      - kind: policy
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-039-passed-optional-warning-in-list
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+      - kind: lint
+        status: warning
+        required: false
+        metrics:
+          findings_low: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-040-failed-with-review-findings
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          tests_failed: 2.0
+          tests_total: 10.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: retry
+- id: tc-041-failed-attempt-two-of-three-after-two-failures
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: failed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures:
+      - verification_failure:tests
+      agent_switched: false
+  expected: switch_agent
+- id: tc-042-warning-medium-attempt-2-high-risk
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: high
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: warning
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics:
+          findings_medium: 1.0
+    history:
+      previous_failures: []
+      agent_switched: false
+  expected: accept
+- id: tc-043-passed-attempt-2-after-failure
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures:
+      - verification_failure:tests
+      agent_switched: true
+  expected: accept
+- id: tc-044-passed-attempt-3-after-two-failures
+  point: task_completion
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    verification:
+      overall: passed
+      checks:
+      - kind: tests
+        status: passed
+        required: true
+        metrics: {}
+    history:
+      previous_failures:
+      - verification_failure:tests
+      - agent_failure
+      agent_switched: false
+  expected: accept

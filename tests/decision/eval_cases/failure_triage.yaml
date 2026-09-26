@@ -1,0 +1,511 @@
+# Labeled failure_triage cases (PLAYBOOK §18.7, §19.2).
+- id: ft-001-verification-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: verification_failure
+      candidates:
+      - verification_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-002-verification-repeated
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - verification_failure:tests
+      agent_switched: false
+    failure:
+      class: verification_failure
+      candidates:
+      - verification_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-003-verification-repeated-after-switch
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - verification_failure:tests
+      agent_switched: true
+    failure:
+      class: verification_failure
+      candidates:
+      - verification_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-004-verification-exhausted
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    history:
+      previous_failures:
+      - verification_failure:tests
+      - verification_failure:tests
+      agent_switched: false
+    failure:
+      class: verification_failure
+      candidates:
+      - verification_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: escalate
+- id: ft-005-no-changes-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: agent_no_changes
+      candidates:
+      - agent_no_changes
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-006-no-changes-repeated
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - agent_no_changes
+      agent_switched: false
+    failure:
+      class: agent_no_changes
+      candidates:
+      - agent_no_changes
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-007-agent-failure-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: agent_failure
+      candidates:
+      - agent_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-008-agent-failure-repeated
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - agent_failure
+      agent_switched: false
+    failure:
+      class: agent_failure
+      candidates:
+      - agent_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-009-timeout-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: timeout
+      candidates:
+      - timeout
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-010-timeout-repeated
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - timeout
+      agent_switched: false
+    failure:
+      class: timeout
+      candidates:
+      - timeout
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-011-scope-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: scope_violation
+      candidates:
+      - scope_violation
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-012-scope-repeated
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - scope_violation
+      agent_switched: false
+    failure:
+      class: scope_violation
+      candidates:
+      - scope_violation
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-013-merge-conflict
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: merge_conflict
+      candidates:
+      - merge_conflict
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-014-context-failure
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: context_failure
+      candidates:
+      - context_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-015-rate-limited-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: rate_limited
+      candidates:
+      - rate_limited
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-016-rate-limited-twice
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - rate_limited
+      agent_switched: false
+    failure:
+      class: rate_limited
+      candidates:
+      - rate_limited
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-017-rate-limited-persistent
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - rate_limited
+      - rate_limited
+      agent_switched: false
+    failure:
+      class: rate_limited
+      candidates:
+      - rate_limited
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-018-network-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: network_failure
+      candidates:
+      - network_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-019-network-persistent
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - network_failure
+      - network_failure
+      agent_switched: false
+    failure:
+      class: network_failure
+      candidates:
+      - network_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-020-auth
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: auth_failure
+      candidates:
+      - auth_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-021-auth-repeat
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 2
+      max_attempts: 3
+    history:
+      previous_failures:
+      - auth_failure
+      agent_switched: false
+    failure:
+      class: auth_failure
+      candidates:
+      - auth_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: switch_agent
+- id: ft-022-policy
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: policy_failure
+      candidates:
+      - policy_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: ask_human
+  tags:
+  - adversarial
+- id: ft-023-budget
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: budget_exceeded
+      candidates:
+      - budget_exceeded
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: ask_human
+- id: ft-024-human-rejection
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: human_rejection
+      candidates:
+      - human_rejection
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: ask_human
+- id: ft-025-tool-failure-first
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 1
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: tool_failure
+      candidates:
+      - tool_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: retry
+- id: ft-026-tool-failure-exhausted
+  point: failure_triage
+  state:
+    task:
+      type: implement
+      risk: low
+      attempt: 3
+      max_attempts: 3
+    history:
+      previous_failures: []
+      agent_switched: false
+    failure:
+      class: tool_failure
+      candidates:
+      - tool_failure
+      mutations:
+      - same_agent_with_failure_context
+      - switch_agent
+  expected: escalate
