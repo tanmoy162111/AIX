@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "TaskEvent": {
+      "description": "Inputs to the task state machine.",
+      "enum": [
+        "deps_satisfied",
+        "assign",
+        "start",
+        "execution_finished",
+        "attempt_failed",
+        "verified",
+        "accept",
+        "retry",
+        "switch_agent",
+        "escalate",
+        "ask_human",
+        "approval_granted",
+        "approval_denied",
+        "reject",
+        "stop",
+        "integrate",
+        "integrated",
+        "merge_conflict",
+        "no_eligible_agent",
+        "dependency_failed",
+        "cancel"
+      ],
+      "title": "TaskEvent",
+      "type": "string"
+    },
+    "TaskStatus": {
+      "description": "Task lifecycle states (\u00a77.2).",
+      "enum": [
+        "created",
+        "ready",
+        "assigned",
+        "running",
+        "verifying",
+        "deciding",
+        "accepted",
+        "integrating",
+        "waiting_approval",
+        "completed",
+        "failed",
+        "blocked",
+        "cancelled"
+      ],
+      "title": "TaskStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TaskEvent"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "from_status": {
+      "$ref": "#/$defs/TaskStatus"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "to_status": {
+      "$ref": "#/$defs/TaskStatus"
+    }
+  },
+  "required": [
+    "from_status",
+    "to_status"
+  ],
+  "title": "TaskStateChangedPayload",
+  "type": "object"
+}

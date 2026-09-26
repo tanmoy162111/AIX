@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actual": {
+      "title": "Actual",
+      "type": "number"
+    },
+    "budget": {
+      "enum": [
+        "cost_usd",
+        "attempts",
+        "wall_seconds"
+      ],
+      "title": "Budget",
+      "type": "string"
+    },
+    "limit": {
+      "title": "Limit",
+      "type": "number"
+    }
+  },
+  "required": [
+    "budget",
+    "limit",
+    "actual"
+  ],
+  "title": "BudgetExceededPayload",
+  "type": "object"
+}

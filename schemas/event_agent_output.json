@@ -1,0 +1,16 @@
+{
+  "additionalProperties": false,
+  "description": "A rate-limited milestone summary, never raw stream output (\u00a78.2).",
+  "properties": {
+    "text": {
+      "maxLength": 2000,
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "text"
+  ],
+  "title": "AgentOutputPayload",
+  "type": "object"
+}

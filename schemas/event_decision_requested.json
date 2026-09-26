@@ -1,0 +1,40 @@
+{
+  "$defs": {
+    "DecisionPoint": {
+      "description": "Where the Decision Service is consulted (\u00a718.2).",
+      "enum": [
+        "task_completion",
+        "failure_triage",
+        "routing",
+        "tool_risk",
+        "plan_review",
+        "budget",
+        "run_completion"
+      ],
+      "title": "DecisionPoint",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "decision_id": {
+      "pattern": "^dec_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "point": {
+      "$ref": "#/$defs/DecisionPoint"
+    },
+    "subject": {
+      "title": "Subject",
+      "type": "string"
+    }
+  },
+  "required": [
+    "decision_id",
+    "point",
+    "subject"
+  ],
+  "title": "DecisionRequestedPayload",
+  "type": "object"
+}

@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "ok": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ok"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "AgentToolCalledPayload",
+  "type": "object"
+}

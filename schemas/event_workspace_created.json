@@ -1,0 +1,25 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "base_commit": {
+      "title": "Base Commit",
+      "type": "string"
+    },
+    "branch": {
+      "title": "Branch",
+      "type": "string"
+    },
+    "path": {
+      "format": "path",
+      "title": "Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "branch",
+    "base_commit"
+  ],
+  "title": "WorkspaceCreatedPayload",
+  "type": "object"
+}

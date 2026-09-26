@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "after_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "After Sha256",
+      "type": "string"
+    },
+    "before_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Before Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "before_sha256",
+    "after_sha256"
+  ],
+  "title": "ContextCompactedPayload",
+  "type": "object"
+}

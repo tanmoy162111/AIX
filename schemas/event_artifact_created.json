@@ -1,0 +1,249 @@
+{
+  "$defs": {
+    "Artifact": {
+      "additionalProperties": false,
+      "description": "A durable, content-addressed output with provenance.",
+      "properties": {
+        "id": {
+          "pattern": "^art_[0-9A-HJKMNP-TV-Z]{26}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "media_type": {
+          "title": "Media Type",
+          "type": "string"
+        },
+        "path": {
+          "format": "path",
+          "title": "Path",
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/Provenance"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "size": {
+          "minimum": 0,
+          "title": "Size",
+          "type": "integer"
+        },
+        "type": {
+          "$ref": "#/$defs/ArtifactType"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "media_type",
+        "sha256",
+        "size",
+        "path",
+        "provenance"
+      ],
+      "title": "Artifact",
+      "type": "object"
+    },
+    "ArtifactType": {
+      "description": "Kind of durable artifact (\u00a721.3).",
+      "enum": [
+        "plan",
+        "patch",
+        "verification",
+        "log",
+        "junit",
+        "sarif",
+        "decision_log",
+        "agent_trace",
+        "report",
+        "manifest",
+        "prompt",
+        "stream",
+        "baseline",
+        "other"
+      ],
+      "title": "ArtifactType",
+      "type": "string"
+    },
+    "Producer": {
+      "additionalProperties": false,
+      "description": "Who or what produced an artifact.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "agent",
+            "check",
+            "control_plane",
+            "reviewer"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Version"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "title": "Producer",
+      "type": "object"
+    },
+    "Provenance": {
+      "additionalProperties": false,
+      "description": "Who, what, from which inputs, under which policy (\u00a721.2).",
+      "properties": {
+        "aix_version": {
+          "title": "Aix Version",
+          "type": "string"
+        },
+        "attempt_id": {
+          "anyOf": [
+            {
+              "pattern": "^att_[0-9A-HJKMNP-TV-Z]{26}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Attempt Id"
+        },
+        "base_commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Commit"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "decisions": {
+          "items": {
+            "pattern": "^dec_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          },
+          "title": "Decisions",
+          "type": "array"
+        },
+        "inputs": {
+          "items": {
+            "pattern": "^art_[0-9A-HJKMNP-TV-Z]{26}$",
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "array"
+        },
+        "policy_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Policy Hash"
+        },
+        "producer": {
+          "$ref": "#/$defs/Producer"
+        },
+        "result_commit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Result Commit"
+        },
+        "run_id": {
+          "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$",
+          "title": "Run Id",
+          "type": "string"
+        },
+        "task_id": {
+          "anyOf": [
+            {
+              "pattern": "^task_[0-9A-HJKMNP-TV-Z]{26}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Task Id"
+        },
+        "tools": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tools",
+          "type": "array"
+        }
+      },
+      "required": [
+        "run_id",
+        "producer",
+        "aix_version",
+        "created_at"
+      ],
+      "title": "Provenance",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "artifact": {
+      "$ref": "#/$defs/Artifact"
+    }
+  },
+  "required": [
+    "artifact"
+  ],
+  "title": "ArtifactCreatedPayload",
+  "type": "object"
+}

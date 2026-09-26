@@ -1,0 +1,44 @@
+{
+  "$defs": {
+    "FailureClass": {
+      "description": "Failure taxonomy (\u00a719.1). Every typed error maps to exactly one class.",
+      "enum": [
+        "agent_failure",
+        "agent_no_changes",
+        "tool_failure",
+        "network_failure",
+        "auth_failure",
+        "rate_limited",
+        "timeout",
+        "verification_failure",
+        "scope_violation",
+        "policy_failure",
+        "merge_conflict",
+        "context_failure",
+        "resource_failure",
+        "budget_exceeded",
+        "no_eligible_agent",
+        "interrupted",
+        "human_rejection"
+      ],
+      "title": "FailureClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "failure": {
+      "$ref": "#/$defs/FailureClass"
+    },
+    "message": {
+      "default": "",
+      "title": "Message",
+      "type": "string"
+    }
+  },
+  "required": [
+    "failure"
+  ],
+  "title": "AgentFailedPayload",
+  "type": "object"
+}

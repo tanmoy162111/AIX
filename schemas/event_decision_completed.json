@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "DecisionOutcome": {
+      "description": "Outcome of a decision (\u00a76). ``CHOOSE`` carries its argument in ``DecisionRecord.choice``.",
+      "enum": [
+        "accept",
+        "retry",
+        "reject",
+        "escalate",
+        "switch_agent",
+        "ask_human",
+        "stop",
+        "allow",
+        "deny",
+        "choose"
+      ],
+      "title": "DecisionOutcome",
+      "type": "string"
+    },
+    "DecisionPoint": {
+      "description": "Where the Decision Service is consulted (\u00a718.2).",
+      "enum": [
+        "task_completion",
+        "failure_triage",
+        "routing",
+        "tool_risk",
+        "plan_review",
+        "budget",
+        "run_completion"
+      ],
+      "title": "DecisionPoint",
+      "type": "string"
+    },
+    "DecisionRecord": {
+      "additionalProperties": false,
+      "description": "A recorded, replayable decision (\u00a718.1 rule 4).",
+      "properties": {
+        "answers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Answers",
+          "type": "object"
+        },
+        "choice": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Choice"
+        },
+        "gate_result": {
+          "$ref": "#/$defs/GateResult"
+        },
+        "id": {
+          "pattern": "^dec_[0-9A-HJKMNP-TV-Z]{26}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "inputs_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Inputs Hash",
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/DecisionOutcome"
+        },
+        "point": {
+          "$ref": "#/$defs/DecisionPoint"
+        },
+        "provider": {
+          "enum": [
+            "rules",
+            "jev",
+            "fake",
+            "human"
+          ],
+          "title": "Provider",
+          "type": "string"
+        },
+        "provider_meta": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Provider Meta",
+          "type": "object"
+        },
+        "questions": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Questions",
+          "type": "object"
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        },
+        "state": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "State",
+          "type": "object"
+        },
+        "subject": {
+          "title": "Subject",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "point",
+        "subject",
+        "provider",
+        "gate_result",
+        "state",
+        "questions",
+        "answers",
+        "outcome",
+        "inputs_hash"
+      ],
+      "title": "DecisionRecord",
+      "type": "object"
+    },
+    "GateResult": {
+      "additionalProperties": false,
+      "description": "Result of the hard gates (\u00a718.3): either a forced outcome or a set of allowed outcomes.",
+      "properties": {
+        "allowed_outcomes": {
+          "items": {
+            "$ref": "#/$defs/DecisionOutcome"
+          },
+          "title": "Allowed Outcomes",
+          "type": "array"
+        },
+        "forced_outcome": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DecisionOutcome"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "reason_codes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reason Codes",
+          "type": "array"
+        }
+      },
+      "title": "GateResult",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "record": {
+      "$ref": "#/$defs/DecisionRecord"
+    }
+  },
+  "required": [
+    "record"
+  ],
+  "title": "DecisionCompletedPayload",
+  "type": "object"
+}

@@ -1,0 +1,107 @@
+{
+  "$defs": {
+    "Approval": {
+      "additionalProperties": false,
+      "description": "A human grant (or refusal) for a gated action.",
+      "properties": {
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "actor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Actor"
+        },
+        "channel": {
+          "anyOf": [
+            {
+              "enum": [
+                "cli_tty",
+                "api_token"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Channel"
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decided At"
+        },
+        "id": {
+          "pattern": "^apv_[0-9A-HJKMNP-TV-Z]{26}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "requested_at": {
+          "format": "date-time",
+          "title": "Requested At",
+          "type": "string"
+        },
+        "scope": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "title": "Scope",
+          "type": "object"
+        },
+        "status": {
+          "default": "pending",
+          "enum": [
+            "pending",
+            "granted",
+            "denied",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "subject": {
+          "title": "Subject",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "subject",
+        "action",
+        "requested_at"
+      ],
+      "title": "Approval",
+      "type": "object"
+    },
+    "JsonValue": {}
+  },
+  "additionalProperties": false,
+  "properties": {
+    "approval": {
+      "$ref": "#/$defs/Approval"
+    }
+  },
+  "required": [
+    "approval"
+  ],
+  "title": "ApprovalRequestedPayload",
+  "type": "object"
+}

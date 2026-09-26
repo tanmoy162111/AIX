@@ -1,0 +1,15 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "format": "path",
+      "title": "Path",
+      "type": "string"
+    }
+  },
+  "required": [
+    "path"
+  ],
+  "title": "WorkspaceRemovedPayload",
+  "type": "object"
+}

@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "agent_id": {
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "fallbacks": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Fallbacks",
+      "type": "array"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "scores": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Scores",
+      "type": "object"
+    }
+  },
+  "required": [
+    "agent_id"
+  ],
+  "title": "AgentSelectedPayload",
+  "type": "object"
+}

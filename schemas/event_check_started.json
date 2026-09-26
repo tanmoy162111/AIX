@@ -1,0 +1,38 @@
+{
+  "$defs": {
+    "CheckKind": {
+      "description": "Kind of verification check (\u00a76, \u00a717.3).",
+      "enum": [
+        "build",
+        "tests",
+        "lint",
+        "typecheck",
+        "security_sast",
+        "secrets",
+        "deps",
+        "ai_review",
+        "policy",
+        "custom"
+      ],
+      "title": "CheckKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "check_id": {
+      "pattern": "^chk_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Check Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/CheckKind"
+    }
+  },
+  "required": [
+    "check_id",
+    "kind"
+  ],
+  "title": "CheckStartedPayload",
+  "type": "object"
+}

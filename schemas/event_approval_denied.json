@@ -1,0 +1,47 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "title": "Actor",
+      "type": "string"
+    },
+    "approval_id": {
+      "pattern": "^apv_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Approval Id",
+      "type": "string"
+    },
+    "channel": {
+      "enum": [
+        "cli_tty",
+        "api_token"
+      ],
+      "title": "Channel",
+      "type": "string"
+    },
+    "decided_at": {
+      "format": "date-time",
+      "title": "Decided At",
+      "type": "string"
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    }
+  },
+  "required": [
+    "approval_id",
+    "actor",
+    "channel",
+    "decided_at"
+  ],
+  "title": "ApprovalDeniedPayload",
+  "type": "object"
+}

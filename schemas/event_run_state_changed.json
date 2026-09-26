@@ -1,0 +1,70 @@
+{
+  "$defs": {
+    "RunEvent": {
+      "description": "Inputs to the run state machine.",
+      "enum": [
+        "start_planning",
+        "planned",
+        "start_execution",
+        "await_approval",
+        "approval_granted",
+        "approval_denied",
+        "all_tasks_terminal",
+        "complete",
+        "fail",
+        "cancel"
+      ],
+      "title": "RunEvent",
+      "type": "string"
+    },
+    "RunStatus": {
+      "description": "Run lifecycle states (\u00a77.1).",
+      "enum": [
+        "created",
+        "planning",
+        "planned",
+        "executing",
+        "waiting_approval",
+        "finalizing",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "title": "RunStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "event": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RunEvent"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "from_status": {
+      "$ref": "#/$defs/RunStatus"
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    },
+    "to_status": {
+      "$ref": "#/$defs/RunStatus"
+    }
+  },
+  "required": [
+    "from_status",
+    "to_status"
+  ],
+  "title": "RunStateChangedPayload",
+  "type": "object"
+}

@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "summary": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Summary"
+    }
+  },
+  "title": "RunCompletedPayload",
+  "type": "object"
+}

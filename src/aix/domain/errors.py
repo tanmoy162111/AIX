@@ -116,6 +116,10 @@ class ResourceFailure(AixError):
     failure_class = FailureClass.RESOURCE_FAILURE
 
 
+class StoreError(ResourceFailure):
+    """The event store is unusable (corrupt, too new, or holds an unknown record)."""
+
+
 class BudgetExceeded(AixError):
     """A run budget was exceeded."""
 

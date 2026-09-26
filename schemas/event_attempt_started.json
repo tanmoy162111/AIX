@@ -1,0 +1,19 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "pid": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pid"
+    }
+  },
+  "title": "AttemptStartedPayload",
+  "type": "object"
+}

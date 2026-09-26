@@ -1,0 +1,188 @@
+{
+  "$defs": {
+    "Budget": {
+      "additionalProperties": false,
+      "description": "Per-run limits; defaults mirror the config defaults in \u00a79.",
+      "properties": {
+        "max_attempts_total": {
+          "default": 20,
+          "minimum": 1,
+          "title": "Max Attempts Total",
+          "type": "integer"
+        },
+        "max_cost_usd": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "title": "Max Cost Usd",
+          "type": "number"
+        },
+        "max_wall_seconds": {
+          "default": 7200,
+          "minimum": 1,
+          "title": "Max Wall Seconds",
+          "type": "integer"
+        }
+      },
+      "title": "Budget",
+      "type": "object"
+    },
+    "Intent": {
+      "additionalProperties": false,
+      "description": "A parsed user goal.",
+      "properties": {
+        "constraints": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Constraints",
+          "type": "array"
+        },
+        "goal": {
+          "title": "Goal",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "coding",
+            "research",
+            "review",
+            "security",
+            "devops",
+            "docs",
+            "other"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "risk": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Risk",
+          "type": "string"
+        },
+        "target_paths": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Target Paths",
+          "type": "array"
+        }
+      },
+      "required": [
+        "goal",
+        "kind",
+        "risk"
+      ],
+      "title": "Intent",
+      "type": "object"
+    },
+    "Run": {
+      "additionalProperties": false,
+      "description": "One invocation of a user goal.",
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finished At"
+        },
+        "goal": {
+          "minLength": 1,
+          "title": "Goal",
+          "type": "string"
+        },
+        "graph_id": {
+          "anyOf": [
+            {
+              "pattern": "^gph_[0-9A-HJKMNP-TV-Z]{26}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Graph Id"
+        },
+        "id": {
+          "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Intent"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "project_root": {
+          "format": "path",
+          "title": "Project Root",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/RunStatus",
+          "default": "created"
+        }
+      },
+      "required": [
+        "id",
+        "project_root",
+        "goal",
+        "created_at"
+      ],
+      "title": "Run",
+      "type": "object"
+    },
+    "RunStatus": {
+      "description": "Run lifecycle states (\u00a77.1).",
+      "enum": [
+        "created",
+        "planning",
+        "planned",
+        "executing",
+        "waiting_approval",
+        "finalizing",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "title": "RunStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "run": {
+      "$ref": "#/$defs/Run"
+    }
+  },
+  "required": [
+    "run"
+  ],
+  "title": "RunCreatedPayload",
+  "type": "object"
+}

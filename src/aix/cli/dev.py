@@ -16,8 +16,12 @@ dev_app = typer.Typer(name="dev", help="Developer and maintenance commands.", no
 def all_schema_models() -> dict[str, type[BaseModel]]:
     """Every model whose JSON Schema is committed under ``schemas/``."""
     from aix.domain.schemas import collect_domain_models
+    from aix.store.events import EVENT_PAYLOADS
 
-    return dict(collect_domain_models())
+    models: dict[str, type[BaseModel]] = dict(collect_domain_models())
+    for event_type, payload in EVENT_PAYLOADS.items():
+        models[f"event_{event_type.replace('.', '_')}"] = payload
+    return dict(sorted(models.items()))
 
 
 @dev_app.command("export-schemas")

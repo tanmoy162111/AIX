@@ -1,0 +1,31 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "detail": {
+      "title": "Detail",
+      "type": "string"
+    },
+    "kind": {
+      "title": "Kind",
+      "type": "string"
+    },
+    "path": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path"
+    }
+  },
+  "required": [
+    "kind",
+    "detail"
+  ],
+  "title": "PolicyViolationPayload",
+  "type": "object"
+}

@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "branch": {
+      "title": "Branch",
+      "type": "string"
+    },
+    "files": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Files",
+      "type": "array"
+    }
+  },
+  "required": [
+    "branch"
+  ],
+  "title": "WorkspaceConflictPayload",
+  "type": "object"
+}

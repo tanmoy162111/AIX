@@ -1,0 +1,21 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "pattern": "^apv_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Approval Id",
+      "type": "string"
+    },
+    "decided_at": {
+      "format": "date-time",
+      "title": "Decided At",
+      "type": "string"
+    }
+  },
+  "required": [
+    "approval_id",
+    "decided_at"
+  ],
+  "title": "ApprovalExpiredPayload",
+  "type": "object"
+}
