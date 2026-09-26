@@ -110,7 +110,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M7.6 `agent_stats` projection; router uses Bayesian observed rate; `aix stats agents`. — projection counters + percentiles computed from recorded durations; router loads history once at run start (merged across models). Verification pass rate is a share of attempts.
 - [x] M7.7 `aix trace`, `aix logs [--follow]`, `--json` everywhere. — `observability/trace.py`; logs shows recorded milestones (agent.output is rate-limited, not raw streams). `dev` subcommands keep their existing output.
 - [x] M7.8 Crash resume (`--resume`, INTERRUPTED) + `test_resume.py`; golden G9. — ADR-0026; test_resume.py uses a real SIGKILL. Accepted-but-unmerged work is redone, not re-integrated.
-- [ ] M7.9 All golden G1–G10 green; run M7 Exit Gate; tag `m7-done`.
+- [x] M7.9 All golden G1–G10 green; run M7 Exit Gate; tag `m7-done`. — gate green: make check (1694 tests), golden G1-G10 (12 tests), test_bundle_verify + test_resume (7).
 
 ## M8 — Security hardening (§20)
 - [ ] M8.1 Policy engine with versioned hash; permissions translation per adapter snapshot-tested.

@@ -152,7 +152,7 @@ progress is tracked in [`docs/playbook/PROGRESS.md`](docs/playbook/PROGRESS.md) 
 | M4 | Verification (checks, security, AI review) | done |
 | M5 | Decisions, Jev, retries, escalation, approvals | done |
 | M6 | Context fabric: facts, handoffs, budgeted prompts, compaction | done |
-| M7 | Artifacts, reports, observability, crash resume | in progress (M7.1-M7.3 done) |
+| M7 | Artifacts, reports, observability, crash resume | done |
 | M8–M10 | Security hardening, API and plugins, release | planned |
 
 Live runs against real agent CLIs are opt-in and less exercised than the fake-agent suite.
