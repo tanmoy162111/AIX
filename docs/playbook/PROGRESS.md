@@ -55,7 +55,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M3.6 Plan post-processing: caps, capability normalization, implicit file-scope edges, verification spec defaults; `--plan-only`, `aix plan show`.
 - [x] M3.7 Router (rules strategy): eligibility, scoring formula, penalties, static pins, fallbacks, reason codes; table tests incl. NO_ELIGIBLE_AGENT.
 - [ ] M3.8 Scheduler: ready set, `max_parallel`, dependency blocking, cancellation (`aix cancel`, SIGINT).
-- [ ] M3.9 Integration: serialized merges into run branch, conflict detection → MERGE_CONFLICT; `test_merge_conflict.py`.
+- [x] M3.9 Integration: serialized merges into run branch, conflict detection → MERGE_CONFLICT; `test_merge_conflict.py`.
 - [ ] M3.10 `gemini` adapter (as M2.7).
 - [ ] M3.11 `opencode` adapter (as M2.7).
 - [ ] M3.12 `aix status` live table.
@@ -181,3 +181,4 @@ M3.4 — done; core/planner/{base,template}.py: Planner protocol, select_skill (
 M3.5 — done; ADR-0010 (key-based PlanDraft); core/planner/{draft,agent}.py + prompts/planner.j2 (snapshot-tested); 2 repairs then TemplatePlanner fallback; make_adapter_runner runs read-only in a throwaway worktree. Planner-run events and planner.provider selection land with M3.6 wiring.
 M3.6 — done; ADR-0011; core/planner/{postprocess,select}.py, core/orchestrator/plan.py (plan_run), cli/plan.py. `auto` planner never picks builtin `fake`; --plan-only leaves the run `planned`. CAVEAT: CLI tests that plan must use tests/cli_env.hermetic — a first draft let the real `claude` CLI on this machine plan a test run (a live paid call, ~70s) before I noticed; fixed before commit.
 M3.7 — done; ADR-0012; core/router/rules.py (pure route(RoutingContext) -> RoutingDecision, NoEligibleAgent with per-agent reasons); 28 table tests. Not yet wired into an orchestrator: the scheduler (M3.8) calls it and emits agent.selected.
+M3.9 — done; core/orchestrator/executor.py execute_graph/execute_run (per-attempt worktrees, merges serialized by WorkspaceManager lock, conflict -> workspace.conflict + rebase_and_retry up to task.max_attempts, then STOP -> MERGE_CONFLICT; ADR-0013 adds integrating--stop-->failed). Acceptance is the STUB_VERIFICATION rule (in scope, write tasks change something), removed in M4.11.
