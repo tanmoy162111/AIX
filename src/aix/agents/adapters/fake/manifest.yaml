@@ -10,3 +10,4 @@ supports:
   cancel: true
   cost_reporting: full
   model_select: false
+  enforces: [read_only, write_scope, network_deny]

@@ -1,0 +1,76 @@
+{
+  "network_allow": [
+    "codex",
+    "exec",
+    "--json",
+    "-C",
+    "/ws",
+    "-s",
+    "workspace-write",
+    "-c",
+    "approval_policy=\"never\"",
+    "-c",
+    "sandbox_workspace_write.network_access=true",
+    "-"
+  ],
+  "network_deny": [
+    "codex",
+    "exec",
+    "--json",
+    "-C",
+    "/ws",
+    "-s",
+    "workspace-write",
+    "-c",
+    "approval_policy=\"never\"",
+    "-"
+  ],
+  "read_only": [
+    "codex",
+    "exec",
+    "--json",
+    "-C",
+    "/ws",
+    "-s",
+    "read-only",
+    "-c",
+    "approval_policy=\"never\"",
+    "-"
+  ],
+  "read_only_tools": [
+    "codex",
+    "exec",
+    "--json",
+    "-C",
+    "/ws",
+    "-s",
+    "read-only",
+    "-c",
+    "approval_policy=\"never\"",
+    "-"
+  ],
+  "scoped": [
+    "codex",
+    "exec",
+    "--json",
+    "-C",
+    "/ws",
+    "-s",
+    "workspace-write",
+    "-c",
+    "approval_policy=\"never\"",
+    "-"
+  ],
+  "workspace": [
+    "codex",
+    "exec",
+    "--json",
+    "-C",
+    "/ws",
+    "-s",
+    "workspace-write",
+    "-c",
+    "approval_policy=\"never\"",
+    "-"
+  ]
+}

@@ -31,6 +31,7 @@ from aix.domain.enums import (
 from aix.domain.enums import CheckKind as K
 from aix.domain.ids import IdPrefix, new_id
 from aix.domain.tasks import Intent, Task, TaskGraph, VerificationSpec
+from aix.security.policy import Policy
 from aix.store.db import EventStore
 from verif_env import fast_config
 
@@ -273,7 +274,12 @@ async def test_recorded_decisions_replay_identically_through_the_rules_provider(
     try:
         records = await store.get_decisions(outcome.run_id)
         assert records
-        assert await replay_records(RulesProvider(), records, policy_version="policy-v1") == []
+        assert (
+            await replay_records(
+                RulesProvider(), records, policy_version=Policy(fast_config().security).hash
+            )
+            == []
+        )
     finally:
         await store.close()
 

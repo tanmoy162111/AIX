@@ -81,6 +81,7 @@ class FakeAdapter:
                 cancel=True,
                 cost_reporting="full",
                 model_select=bool(self._models),
+                enforces=["read_only", "write_scope", "network_deny"],
             ),
             models=self._models,
             default_model=self._default_model,

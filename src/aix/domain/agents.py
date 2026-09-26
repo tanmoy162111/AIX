@@ -19,6 +19,11 @@ class AgentSupports(DomainModel):
     cancel: bool = True
     cost_reporting: Literal["none", "partial", "full"] = "none"
     model_select: bool = False
+    enforces: list[Literal["read_only", "write_scope", "network_deny"]] = Field(
+        default_factory=list[Literal["read_only", "write_scope", "network_deny"]]
+    )
+    """Restrictions the agent's own CLI enforces natively (§20.2). What is absent is enforced only
+    by the control plane's post-run checks, so a high-risk task must not depend on it."""
 
 
 class AgentSpec(DomainModel):

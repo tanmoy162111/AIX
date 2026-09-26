@@ -1,0 +1,54 @@
+{
+  "network_allow": [
+    "opencode",
+    "run",
+    "--format",
+    "json",
+    "--dir",
+    "/ws"
+  ],
+  "network_deny": [
+    "opencode",
+    "run",
+    "--format",
+    "json",
+    "--dir",
+    "/ws"
+  ],
+  "read_only": [
+    "opencode",
+    "run",
+    "--format",
+    "json",
+    "--dir",
+    "/ws",
+    "--agent",
+    "plan"
+  ],
+  "read_only_tools": [
+    "opencode",
+    "run",
+    "--format",
+    "json",
+    "--dir",
+    "/ws",
+    "--agent",
+    "plan"
+  ],
+  "scoped": [
+    "opencode",
+    "run",
+    "--format",
+    "json",
+    "--dir",
+    "/ws"
+  ],
+  "workspace": [
+    "opencode",
+    "run",
+    "--format",
+    "json",
+    "--dir",
+    "/ws"
+  ]
+}

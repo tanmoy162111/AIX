@@ -1,0 +1,68 @@
+{
+  "network_allow": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "acceptEdits"
+  ],
+  "network_deny": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "acceptEdits",
+    "--disallowedTools",
+    "WebFetch,WebSearch"
+  ],
+  "read_only": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "dontAsk",
+    "--allowedTools",
+    "Read,Glob,Grep",
+    "--disallowedTools",
+    "Edit,Write,NotebookEdit,Bash"
+  ],
+  "read_only_tools": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "dontAsk",
+    "--allowedTools",
+    "Read,Grep",
+    "--disallowedTools",
+    "Edit,Write,NotebookEdit,Bash"
+  ],
+  "scoped": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "dontAsk",
+    "--allowedTools",
+    "Read,Glob,Grep,Edit(app/**),Write(app/**),Edit(tests/*.py),Write(tests/*.py)"
+  ],
+  "workspace": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--permission-mode",
+    "acceptEdits"
+  ]
+}

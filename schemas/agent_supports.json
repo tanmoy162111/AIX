@@ -17,6 +17,18 @@
       "title": "Cost Reporting",
       "type": "string"
     },
+    "enforces": {
+      "items": {
+        "enum": [
+          "read_only",
+          "write_scope",
+          "network_deny"
+        ],
+        "type": "string"
+      },
+      "title": "Enforces",
+      "type": "array"
+    },
     "model_select": {
       "default": false,
       "title": "Model Select",

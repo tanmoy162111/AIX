@@ -1,0 +1,62 @@
+{
+  "network_allow": [
+    "gemini",
+    "--output-format",
+    "stream-json",
+    "--approval-mode",
+    "auto_edit",
+    "--skip-trust",
+    "--prompt",
+    "Follow the task given on standard input."
+  ],
+  "network_deny": [
+    "gemini",
+    "--output-format",
+    "stream-json",
+    "--approval-mode",
+    "auto_edit",
+    "--skip-trust",
+    "--prompt",
+    "Follow the task given on standard input."
+  ],
+  "read_only": [
+    "gemini",
+    "--output-format",
+    "stream-json",
+    "--approval-mode",
+    "plan",
+    "--skip-trust",
+    "--prompt",
+    "Follow the task given on standard input."
+  ],
+  "read_only_tools": [
+    "gemini",
+    "--output-format",
+    "stream-json",
+    "--approval-mode",
+    "plan",
+    "--skip-trust",
+    "--prompt",
+    "Follow the task given on standard input."
+  ],
+  "scoped": [
+    "gemini",
+    "--output-format",
+    "stream-json",
+    "--approval-mode",
+    "auto_edit",
+    "--skip-trust",
+    "--prompt",
+    "Follow the task given on standard input."
+  ],
+  "workspace": [
+    "gemini",
+    "--output-format",
+    "stream-json",
+    "--approval-mode",
+    "auto_edit",
+    "--skip-trust",
+    "--prompt",
+    "Follow the task given on standard input."
+  ]
+}

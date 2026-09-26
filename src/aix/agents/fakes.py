@@ -41,6 +41,11 @@ def make_fake_entry(
         kind="local",
         cost_class="free",
         capabilities=adapter._caps,  # pyright: ignore[reportPrivateUsage]
-        supports=AgentSupports(streaming=True, cancel=True, cost_reporting="full"),
+        supports=AgentSupports(
+            streaming=True,
+            cancel=True,
+            cost_reporting="full",
+            enforces=["read_only", "write_scope", "network_deny"],
+        ),
     )
     return AdapterEntry(manifest=manifest, adapter=adapter)

@@ -31,6 +31,7 @@ supports:
   cancel: true
   cost_reporting: partial
   model_select: true
+  enforces: [read_only]
 env_allowlist:
   - GEMINI_API_KEY
   - GOOGLE_API_KEY

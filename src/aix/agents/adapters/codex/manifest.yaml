@@ -28,6 +28,7 @@ supports:
   cancel: true
   cost_reporting: partial
   model_select: true
+  enforces: [read_only, network_deny]
 env_allowlist:
   - OPENAI_API_KEY
   - OPENAI_BASE_URL

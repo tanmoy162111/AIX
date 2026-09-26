@@ -32,6 +32,7 @@ supports:
   cancel: true
   cost_reporting: full
   model_select: true
+  enforces: [read_only, write_scope]
 models: [fable, opus, sonnet]
 env_allowlist:
   - ANTHROPIC_API_KEY

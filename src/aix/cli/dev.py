@@ -80,6 +80,10 @@ def eval_decisions(
     replay: Annotated[
         Path | None, typer.Option("--replay", help="JSON list of DecisionRecords to replay.")
     ] = None,
+    policy_hash: Annotated[
+        str | None,
+        typer.Option("--policy-hash", help="Policy hash the replayed decisions were made under."),
+    ] = None,
     save: Annotated[Path | None, typer.Option("--save", help="Write the JSON report here.")] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Print the report as JSON.")] = False,
 ) -> None:
@@ -94,6 +98,7 @@ def eval_decisions(
     from aix.decision.eval import load_cases, replay_records, run_eval
     from aix.decision.providers.rules import RulesProvider
     from aix.domain.decisions import DecisionRecord
+    from aix.security.policy import Policy
 
     rules = RulesProvider()
     if provider == "rules":
@@ -117,7 +122,11 @@ def eval_decisions(
     if replay is not None:
         raw = json.loads(replay.read_text(encoding="utf-8"))
         records = [DecisionRecord.model_validate(r) for r in raw]
-        bad = anyio.run(lambda: replay_records(engine, records, policy_version="policy-v1"))
+        bad = anyio.run(
+            lambda: replay_records(
+                engine, records, policy_version=policy_hash or Policy(AixConfig().security).hash
+            )
+        )
         if as_json:
             typer.echo(json.dumps([b.model_dump() for b in bad], indent=2))
         else:

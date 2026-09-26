@@ -18,7 +18,7 @@ from typing import Final, Literal
 
 import anyio
 
-from aix.agents.protocol import AgentAdapter, AgentHandle, AgentPermissions, AgentRequest
+from aix.agents.protocol import AgentAdapter, AgentHandle, AgentRequest
 from aix.agents.registry import AdapterRegistry
 from aix.config.schema import AixConfig
 from aix.core.budget import BudgetTracker, Overrun
@@ -82,6 +82,7 @@ from aix.domain.ids import IdPrefix, new_id
 from aix.domain.state import RunEvent, TaskEvent, transition_task
 from aix.domain.tasks import Task, TaskGraph
 from aix.domain.verification import Check, VerificationReport
+from aix.security.policy import Policy
 from aix.skills.registry import SkillRegistry
 from aix.store import events as ev
 from aix.store.db import EventStore
@@ -244,6 +245,7 @@ class _Driver:
         self._active = 0
         self._cancelled = False
         self._authors: dict[str, str] = {}
+        self._policy = Policy(config.security)
         self._handoffs: dict[str, Handoff] = {}
         self._resume_notes: dict[str, str] = {}
         self._router_stats: dict[tuple[str, TaskType], AgentStat] = {}
@@ -321,6 +323,7 @@ class _Driver:
             authored_by=frozenset(self._authors_for(task)),
             config=self._config.routing,
             stats=self._router_stats,
+            policy_allows=lambda agent, t: bool(self._policy.can_run_agent(agent, t)),
         )
         try:
             decision = route(ctx)
@@ -746,7 +749,6 @@ class _Driver:
             await self.apply(task.id, TaskEvent.START)
 
             stream_path = wm.root / ".aix" / "runs" / run_id / f"{attempt_id}.stream.jsonl"
-            write_scope = [] if task.file_scope == ["**"] else list(task.file_scope)
             prompt = await self._task_prompt(task, notes)
             await persist_prompt(stream_path, prompt)
             ledger.record(RetryFingerprint.of(agent_id, prompt, ws.base_commit))
@@ -756,9 +758,7 @@ class _Driver:
                 prompt=prompt,
                 model=attempt.model,
                 timeout_s=timeout_override(config, agent_id) or config.execution.attempt_timeout_s,
-                permissions=AgentPermissions(
-                    read_only=not task.file_scope, write_scope=write_scope
-                ),
+                permissions=self._policy.agent_permissions(task),
                 stream_path=stream_path,
             )
             tool_calls: list[ToolCallRecord] = []
@@ -1064,7 +1064,7 @@ def default_decision_service(config: AixConfig) -> DecisionService:
     return DecisionService(
         provider,
         rules,
-        policy_version="policy-v1",
+        policy_version=Policy(config.security).hash,
         timeout_s=config.decision.jev.timeout_ms / 1000,
     )
 
@@ -1198,7 +1198,9 @@ async def execute_graph(
             )
 
     if rec.run.status in (RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.CANCELLED):
-        await write_run_artifacts(rec, wm.root, bundle=config.artifacts.bundle)
+        await write_run_artifacts(
+            rec, wm.root, bundle=config.artifacts.bundle, policy_hash=Policy(config.security).hash
+        )
     usage = Usage()
     for b in driver.book.values():
         usage = _add_usage(usage, b.usage)
@@ -1229,7 +1231,9 @@ async def execute_graph(
     )
 
 
-async def write_run_artifacts(rec: RunRecorder, root: Path, *, bundle: bool = False) -> None:
+async def write_run_artifacts(
+    rec: RunRecorder, root: Path, *, bundle: bool = False, policy_hash: str | None = None
+) -> None:
     """Persist the run's standard artifacts and manifest (§21.3) under ``.aix/``."""
     from aix import __version__
     from aix.artifacts.report import build_report, render_html, render_markdown
@@ -1238,7 +1242,10 @@ async def write_run_artifacts(rec: RunRecorder, root: Path, *, bundle: bool = Fa
 
     run_id = rec.run.id
     writer = ArtifactWriter(
-        ObjectStore(root / ".aix" / "artifacts" / "objects"), rec, aix_version=__version__
+        ObjectStore(root / ".aix" / "artifacts" / "objects"),
+        rec,
+        aix_version=__version__,
+        policy_hash=policy_hash,
     )
     entries = await write_standard_artifacts(
         rec.store, writer, run_id, runs_dir=root / ".aix" / "runs" / run_id
