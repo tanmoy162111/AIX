@@ -74,6 +74,19 @@ async def choose(
     return PlannerSetup(choice.agent_id, list(choice.warnings))
 
 
+async def record_plan(
+    rec: RunRecorder, intent: Intent, graph: TaskGraph, planner: str, warnings: list[str]
+) -> None:
+    """Record ``run.planned`` and a ``task.created`` per task; the run moves to ``planned``."""
+    await rec.emit(
+        "run.planned",
+        ev.RunPlannedPayload(intent=intent, graph=graph, planner=planner, warnings=warnings),
+    )
+    for task in graph.tasks:
+        await rec.emit("task.created", ev.TaskCreatedPayload(task=task), task_id=task.id)
+    await rec.run_to(RunEvent.PLANNED)
+
+
 async def plan_into(
     rec: RunRecorder,
     req: PlanRunRequest,
@@ -135,13 +148,7 @@ async def plan_into(
         await rec.emit("run.failed", ev.RunFailedPayload(failure=classify(exc), reason=str(exc)))
         raise
 
-    await rec.emit(
-        "run.planned",
-        ev.RunPlannedPayload(intent=intent, graph=graph, planner=planner_name, warnings=warnings),
-    )
-    for task in graph.tasks:
-        await rec.emit("task.created", ev.TaskCreatedPayload(task=task), task_id=task.id)
-    await rec.run_to(RunEvent.PLANNED)
+    await record_plan(rec, intent, graph, planner_name, warnings)
     return PlanRunResult(
         run_id=run_id, intent=intent, graph=graph, planner=planner_name, warnings=warnings
     )

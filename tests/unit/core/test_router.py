@@ -268,3 +268,11 @@ def test_no_eligible_agent(agents: list[AgentSpec]) -> None:
 def test_scores_are_finite_and_rounded() -> None:
     d = route(ctx([agent("a"), agent("b")]))
     assert all(math.isfinite(v) and round(v, 4) == v for v in d.scores.values())
+
+
+def test_reason_codes_say_why_agents_were_skipped() -> None:
+    d = route(
+        ctx([agent("down", health="unavailable"), agent("nocap", {C.REVIEW: 0.9}), agent("ok")])
+    )
+    assert "ineligible:down:unavailable" in d.reason_codes
+    assert "ineligible:nocap:missing_capability:implement" in d.reason_codes

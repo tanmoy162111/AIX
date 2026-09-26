@@ -121,10 +121,13 @@ def route(ctx: RoutingContext) -> RoutingDecision:
     for agent in sorted(ctx.agents, key=lambda a: a.id):
         if agent.health not in ("ready", "degraded"):
             dropped.append(f"{agent.id}: {agent.health}")
+            reasons.append(f"ineligible:{agent.id}:{agent.health}")
         elif (missing := _supports(agent, task)) is not None:
             dropped.append(f"{agent.id}: missing capability {missing}")
+            reasons.append(f"ineligible:{agent.id}:missing_capability:{missing}")
         elif not ctx.policy_allows(agent, task):
             dropped.append(f"{agent.id}: forbidden by policy")
+            reasons.append(f"ineligible:{agent.id}:policy")
         else:
             eligible.append(agent)
 
@@ -132,6 +135,7 @@ def route(ctx: RoutingContext) -> RoutingDecision:
         for a in eligible:
             if a.health == "degraded":
                 dropped.append(f"{a.id}: degraded while ready agents exist")
+                reasons.append(f"ineligible:{a.id}:degraded")
         eligible = [a for a in eligible if a.health == "ready"]
     elif eligible:
         reasons.append("degraded_only")

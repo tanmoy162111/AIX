@@ -7,7 +7,7 @@ into the store and persists the raw artifacts.
 from __future__ import annotations
 
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from pathlib import Path
 
 import anyio
@@ -27,10 +27,13 @@ OUTPUT_MIN_INTERVAL_S = 1.0
 """At most one ``agent.output`` event per attempt per second (§8.2)."""
 
 
-def render_prompt(task: Task) -> str:
-    """Interim task prompt (the Appendix B.2 template replaces this in M6.4)."""
+def render_prompt(task: Task, notes: Sequence[str] = ()) -> str:
+    """Interim task prompt (the Appendix B.2 template replaces this in M6.4).
+
+    ``notes`` are control-plane facts about earlier attempts of this task (never agent prose).
+    """
     scope = ", ".join(task.file_scope) if task.file_scope else "(read-only: change nothing)"
-    return (
+    text = (
         f"TASK TYPE: {task.type.value}\n"
         f"GOAL: {task.goal}\n"
         f"FILE SCOPE: {scope}\n"
@@ -38,6 +41,9 @@ def render_prompt(task: Task) -> str:
         "workspace. Your statements about success are not accepted as evidence; independent "
         "checks are.\n"
     )
+    if notes:
+        text += "PREVIOUS ATTEMPT NOTES:\n" + "".join(f"- {n}\n" for n in notes)
+    return text
 
 
 def model_override(config: AixConfig, agent_id: str) -> str | None:
