@@ -102,7 +102,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M6.7 Run M6 Exit Gate; tag `m6-done`. — gate green: make check (1654 tests), unit/context + test_handoff (29).
 
 ## M7 — Artifacts, reports, observability, resume (§21, §22, §8.2)
-- [ ] M7.1 Content-addressed artifact store + provenance.
+- [x] M7.1 Content-addressed artifact store + provenance. — `artifacts.store.ObjectStore` (`.aix/artifacts/objects/<sha[:2]>/<sha>`, atomic, self-repairing) + `ArtifactWriter` (redacts text types, emits `artifact.created`). Not yet called by the executor (M7.2).
 - [ ] M7.2 Standard artifacts (plan, patches, verification, decision-log, agent-trace, manifest).
 - [ ] M7.3 `report.md` + `report.html` (jinja2, deterministic) + snapshot tests; §23.3 summary on stdout.
 - [ ] M7.4 Bundle export + `aix artifact verify`.
