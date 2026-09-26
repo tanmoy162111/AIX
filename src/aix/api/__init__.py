@@ -1,0 +1,1 @@
+"""FastAPI application (M9)."""

@@ -13,7 +13,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M0.1 Probe environment (`which`/`--version` for every tool above); record results in "Environment notes"; ADR-0002 if anything required is missing.
 - [x] M0.2 `git init`, `.gitignore` (incl. `.env*`, `.aix/`, `__pycache__`, `.venv`), initial commit of playbook docs.
 - [x] M0.3 `pyproject.toml` (src layout, extras `jev`,`api`,`security`,`dev`), `uv lock`, console script `aix = aix.cli.main:app`.
-- [ ] M0.4 Package tree per §5.1 with `__init__.py` files and module docstrings.
+- [x] M0.4 Package tree per §5.1 with `__init__.py` files and module docstrings.
 - [ ] M0.5 Tooling configs: ruff, pyright (strict on core/domain/decision), `.importlinter` contracts from §5.3.
 - [ ] M0.6 pytest config: anyio, markers (`live`, `slow`), socket blocker plugin, `AIX_LIVE` gate, coverage config.
 - [ ] M0.7 Makefile targets: `fmt`, `fmt-check`, `lint`, `typecheck`, `layers`, `test`, `golden`, `test-live`, `check`.
@@ -146,3 +146,4 @@ _(one line per completed item: `M1.4 — done; hypothesis found X, fixed`)_
 M0.1 — done; all required tools present. Missing optional: podman, semgrep, gitleaks, pip-audit, TYPESAFE_API_KEY → container tests skip, security checks use fallbacks (§17.2/M4.5), Jev uses FakeJevClient. No ADR needed (nothing required missing).
 M0.2 — done; .claude/ hooks+agent committed with the initial commit.
 M0.3 — done; ADR-0002 records deps; typesafe-sdk resolves on PyPI (surface still to be verified in M5.5).
+M0.4 — done; 32 packages + py.typed; agents/protocol.py, registry.py, subprocess.py, decision/service.py etc. are created in the milestones that implement them.

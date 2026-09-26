@@ -1,0 +1,1 @@
+"""Deterministic scripted fake agent."""
