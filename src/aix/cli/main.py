@@ -9,8 +9,10 @@ from __future__ import annotations
 import typer
 
 from aix import __version__
+from aix.cli.agent import agent_app, list_agents
 from aix.cli.config import config_app
 from aix.cli.dev import dev_app
+from aix.cli.doctor import doctor
 from aix.cli.init import init
 
 app = typer.Typer(
@@ -21,6 +23,9 @@ app = typer.Typer(
 )
 
 app.command("init")(init)
+app.command("doctor")(doctor)
+app.add_typer(agent_app)
+app.command("agents", help="Alias for `aix agent list`.")(list_agents)
 app.add_typer(config_app)
 app.add_typer(dev_app)
 

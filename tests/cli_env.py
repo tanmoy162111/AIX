@@ -1,0 +1,27 @@
+"""Helpers for CLI tests that need a hermetic PATH with only git and chosen fake agents."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from binaries import make_replay_binary
+
+RECORDINGS = Path(__file__).resolve().parent / "fixtures" / "recordings"
+HELP = {
+    "claude": "--output-format --verbose --permission-mode --allowedTools --disallowedTools "
+    "--model --resume",
+    "codex": "--json --sandbox --model --cd --config resume",
+}
+
+
+def install(env: Path, kind: str, recording: str | None = None, **kw: object) -> None:
+    """Put a fake ``kind`` CLI on the hermetic PATH (logs invocations to ``<env>/log-<kind>``)."""
+    make_replay_binary(
+        env / "bin",
+        kind,
+        recording=RECORDINGS / kind / recording if recording else None,
+        help_text=HELP[kind],
+        version=f"{kind} 1.2.3",
+        log_dir=env / f"log-{kind}",
+        **kw,  # type: ignore[arg-type]
+    )
