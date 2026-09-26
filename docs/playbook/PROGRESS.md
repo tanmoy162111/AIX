@@ -4,7 +4,7 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial (see Blocked) · IDs are stabl
 Rule: work the **first unchecked item of the current milestone**. A milestone is done only when its
 PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
-**Current milestone:** M2
+**Current milestone:** M3
 **Environment notes (M0.1, probed 2026-09-26):** python=3.14.4 system, 3.12.13 via uv (project pins 3.12), uv=0.11.17, git=2.53.0, docker=29.5.2, podman=missing, claude=2.1.283, codex=0.147.0, gemini=0.55.1, opencode=1.18.26, ollama=0.24.0, TYPESAFE_API_KEY present=no, semgrep=missing, gitleaks=missing, pip-audit=missing (auth state of agent CLIs not probed; live tests gated by AIX_LIVE)
 
 ---
@@ -44,7 +44,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M2.9 Adapter test matrix (§10.5) for fake, claude, codex using fake binaries on PATH.
 - [x] M2.10 CLI: `aix agent list|inspect|test|enable|disable`, `aix doctor`.
 - [x] M2.11 Single-task orchestration: `aix run "<goal>" --agent <id>` → worktree → execute → diff → events → run branch commit; `tests/integration/test_single_task_run.py`.
-- [ ] M2.12 Run M2 Exit Gate; tag `m2-done`.
+- [x] M2.12 Run M2 Exit Gate; tag `m2-done`.
 
 ## M3 — Planning, routing, scheduling (§12–§14, §16)
 - [ ] M3.1 Repo facts inspector (languages, managers, commands, size) — shared with §17.1 detection.
@@ -173,3 +173,4 @@ M2.8 — done; codex adapter (real `codex exec --help` 0.147.0 verified flags; a
 M2.9 — done; tests/adapter/test_matrix.py runs the 11 §10.5 rows identically against fake, claude, codex (rigs in tests/adapter_matrix.py); 2 explicit n/a (fake: malformed stream, permission flags) with reasons; a guard test keeps rows and reasons complete.
 M2.10 — done; `aix agent list|inspect|test|enable|disable` (+ alias `aix agents`) and `aix doctor` (fail = python/git/config -> exit 5; everything else warns). `agent test` only probes unless --live or fake. Verified on this machine: real claude 2.1.283 and codex 0.147.0 both probe 'ready' (manifest required_flags exist). Tests use a hermetic PATH (tests/unit/conftest.py env fixture + tests/cli_env.py).
 M2.11 — done; core/orchestrator/single.py + `aix run "<goal>" --agent <id> [--scope] [--allow-dirty] [--keep-worktrees] [--json]`: run branch -> worktree -> agent -> control-plane diff -> scope check -> accept/reject stand-in (replaced by M4 verification / M5 decisions) -> commit + checkout-free merge -> cleanup; full event trail, replay-equal projections, exit codes 0/1/2/5. Interim prompt (B.2 template in M6.4); fake agent scriptable via AIX_FAKE_SCRIPTS. Single attempt, no retries yet (max_attempts=1).
+M2.12 — done; gate green (make check; tests/adapter 141 passed/2 documented n/a; test_single_task_run 13 passed; agent list ids ⊇ {claude,codex,fake}); tagged m2-done.
