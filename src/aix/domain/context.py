@@ -1,0 +1,23 @@
+"""Context-fabric models that cross module boundaries (§15)."""
+
+from __future__ import annotations
+
+from pydantic import Field
+
+from aix.domain.base import DomainModel
+from aix.domain.ids import ArtifactId, DecisionId, TaskId
+
+
+class Handoff(DomainModel):
+    """What an accepted task passes to its dependents (§15.2).
+
+    ``summary`` is built from facts; the agent's own words appear only inside a block labeled
+    ``AGENT CLAIM (unverified)``.
+    """
+
+    task_id: TaskId
+    summary: str
+    files_changed: list[str] = Field(default_factory=list[str])
+    decisions: list[DecisionId] = Field(default_factory=list[DecisionId])
+    open_issues: list[str] = Field(default_factory=list[str])
+    artifacts: list[ArtifactId] = Field(default_factory=list[ArtifactId])
