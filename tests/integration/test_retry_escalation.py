@@ -276,3 +276,38 @@ async def test_recorded_decisions_replay_identically_through_the_rules_provider(
         assert await replay_records(RulesProvider(), records, policy_version="policy-v1") == []
     finally:
         await store.close()
+
+
+async def test_gated_control_plane_command_is_refused_and_recorded(repo: Path) -> None:
+    """A verification command that would deploy needs approval, so it is refused, not run."""
+    marker = repo / "ran.txt"
+    cfg = config()
+    deploy = [sys.executable, "-c", f"open({str(marker)!r}, 'w').write('x')", "deploy"]
+    commands = dict(cfg.verification.commands) | {K.TESTS: deploy}
+    cfg = cfg.model_copy(
+        update={"verification": cfg.verification.model_copy(update={"commands": commands})}
+    )
+    agents = [("fake-a", {"capabilities": AGENT_A, "scripts": [script(step(GOOD))]})]
+    outcome, store, _ = await run_graph(repo, agents, lambda r: [implement_task(r)], cfg)
+    try:
+        assert not marker.exists()  # never executed
+        decisions = [
+            d for d in await store.get_decisions(outcome.run_id) if d.point.value == "tool_risk"
+        ]
+        assert decisions and decisions[0].outcome.value == "ask_human"
+        assert "gate:approval_required:deploy" in decisions[0].reason_codes
+        report = (await store.events(run_id=outcome.run_id, types=["verification.completed"]))[0]
+        tests = next(c for c in report.payload.report.checks if c.kind is K.TESTS)  # type: ignore[attr-defined]
+        assert tests.status == "error" and "command refused" in tests.summary
+    finally:
+        await store.close()
+
+
+async def test_ordinary_commands_pass_without_tool_risk_decisions(repo: Path) -> None:
+    agents = [("fake-a", {"capabilities": AGENT_A, "scripts": [script(step(GOOD))]})]
+    outcome, store, _ = await run_graph(repo, agents, lambda r: [implement_task(r)])
+    try:
+        assert outcome.status is RunStatus.COMPLETED
+        assert all(d.point.value != "tool_risk" for d in await store.get_decisions(outcome.run_id))
+    finally:
+        await store.close()

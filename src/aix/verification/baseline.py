@@ -10,9 +10,11 @@ from pydantic import Field
 
 from aix.domain.base import DomainModel
 from aix.domain.enums import CheckKind
+from aix.domain.ids import IdPrefix, new_id
 from aix.domain.verification import Check
 from aix.verification.checks import run_command_check
 from aix.verification.commands import ResolvedCommand
+from aix.verification.gate import CommandGate
 
 _COUNT_KEY: Final[dict[CheckKind, str]] = {
     CheckKind.TESTS: "tests_failed",
@@ -40,10 +42,28 @@ async def run_baseline(
     timeout_s: float,
     network: str = "deny",
     out_dir: Path | None = None,
+    command_gate: CommandGate | None = None,
 ) -> Baseline:
-    """Run the command checks in ``kinds`` once on an untouched workspace."""
+    """Run the command checks in ``kinds`` once on an untouched workspace.
+
+    A ``command_gate`` may refuse a command (``tool_risk``); that kind is then recorded as
+    ``error``, which carries no baseline information (§17.4).
+    """
     checks: dict[CheckKind, Check] = {}
     for kind in kinds:
+        cmd = commands.get(kind)
+        if cmd is not None and command_gate is not None:
+            refusal = await command_gate(list(cmd.argv))
+            if refusal is not None:
+                checks[kind] = Check(
+                    id=new_id(IdPrefix.CHECK),
+                    kind=kind,
+                    status="error",
+                    required=True,
+                    summary=f"command refused: {refusal}",
+                    command=list(cmd.argv),
+                )
+                continue
         res = await run_command_check(
             kind,
             commands.get(kind),

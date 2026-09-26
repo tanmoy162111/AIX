@@ -31,13 +31,14 @@ from aix.core.orchestrator.attempt import (
     render_prompt,
     timeout_override,
 )
-from aix.core.orchestrator.plan import PlanRunRequest, choose, plan_into
+from aix.core.orchestrator.plan import PlanRunRequest, PlanRunResult, choose, plan_into
 from aix.core.orchestrator.recorder import RunRecorder, new_run
 from aix.core.orchestrator.task_policy import NextAction, TaskPolicy
 from aix.core.planner.agent import make_adapter_runner
 from aix.core.retry import RetryFingerprint, RetryLedger, remaining_mutations, split_task
 from aix.core.router.rules import RoutingContext, RoutingDecision, route
 from aix.core.scheduler.engine import Scheduler
+from aix.core.toolrisk import SAFE_CLASSES, classify_command, gated_actions
 from aix.core.workspace.manager import DiffCapture, Workspace, WorkspaceManager
 from aix.core.workspace.scope import scope_violations
 from aix.decision import state as dstate
@@ -158,6 +159,32 @@ class _Book:
     failure: FailureClass | None = None
     detail: str | None = None
     usage: Usage = field(default_factory=Usage)
+
+
+async def emit_decision(rec: RunRecorder, record: DecisionRecord) -> None:
+    """Record a decision as ``decision.requested`` + ``decision.completed``."""
+    await rec.emit(
+        "decision.requested",
+        ev.DecisionRequestedPayload(
+            decision_id=record.id, point=record.point, subject=record.subject
+        ),
+    )
+    await rec.emit("decision.completed", ev.DecisionCompletedPayload(record=record))
+
+
+async def request_approval(
+    rec: RunRecorder, subject: str, action: str, reasons: Sequence[str]
+) -> str:
+    """Record a pending approval for ``subject``; ``aix approve|deny`` resolves it."""
+    approval = Approval(
+        id=new_id(IdPrefix.APPROVAL),
+        subject=subject,
+        action=action,
+        scope={"reasons": list(reasons)},
+        requested_at=rec.now(),
+    )
+    await rec.emit("approval.requested", ev.ApprovalRequestedPayload(approval=approval))
+    return approval.id
 
 
 class _Driver:
@@ -418,26 +445,12 @@ class _Driver:
         self._on_stop()
 
     async def _emit_decision(self, record: DecisionRecord) -> None:
-        await self._rec.emit(
-            "decision.requested",
-            ev.DecisionRequestedPayload(
-                decision_id=record.id, point=record.point, subject=record.subject
-            ),
-        )
-        await self._rec.emit("decision.completed", ev.DecisionCompletedPayload(record=record))
+        await emit_decision(self._rec, record)
 
     async def _request_approval(self, subject: str, action: str, reasons: list[str]) -> str:
-        """Record a pending approval; ``aix approve|deny`` resolves it (M5.11)."""
-        approval = Approval(
-            id=new_id(IdPrefix.APPROVAL),
-            subject=subject,
-            action=action,
-            scope={"reasons": list(reasons)},
-            requested_at=self._rec.now(),
-        )
-        await self._rec.emit("approval.requested", ev.ApprovalRequestedPayload(approval=approval))
-        self.pending_approvals.append(approval.id)
-        return approval.id
+        approval_id = await request_approval(self._rec, subject, action, reasons)
+        self.pending_approvals.append(approval_id)
+        return approval_id
 
     async def _decide_attempt(
         self,
@@ -532,6 +545,7 @@ class _Driver:
                     key=lambda k: k.value,
                 )
                 run_id = self._rec.run.id
+                gate_task = next(t for t in self._tasks.values() if t.file_scope)
                 ws = await self._wm.create_attempt_workspace(run_id, new_id(IdPrefix.ATTEMPT))
                 try:
                     self._baseline_result = await run_baseline(
@@ -541,6 +555,7 @@ class _Driver:
                         allow=list(self._config.security.shell_allow),
                         timeout_s=CHECK_TIMEOUT_S,
                         network=self._config.security.network.checks,
+                        command_gate=lambda argv: self._gate_command(gate_task, argv),
                     )
                 finally:
                     with anyio.CancelScope(shield=True):
@@ -577,6 +592,7 @@ class _Driver:
             changed_paths=capture.summary.paths,
             file_scope=task.file_scope,
             baseline=await self._baseline(),
+            command_gate=lambda argv: self._gate_command(task, argv),
             out_dir=stream_path.parent / attempt_id / "verification",
             reviewer=reviewer,
             goal=task.goal,
@@ -595,6 +611,30 @@ class _Driver:
             attempt_id=attempt_id,
         )
         return report
+
+    async def _gate_command(self, task: Task, argv: list[str]) -> str | None:
+        """``tool_risk`` for a control-plane command: ordinary build/test commands pass silently."""
+        classes = classify_command(argv)
+        if set(classes) <= SAFE_CLASSES:
+            return None
+        state = dstate.build_tool_risk_state(
+            classes=classes, target_paths=[], task_risk=task.risk, in_scope=True
+        )
+        record = await self._service.decide(
+            DecisionPoint.TOOL_RISK,
+            task.id,
+            state,
+            GateFacts(
+                attempt=1,
+                max_attempts=1,
+                actions=gated_actions(classes),
+                approval_required_for=list(self._config.security.approval_required_for),
+            ),
+        )
+        await self._emit_decision(record)
+        if record.outcome is DecisionOutcome.ALLOW:
+            return None
+        return f"tool_risk {record.outcome.value} ({', '.join(classes)})"
 
     def _reviewer(self, task: Task, agent_id: str) -> Reviewer:
         async def review(diff: str, checks: Sequence[Check]) -> Check | None:
@@ -1094,6 +1134,56 @@ async def execute_graph(
     )
 
 
+async def _plan_review(
+    rec: RunRecorder,
+    planned: PlanRunResult,
+    service: DecisionService,
+    config: AixConfig,
+    *,
+    t0: float,
+) -> RunOutcome | None:
+    """The ``plan_review`` decision for a high-risk intent (§18.2).
+
+    ``None`` means go ahead. ``ask_human`` records a pending approval and leaves the run
+    ``waiting_approval`` (exit 3, nothing executed); ``reject`` fails the run.
+    """
+    state = dstate.build_plan_review_state(planned.graph, risk=planned.intent.risk)
+    record = await service.decide(
+        DecisionPoint.PLAN_REVIEW,
+        rec.run.id,
+        state,
+        GateFacts(attempt=1, max_attempts=1),
+    )
+    await emit_decision(rec, record)
+    if record.outcome is DecisionOutcome.ACCEPT:
+        return None
+    pending: list[str] = []
+    await rec.run_to(RunEvent.AWAIT_APPROVAL)
+    failure: FailureClass | None = None
+    if record.outcome is DecisionOutcome.ASK_HUMAN:
+        pending.append(await request_approval(rec, rec.run.id, "plan_review", record.reason_codes))
+    else:
+        failure = FailureClass.POLICY_FAILURE
+        await rec.run_to(RunEvent.FAIL)
+        await rec.emit("run.failed", ev.RunFailedPayload(failure=failure, reason="plan rejected"))
+    summaries = [
+        TaskSummary(t.id, t.title, t.type.value, TaskStatus.CREATED, None, 0, None)
+        for t in planned.graph.tasks
+    ]
+    return RunOutcome(
+        run_id=rec.run.id,
+        status=rec.run.status,
+        branch=f"aix/run/{rec.run.id}",
+        planner=planned.planner,
+        tasks=summaries,
+        failure=failure,
+        usage=Usage(),
+        duration_ms=int((time.monotonic() - t0) * 1000),
+        warnings=list(planned.warnings),
+        pending_approvals=pending,
+    )
+
+
 async def execute_run(
     req: RunRequest,
     *,
@@ -1103,6 +1193,7 @@ async def execute_run(
     skills: SkillRegistry | None = None,
     clock: Callable[[], datetime] = _utc,
     cancel: anyio.Event | None = None,
+    decisions: DecisionService | None = None,
 ) -> RunOutcome:
     """Plan a goal and execute the plan (``aix run "<goal>"``).
 
@@ -1129,6 +1220,11 @@ async def execute_run(
     planned = await plan_into(
         rec, plan_req, setup, wm=wm, registry=registry, config=config, skills=skills
     )
+    service = decisions or default_decision_service(config)
+    if planned.intent.risk == "high":
+        held = await _plan_review(rec, planned, service, config, t0=time.monotonic())
+        if held is not None:
+            return held
     return await execute_graph(
         rec,
         wm,
@@ -1140,6 +1236,7 @@ async def execute_run(
         keep_worktrees=req.keep_worktrees,
         max_parallel=req.max_parallel,
         cancel=cancel,
+        decisions=service,
     )
 
 

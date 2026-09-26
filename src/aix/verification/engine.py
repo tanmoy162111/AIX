@@ -8,11 +8,13 @@ from typing import Final
 
 from aix.config.schema import AixConfig
 from aix.domain.enums import CheckKind as K
+from aix.domain.ids import IdPrefix, new_id
 from aix.domain.tasks import VerificationSpec
 from aix.domain.verification import Check, VerificationReport, compute_overall
 from aix.verification.baseline import Baseline, apply_baseline
 from aix.verification.checks import run_command_check
 from aix.verification.commands import resolve_commands
+from aix.verification.gate import CommandGate
 from aix.verification.policy import run_policy_check
 from aix.verification.security import run_deps_check, run_sast_check, run_secrets_check
 
@@ -37,6 +39,7 @@ async def run_verification(
     reviewer: Reviewer | None = None,
     goal: str = "",
     path_env: str | None = None,
+    command_gate: CommandGate | None = None,
 ) -> VerificationReport:
     """Run every applicable check on ``workspace`` and return the report.
 
@@ -44,9 +47,10 @@ async def run_verification(
     are ``required`` per ``spec.required``; a failure that already existed in ``baseline`` is
     downgraded (§17.4). ``policy`` and ``secrets`` (unless ``off``) always run and are required.
     ``sast``/``deps`` run when configured ``on`` or (``auto`` and listed in the spec).
-    ``ai_review`` runs only if listed and a ``reviewer`` produces a check; it sees the executed
-    facts and never alters them. ``overall`` is computed by :func:`compute_overall`, so a required
-    check that could not run yields ``incomplete``, never ``passed``.
+    A ``command_gate`` may refuse a command before it runs (``tool_risk``): that check is
+    ``error``. ``ai_review`` runs only if listed and a ``reviewer`` produces a check; it sees the
+    executed facts and never alters them. ``overall`` is computed by :func:`compute_overall`, so a
+    required check that could not run yields ``incomplete``, never ``passed``.
     """
     listed = set(spec.required) | set(spec.optional)
     required = set(spec.required)
@@ -59,9 +63,25 @@ async def run_verification(
     for kind in COMMAND_KINDS:
         if kind not in listed:
             continue
+        resolved = commands.get(kind)
+        if resolved is not None and command_gate is not None:
+            refusal = await command_gate(list(resolved.argv))
+            if refusal is not None:
+                checks.append(
+                    Check(
+                        id=new_id(IdPrefix.CHECK),
+                        kind=kind,
+                        status="error",
+                        severity="high",
+                        required=kind in required,
+                        summary=f"command refused: {refusal}",
+                        command=list(resolved.argv),
+                    )
+                )
+                continue
         res = await run_command_check(
             kind,
-            commands.get(kind),
+            resolved,
             workspace,
             required=kind in required,
             allow=allow,
