@@ -49,6 +49,8 @@ class RunReport(DomainModel):
     cost_estimated: bool
     duration_s: float | None
     artifacts: list[str] = Field(default_factory=list[str])
+    bundle: str | None = None
+    """Project-relative path of the exported evidence bundle, if one was written."""
 
     @property
     def failure(self) -> str | None:

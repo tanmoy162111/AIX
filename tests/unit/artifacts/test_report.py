@@ -28,6 +28,7 @@ def report(**kw: object) -> RunReport:
         decisions_by_provider={"jev": 2, "rules": 7}, final_decision="accept",
         agents=["claude (design)", "codex (implement x2)"], cost_usd=1.84, cost_estimated=True,
         duration_s=852.0, artifacts=["plan.json", "patch/task_2.diff", "manifest.json"],
+        bundle=".aix/artifacts/bundles/run_01ARZ3NDEKTSV4RRFFQ69G5FAV.zip",
     )  # fmt: skip
     return RunReport.model_validate({**base, **kw})
 

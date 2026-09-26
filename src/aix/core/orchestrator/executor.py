@@ -1153,7 +1153,7 @@ async def execute_graph(
             )
 
     if rec.run.status in (RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.CANCELLED):
-        await write_run_artifacts(rec, wm.root)
+        await write_run_artifacts(rec, wm.root, bundle=config.artifacts.bundle)
     usage = Usage()
     for b in driver.book.values():
         usage = _add_usage(usage, b.usage)
@@ -1184,7 +1184,7 @@ async def execute_graph(
     )
 
 
-async def write_run_artifacts(rec: RunRecorder, root: Path) -> None:
+async def write_run_artifacts(rec: RunRecorder, root: Path, *, bundle: bool = False) -> None:
     """Persist the run's standard artifacts and manifest (§21.3) under ``.aix/``."""
     from aix import __version__
     from aix.artifacts.report import build_report, render_html, render_markdown
@@ -1211,6 +1211,10 @@ async def write_run_artifacts(rec: RunRecorder, root: Path) -> None:
         )
     )
     await write_manifest(writer, run_id, entries)
+    if bundle:
+        from aix.artifacts.bundle import export_bundle
+
+        await export_bundle(rec.store, root, run_id)
 
 
 async def _plan_review(

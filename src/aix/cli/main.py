@@ -11,6 +11,7 @@ import typer
 from aix import __version__
 from aix.cli.agent import agent_app, list_agents
 from aix.cli.approvals import approvals, approve, deny
+from aix.cli.artifact import artifact_app
 from aix.cli.cancel import cancel
 from aix.cli.config import config_app
 from aix.cli.dev import dev_app
@@ -40,6 +41,7 @@ app.command("status")(status)
 app.command("verify")(verify)
 app.command("review")(review)
 app.add_typer(agent_app)
+app.add_typer(artifact_app)
 app.command("agents", help="Alias for `aix agent list`.")(list_agents)
 app.add_typer(config_app)
 app.add_typer(dev_app)

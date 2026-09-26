@@ -285,6 +285,13 @@ class EventStore:
             Artifact, "SELECT data FROM artifacts WHERE run_id = ? ORDER BY seq", (run_id,)
         )
 
+    async def get_artifact(self, artifact_id: str) -> Artifact | None:
+        """One artifact by id, or ``None``."""
+        found = await self._models(
+            Artifact, "SELECT data FROM artifacts WHERE id = ?", (artifact_id,)
+        )
+        return found[0] if found else None
+
     @staticmethod
     def _decode(row: aiosqlite.Row) -> Event:
         etype = str(row["type"])

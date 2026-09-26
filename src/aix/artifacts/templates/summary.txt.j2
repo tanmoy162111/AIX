@@ -20,8 +20,8 @@ Agents       {{ r.agents | join(", ") or "none" }}
 Cost         {{ cost }}   Duration {{ duration }}
 {% if r.artifacts %}
 
-Artifacts    .aix/artifacts/objects (manifest.json lists every file)
-  {{ r.artifacts | select("ne", "manifest.json") | list | length }} files recorded
+Artifacts    {{ r.bundle or ".aix/artifacts/objects" }}
+  {{ r.artifacts | select("ne", "manifest.json") | list | join(" · ") }}
 {% endif %}
 {% if r.status == "completed" %}
 

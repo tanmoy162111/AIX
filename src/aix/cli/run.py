@@ -282,6 +282,9 @@ async def _summary(store, root: Path, run_id: str) -> str | None:  # type: ignor
         )
     except (LookupError, OSError, ValueError):
         return None
+    bundle = f".aix/artifacts/bundles/{run_id}.zip"
+    if (root / bundle).is_file():
+        report = report.model_copy(update={"bundle": bundle})
     return render_summary(report).rstrip("\n")
 
 
