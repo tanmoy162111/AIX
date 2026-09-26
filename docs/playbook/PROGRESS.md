@@ -4,7 +4,7 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial (see Blocked) · IDs are stabl
 Rule: work the **first unchecked item of the current milestone**. A milestone is done only when its
 PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
-**Current milestone:** M3
+**Current milestone:** M4
 **Environment notes (M0.1, probed 2026-09-26):** python=3.14.4 system, 3.12.13 via uv (project pins 3.12), uv=0.11.17, git=2.53.0, docker=29.5.2, podman=missing, claude=2.1.283, codex=0.147.0, gemini=0.55.1, opencode=1.18.26, ollama=0.24.0, TYPESAFE_API_KEY present=no, semgrep=missing, gitleaks=missing, pip-audit=missing (auth state of agent CLIs not probed; live tests gated by AIX_LIVE)
 
 ---
@@ -59,8 +59,8 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M3.10 `gemini` adapter (as M2.7).
 - [x] M3.11 `opencode` adapter (as M2.7).
 - [x] M3.12 `aix status` live table.
-- [ ] M3.13 Golden G2, G5 passing (verification may be stubbed to "passed" behind a clearly named test-only flag removed in M4).
-- [ ] M3.14 Run M3 Exit Gate; tag `m3-done`.
+- [x] M3.13 Golden G2, G5 passing (verification may be stubbed to "passed" behind a clearly named test-only flag removed in M4).
+- [x] M3.14 Run M3 Exit Gate; tag `m3-done`.
 
 ## M4 — Verification (§17)
 - [ ] M4.1 Toolchain detection table + explicit command override; recorded in report.
@@ -186,3 +186,5 @@ M3.8 — done; ADR-0014; core/scheduler/engine.py (TaskDriver protocol; driver o
 M3.10 — done; adapters/gemini/ (gemini-cli 0.55.1 installed here: probes ready; event schema read from its bundle source, no paid call). Recordings synthetic. Prompt on stdin with a fixed -p instruction; write mode = --approval-mode auto_edit (no shell approval; ADR-0015 with opencode). Resume by session id unverified live. Matrix now has 4 kinds; docs/adapters/gemini.md.
 M3.11 — done; ADR-0015 (gemini+opencode discovered behavior, no --auto/yolo); adapters/opencode/ (opencode 1.18.26 installed here: probes ready; event types read from the binary handler; part field names unconfirmed live). No result event: completion = final step_finish. Recordings synthetic; matrix now 5 kinds.
 M3.12 — done; core/orchestrator/status.py snapshot() (reused by the API in M9), cli/status.py: TTY redraws with rich Live, non-TTY `--watch` prints a frame only when the run changes; tested against a live slow subprocess run.
+M3.13 — done; tests/golden/test_golden_multi.py. G2 asserts >=5 tasks, >=3 agents, independent reviewer, green integrated branch; its handoff-in-prompt assertion is M6.6. G5 shows independence also re-routes the review to the spare. Stub verification in use (removed M4.11).
+M3.14 — done; exit gate green: make check (1215 passed, 10 live skipped), test_multi_task_run + test_merge_conflict (12 passed), golden G2/G5 (2 passed). Tagged m3-done.
