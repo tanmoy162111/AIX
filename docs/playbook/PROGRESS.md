@@ -87,7 +87,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M5.8 Failure classification (adapter patterns + generic); `failure_triage` point.
 - [x] M5.9 Retry mutations (§19.2) incl. non-consuming retries, identical-retry assertion, `split_task` via planner.
 - [x] M5.10 Escalation ladder (§19.3) + attempt/budget limits; `budget` decision point.
-- [ ] M5.11 Approvals: model, `aix approvals|approve|deny`, TTY confirmation, token file, `AIX_AGENT_CONTEXT` guard, exit code 3 on wait, resume after grant.
+- [x] M5.11 Approvals: model, `aix approvals|approve|deny`, TTY confirmation, token file, `AIX_AGENT_CONTEXT` guard, exit code 3 on wait, resume after grant.
 - [ ] M5.12 `plan_review` for high-risk intents; `tool_risk` for control-plane-executed gated commands.
 - [ ] M5.13 Golden G3, G4, G8, G10.
 - [ ] M5.14 Run M5 Exit Gate; tag `m5-done`.
@@ -210,3 +210,4 @@ M5.7 — done; decision/eval.py + tests/decision/eval_cases/{task_completion (44
 M5.8 — done; core/failure.py classify_verification (policy > secrets > build > tests > typecheck > lint > sast/deps > review; incomplete -> TOOL_FAILURE), classify_attempt (adapter class wins, generic stderr patterns only as fallback), candidates_for (rule class first + near neighbours) for failure_triage. Executor wiring happens with the retry engine (M5.9/M5.10).
 M5.9 — done; core/retry.py (pure): sequence_for/next_step/remaining_mutations per §19.2, Step{consumes_attempt,wait_s,mark_agent_unavailable} (rate-limit/network waits and auth switch do not consume an attempt), RetryLedger asserts no identical (agent, prompt hash, base commit) retry (new IdenticalRetry error), split_task -> 2-3 chained subtasks with dependents rewired (deterministic; an AgentPlanner-produced split can feed the same rewiring). Executor integration lands with M5.10-M5.13.
 M5.10 — done; ADR-0020. core/{budget,escalation}.py, orchestrator/task_policy.py, executor wired: decisions after every attempt, mutations, ladder, budget stop (exit 6), ask_human -> pending Approval + run waiting_approval (exit 3), split_task (dependents rewired in memory only). tests/integration/test_retry_escalation.py (8 scenarios). Fake agent gained models/model_select. Resume after approval is M5.11.
+M5.11 — done; ADR-0021. security/approvals.py, core/orchestrator/approvals.py (resolve_approval), executor resume_run + ResumeState, cli/approvals.py. Agents always get AIX_AGENT_CONTEXT=1. Exit 3 on wait, deny -> HUMAN_REJECTION. Approval/resume tested in-process and via CLI with a real token file.
