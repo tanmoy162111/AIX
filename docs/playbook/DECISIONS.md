@@ -49,3 +49,10 @@ Template:
 - Options: (a) forbid all peer imports; (b) enforce only the explicit "Forbidden" list plus the unambiguous isolation rules; (c) impose an internal ordering among core-tier packages.
 - Decision: (b). Enforced contracts: domain imports nothing else in aix; core-tier (and store/config/domain) never import `agents.adapters` or `agents.subprocess`; adapters never import core-tier, store, registry, api or cli; nothing imports `aix.cli`; only cli may import `aix.api`; `typesafe_sdk` only from `decision/providers/jev.py`. `agents.registry` is deliberately excluded from the core-never-imports-adapters sources and will discover adapters via entry points/`importlib` strings, not static imports (M2.3/M9.3).
 - Consequences: Peer imports inside the core tier are allowed; revisit with a stricter ordering contract if cycles appear. Empty stub modules (`agents/protocol.py`, `registry.py`, `subprocess.py`, `decision/providers/jev.py`) exist so contracts can name them.
+
+## ADR-0004: Use anyio's pytest plugin; drop pytest-asyncio
+- Date: 2026-09-26 · Milestone/item: M0.6 · Status: accepted · Amends ADR-0002
+- Context: PLAYBOOK §4 says "pytest-asyncio (anyio)"; the codebase is anyio-only (CLAUDE.md §7). Two async plugins would both be loaded, and pytest-asyncio emitted a loop-scope deprecation warning.
+- Options: keep both; keep pytest-asyncio only; anyio's built-in plugin only.
+- Decision: anyio plugin only (`@pytest.mark.anyio`, backend pinned to asyncio in `tests/aix_pytest_plugin.py`). `pytest-asyncio` removed from the `dev` extra.
+- Consequences: async tests must carry `@pytest.mark.anyio`. Trio is not tested.

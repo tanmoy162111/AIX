@@ -23,7 +23,6 @@ api = ["fastapi>=0.111", "uvicorn>=0.30"]
 security = ["bandit>=1.7", "pip-audit>=2.7"]
 dev = [
     "pytest>=8.2",
-    "pytest-asyncio>=0.23",
     "pytest-cov>=5.0",
     "hypothesis>=6.100",
     "syrupy>=4.6",
@@ -47,6 +46,7 @@ packages = ["src/aix"]
 line-length = 100
 target-version = "py312"
 src = ["src", "tests"]
+extend-exclude = ["docs"]  # ruff would reformat Python blocks inside the spec markdown
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC", "SIM", "RUF"]
@@ -61,3 +61,24 @@ venvPath = "."
 venv = ".venv"
 typeCheckingMode = "basic"
 strict = ["src/aix/core", "src/aix/domain", "src/aix/decision"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = "-p aix_pytest_plugin -ra --strict-markers --strict-config"
+markers = [
+    "live: talks to real agent CLIs or Jev; skipped unless AIX_LIVE=1",
+    "slow: slow test; deselect with -m 'not slow'",
+    "allow_network: permit non-localhost sockets for this test",
+    "anyio: run the test with the anyio pytest plugin",
+]
+
+[tool.coverage.run]
+source = ["aix"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "\\.\\.\\."]
