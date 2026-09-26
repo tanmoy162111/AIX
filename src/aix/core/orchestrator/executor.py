@@ -8,6 +8,7 @@ used as a signal (§10.4).
 
 from __future__ import annotations
 
+import contextlib
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field, replace
@@ -21,6 +22,9 @@ from aix.agents.protocol import AgentAdapter, AgentHandle, AgentPermissions, Age
 from aix.agents.registry import AdapterRegistry
 from aix.config.schema import AixConfig
 from aix.core.budget import BudgetTracker, Overrun
+from aix.core.context.facts import ProjectFacts, load_project_facts
+from aix.core.context.handoff import build_handoff
+from aix.core.context.prompt import render_task_prompt
 from aix.core.escalation import Step as EscStep
 from aix.core.failure import Classified, candidates_for, classify_attempt, classify_verification
 from aix.core.orchestrator.attempt import (
@@ -28,7 +32,7 @@ from aix.core.orchestrator.attempt import (
     execute_agent,
     model_override,
     persist_artifacts,
-    render_prompt,
+    persist_prompt,
     timeout_override,
 )
 from aix.core.orchestrator.plan import PlanRunRequest, PlanRunResult, choose, plan_into
@@ -47,6 +51,7 @@ from aix.decision.provider import DecisionProvider
 from aix.decision.providers.rules import RulesProvider
 from aix.decision.service import DecisionService
 from aix.domain.agents import AgentSpec
+from aix.domain.context import Handoff
 from aix.domain.decisions import Approval, DecisionRecord
 from aix.domain.enums import (
     AttemptStatus,
@@ -226,6 +231,9 @@ class _Driver:
         self._active = 0
         self._cancelled = False
         self._authors: dict[str, str] = {}
+        self._handoffs: dict[str, Handoff] = {}
+        self._facts: ProjectFacts | None = None
+        self._skills: SkillRegistry | None = None
         self._baseline_lock = anyio.Lock()
         self._baseline_result: Baseline | None = None
         self.book: dict[str, _Book] = {t.id: _Book() for t in graph.tasks}
@@ -712,7 +720,8 @@ class _Driver:
 
             stream_path = wm.root / ".aix" / "runs" / run_id / f"{attempt_id}.stream.jsonl"
             write_scope = [] if task.file_scope == ["**"] else list(task.file_scope)
-            prompt = render_prompt(task, notes)
+            prompt = await self._task_prompt(task, notes)
+            await persist_prompt(stream_path, prompt)
             ledger.record(RetryFingerprint.of(agent_id, prompt, ws.base_commit))
             agent_req = AgentRequest(
                 attempt_id=attempt_id,
@@ -844,6 +853,13 @@ class _Driver:
                 detail=detail, model=attempt.model or self._spec(agent_id).default_model,
             )  # fmt: skip
             if action.kind == "accept":
+                self._handoffs[task.id] = build_handoff(
+                    task_id=task.id,
+                    title=task.title,
+                    diff=capture.summary,
+                    checks=report.checks if report else [],
+                    claim=outcome.claim,
+                )
                 await self.apply(task.id, TaskEvent.ACCEPT, "decision:accept")
                 await self.apply(task.id, TaskEvent.INTEGRATE)
                 end = await self._integrate(
@@ -888,6 +904,24 @@ class _Driver:
                         task_id=task.id,
                         attempt_id=attempt_id,
                     )
+
+    async def _task_prompt(self, task: Task, notes: Sequence[str]) -> str:
+        """Appendix B.2 prompt: dependency handoffs, failure notes, project facts, skill."""
+        if self._facts is None:
+            self._facts = await load_project_facts(self._wm.root)
+        instructions: str | None = None
+        if task.skill:
+            self._skills = self._skills or SkillRegistry.builtin()
+            with contextlib.suppress(AixError):
+                instructions = self._skills.get(task.skill).instructions
+        return render_task_prompt(
+            task,
+            handoffs=[self._handoffs[d] for d in task.depends_on if d in self._handoffs],
+            failure_notes=notes,
+            facts=self._facts,
+            skill_instructions=instructions,
+            budget_tokens=self._config.execution.context_budget_tokens,
+        )
 
     async def _integrate(self, task: Task, ws: object, attempt_id: str, *, can_retry: bool) -> _End:
         """Merge an accepted attempt into the run branch (serialized by the workspace manager)."""

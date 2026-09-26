@@ -21,12 +21,14 @@ import anyio
 from aix.agents.protocol import AgentOutcome, AgentPermissions, AgentRequest
 from aix.agents.registry import AdapterRegistry
 from aix.config.schema import AixConfig
+from aix.core.context.facts import load_project_facts
+from aix.core.context.prompt import render_task_prompt
 from aix.core.orchestrator.attempt import (
     conflict_files,
     execute_agent,
     model_override,
     persist_artifacts,
-    render_prompt,
+    persist_prompt,
     timeout_override,
 )
 from aix.core.workspace.manager import DiffCapture, Workspace, WorkspaceManager
@@ -226,10 +228,16 @@ async def run_single_task(
         await task_to(TaskEvent.START)
 
         write_scope = [] if task.file_scope == ["**"] else list(task.file_scope)
+        prompt = render_task_prompt(
+            task,
+            facts=await load_project_facts(req.project_root),
+            budget_tokens=config.execution.context_budget_tokens,
+        )
+        await persist_prompt(stream_path, prompt)
         agent_req = AgentRequest(
             attempt_id=attempt_id,
             workspace=ws.path,
-            prompt=render_prompt(task),
+            prompt=prompt,
             model=attempt.model,
             timeout_s=timeout_override(config, req.agent_id) or config.execution.attempt_timeout_s,
             permissions=AgentPermissions(read_only=not task.file_scope, write_scope=write_scope),
