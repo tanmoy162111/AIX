@@ -177,3 +177,22 @@ TASK_TERMINAL: frozenset[TaskStatus] = frozenset(
 ATTEMPT_TERMINAL: frozenset[AttemptStatus] = frozenset(
     {AttemptStatus.COMPLETED, AttemptStatus.FAILED, AttemptStatus.CANCELLED}
 )
+
+
+class ArtifactType(StrEnum):
+    """Kind of durable artifact (§21.3)."""
+
+    PLAN = "plan"
+    PATCH = "patch"
+    VERIFICATION = "verification"
+    LOG = "log"
+    JUNIT = "junit"
+    SARIF = "sarif"
+    DECISION_LOG = "decision_log"
+    AGENT_TRACE = "agent_trace"
+    REPORT = "report"
+    MANIFEST = "manifest"
+    PROMPT = "prompt"
+    STREAM = "stream"
+    BASELINE = "baseline"
+    OTHER = "other"

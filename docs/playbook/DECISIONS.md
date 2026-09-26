@@ -56,3 +56,10 @@ Template:
 - Options: keep both; keep pytest-asyncio only; anyio's built-in plugin only.
 - Decision: anyio plugin only (`@pytest.mark.anyio`, backend pinned to asyncio in `tests/aix_pytest_plugin.py`). `pytest-asyncio` removed from the `dev` extra.
 - Consequences: async tests must carry `@pytest.mark.anyio`. Trio is not tested.
+
+## ADR-0005: Domain model shape where §6 leaves fields open
+- Date: 2026-09-26 · Milestone/item: M1.2 · Status: accepted
+- Context: §6 shows "only key fields" and says extra fields need an ADR. It also writes outcomes as `choose:<x>` and uses bare `dict` for decision payloads, while CLAUDE.md §7 forbids bare dicts across modules.
+- Options: encode `choose:<x>` as a parametrised string vs. an enum plus a separate field; `dict[str, Any]` vs. `dict[str, JsonValue]`.
+- Decision: (1) `DecisionOutcome` is a plain enum with a `choose` member and `DecisionRecord.choice: str | None` holds the argument; a validator requires `choice` exactly when outcome is `choose`. (2) Decision/approval payloads are `dict[str, JsonValue]`. (3) Models are frozen with `extra="forbid"`, timestamps are timezone-aware. (4) Supporting types defined here because §6 references but does not define them: `Budget`, `VerificationSpec{required,optional}`, `AgentSupports`, `DiffSummary{files_changed,lines_added,lines_removed,paths,patch_sha256}`, `ToolCallRecord`, `Usage{...,estimated}`, `ArtifactRef`, `GateResult`, `Producer`, `Provenance`, `ArtifactType`, `Capability`, `VerificationFailureKind`, `AttemptStatus`. (5) Extra validators: `Task.max_attempts` in 1..6 (§19.3), `VerificationReport.overall` must equal `compute_overall(checks)`, `Run.finished_at` only for terminal status, decided `Approval`s need actor/channel/decided_at.
+- Consequences: Schema changes after M1 need a new ADR (CLAUDE.md §3), so this is the last cheap moment to adjust shapes. Consumers read the `choose` argument from `choice`.

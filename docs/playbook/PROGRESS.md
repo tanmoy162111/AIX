@@ -22,7 +22,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
 ## M1 — Domain, store, config (§6–§9)
 - [x] M1.1 ID types (prefixed ULIDs), enums (`TaskType`, `Capability`, `CheckKind`, `FailureClass`, `RetryMutation`, `DecisionPoint`, `DecisionOutcome`, statuses).
-- [ ] M1.2 Domain models from §6 with validators (TaskGraph invariants: acyclic, unique ids, deps exist).
+- [x] M1.2 Domain models from §6 with validators (TaskGraph invariants: acyclic, unique ids, deps exist).
 - [ ] M1.3 Typed errors in `aix.domain.errors`, each mapped to a `FailureClass`.
 - [ ] M1.4 Run + Task state machines (§7), table-driven; hypothesis state-machine tests; terminal absorption; blocked propagation.
 - [ ] M1.5 `aix dev export-schemas` → `schemas/*.json`; drift test.
@@ -153,3 +153,4 @@ M0.7 — done; `make golden` tolerates pytest exit 5 (no tests) until G-scenario
 M0.8 — done; `aix --version/--help` with smoke tests; committed together with M0.7 so every commit passes `make check`.
 M0.9 — done; gate `make check && uv run aix --help && uv run lint-imports` green; tagged m0-done.
 M1.1 — done; StrEnum values asserted against spec sets; ULID ids via Annotated patterns. DecisionOutcome.CHOOSE carries its arg in DecisionRecord.choice (ADR-0005 with M1.2). Added Capability vocabulary.
+M1.2 — done; 12 models + supporting types, pyright-strict clean; shapes recorded in ADR-0005.
