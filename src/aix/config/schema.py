@@ -51,6 +51,8 @@ class ExecutionConfig(DomainModel):
         Literal["stronger_model", "different_agent", "multi_agent", "human"]
     ] = Field(default_factory=lambda: ["stronger_model", "different_agent", "multi_agent", "human"])
     """Escalation steps in order (§19.3)."""
+    context_budget_tokens: int = Field(default=24000, ge=500)
+    """Token budget of one agent's context pack (§15.3); estimated as chars / 4 (ADR-0023)."""
 
 
 class SecurityChecksConfig(DomainModel):
