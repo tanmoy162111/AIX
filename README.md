@@ -65,6 +65,9 @@ labeled decision suite first.
   default). Every decision is stored with its inputs hash and is replayable.
 - **Human approval where it matters.** High-risk plans and gated commands wait for `aix approve`,
   which requires a TTY or a token and refuses to run inside an agent.
+- **Honest security.** A policy engine, secret redaction, tool-call inspection and an optional
+  container sandbox reduce blast radius; in the default `local` mode aix cannot contain a malicious
+  agent. Read [`docs/security.md`](docs/security.md) for exactly what is and is not protected.
 
 ## Install
 
@@ -77,7 +80,7 @@ uv sync --all-extras
 uv run aix --help
 ```
 
-Agent CLIs (`claude`, `codex`, `gemini`, `opencode`) are optional; `aix doctor` reports what it
+Agent CLIs (`claude`, `codex`, `gemini`, `opencode`, plus local models via `ollama`) are optional; `aix doctor` reports what it
 finds, and a built-in `fake` agent exists for tests and demos. To use Jev, install the extra and
 export a key:
 
@@ -153,6 +156,7 @@ progress is tracked in [`docs/playbook/PROGRESS.md`](docs/playbook/PROGRESS.md) 
 | M5 | Decisions, Jev, retries, escalation, approvals | done |
 | M6 | Context fabric: facts, handoffs, budgeted prompts, compaction | done |
 | M7 | Artifacts, reports, observability, crash resume | done |
-| M8–M10 | Security hardening, API and plugins, release | planned |
+| M8 | Security hardening: policy engine, redaction, container sandbox, ollama | done |
+| M9–M10 | API and plugins, release | planned |
 
 Live runs against real agent CLIs are opt-in and less exercised than the fake-agent suite.
