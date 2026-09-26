@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "description": "What changed in the workspace, computed by the control plane, never by the agent (\u00a710.4).",
+  "properties": {
+    "files_changed": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Files Changed",
+      "type": "integer"
+    },
+    "lines_added": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Lines Added",
+      "type": "integer"
+    },
+    "lines_removed": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Lines Removed",
+      "type": "integer"
+    },
+    "patch_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Patch Sha256"
+    },
+    "paths": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Paths",
+      "type": "array"
+    }
+  },
+  "title": "DiffSummary",
+  "type": "object"
+}

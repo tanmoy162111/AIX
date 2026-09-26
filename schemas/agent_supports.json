@@ -1,0 +1,43 @@
+{
+  "additionalProperties": false,
+  "description": "Feature flags an adapter declares; the policy engine uses them for eligibility (\u00a720.2).",
+  "properties": {
+    "cancel": {
+      "default": true,
+      "title": "Cancel",
+      "type": "boolean"
+    },
+    "cost_reporting": {
+      "default": "none",
+      "enum": [
+        "none",
+        "partial",
+        "full"
+      ],
+      "title": "Cost Reporting",
+      "type": "string"
+    },
+    "model_select": {
+      "default": false,
+      "title": "Model Select",
+      "type": "boolean"
+    },
+    "non_interactive": {
+      "default": true,
+      "title": "Non Interactive",
+      "type": "boolean"
+    },
+    "sessions": {
+      "default": false,
+      "title": "Sessions",
+      "type": "boolean"
+    },
+    "streaming": {
+      "default": false,
+      "title": "Streaming",
+      "type": "boolean"
+    }
+  },
+  "title": "AgentSupports",
+  "type": "object"
+}

@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "DecisionOutcome": {
+      "description": "Outcome of a decision (\u00a76). ``CHOOSE`` carries its argument in ``DecisionRecord.choice``.",
+      "enum": [
+        "accept",
+        "retry",
+        "reject",
+        "escalate",
+        "switch_agent",
+        "ask_human",
+        "stop",
+        "allow",
+        "deny",
+        "choose"
+      ],
+      "title": "DecisionOutcome",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Result of the hard gates (\u00a718.3): either a forced outcome or a set of allowed outcomes.",
+  "properties": {
+    "allowed_outcomes": {
+      "items": {
+        "$ref": "#/$defs/DecisionOutcome"
+      },
+      "title": "Allowed Outcomes",
+      "type": "array"
+    },
+    "forced_outcome": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DecisionOutcome"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reason_codes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Reason Codes",
+      "type": "array"
+    }
+  },
+  "title": "GateResult",
+  "type": "object"
+}

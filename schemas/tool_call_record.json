@@ -1,0 +1,40 @@
+{
+  "additionalProperties": false,
+  "description": "A tool call observed in an agent stream.",
+  "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "ok": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ok"
+    },
+    "ts": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Ts"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "title": "ToolCallRecord",
+  "type": "object"
+}

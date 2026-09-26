@@ -1,0 +1,188 @@
+{
+  "$defs": {
+    "Capability": {
+      "description": "Vocabulary of agent capabilities (\u00a710.2, \u00a711, \u00a713.3).",
+      "enum": [
+        "implement",
+        "debug",
+        "test",
+        "review",
+        "design",
+        "research",
+        "summarize",
+        "security",
+        "document"
+      ],
+      "title": "Capability",
+      "type": "string"
+    },
+    "CheckKind": {
+      "description": "Kind of verification check (\u00a76, \u00a717.3).",
+      "enum": [
+        "build",
+        "tests",
+        "lint",
+        "typecheck",
+        "security_sast",
+        "secrets",
+        "deps",
+        "ai_review",
+        "policy",
+        "custom"
+      ],
+      "title": "CheckKind",
+      "type": "string"
+    },
+    "TaskStatus": {
+      "description": "Task lifecycle states (\u00a77.2).",
+      "enum": [
+        "created",
+        "ready",
+        "assigned",
+        "running",
+        "verifying",
+        "deciding",
+        "accepted",
+        "integrating",
+        "waiting_approval",
+        "completed",
+        "failed",
+        "blocked",
+        "cancelled"
+      ],
+      "title": "TaskStatus",
+      "type": "string"
+    },
+    "TaskType": {
+      "description": "Kind of work a task performs (\u00a76).",
+      "enum": [
+        "inspect",
+        "research",
+        "design",
+        "implement",
+        "test",
+        "review",
+        "security_review",
+        "document",
+        "integrate"
+      ],
+      "title": "TaskType",
+      "type": "string"
+    },
+    "VerificationSpec": {
+      "additionalProperties": false,
+      "description": "Which checks must / may run for a task.",
+      "properties": {
+        "optional": {
+          "items": {
+            "$ref": "#/$defs/CheckKind"
+          },
+          "title": "Optional",
+          "type": "array"
+        },
+        "required": {
+          "items": {
+            "$ref": "#/$defs/CheckKind"
+          },
+          "title": "Required",
+          "type": "array"
+        }
+      },
+      "title": "VerificationSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One unit of work in a graph.",
+  "properties": {
+    "depends_on": {
+      "items": {
+        "pattern": "^task_[0-9A-HJKMNP-TV-Z]{26}$",
+        "type": "string"
+      },
+      "title": "Depends On",
+      "type": "array"
+    },
+    "file_scope": {
+      "items": {
+        "type": "string"
+      },
+      "title": "File Scope",
+      "type": "array"
+    },
+    "goal": {
+      "title": "Goal",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^task_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "max_attempts": {
+      "default": 3,
+      "maximum": 6,
+      "minimum": 1,
+      "title": "Max Attempts",
+      "type": "integer"
+    },
+    "required_capabilities": {
+      "items": {
+        "$ref": "#/$defs/Capability"
+      },
+      "title": "Required Capabilities",
+      "type": "array"
+    },
+    "risk": {
+      "default": "low",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Risk",
+      "type": "string"
+    },
+    "run_id": {
+      "pattern": "^run_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Run Id",
+      "type": "string"
+    },
+    "skill": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Skill"
+    },
+    "status": {
+      "$ref": "#/$defs/TaskStatus",
+      "default": "created"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/TaskType"
+    },
+    "verification": {
+      "$ref": "#/$defs/VerificationSpec"
+    }
+  },
+  "required": [
+    "id",
+    "run_id",
+    "title",
+    "goal",
+    "type"
+  ],
+  "title": "Task",
+  "type": "object"
+}

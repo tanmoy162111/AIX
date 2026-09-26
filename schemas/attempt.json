@@ -1,0 +1,106 @@
+{
+  "$defs": {
+    "AttemptStatus": {
+      "description": "Attempt lifecycle states.",
+      "enum": [
+        "created",
+        "running",
+        "completed",
+        "failed",
+        "cancelled"
+      ],
+      "title": "AttemptStatus",
+      "type": "string"
+    },
+    "RetryMutation": {
+      "description": "Why a retry attempt differs from the previous one (\u00a719.2).",
+      "enum": [
+        "same_agent_with_failure_context",
+        "same_agent_with_findings",
+        "same_agent_clarified_prompt",
+        "same_agent_with_scope_reminder",
+        "same_agent_new_context",
+        "switch_agent",
+        "add_research_step",
+        "split_task",
+        "wait_and_retry",
+        "rebase_and_retry",
+        "compact_context_and_retry",
+        "more_verification",
+        "ask_human"
+      ],
+      "title": "RetryMutation",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One try at a task by one agent.",
+  "properties": {
+    "agent_id": {
+      "minLength": 1,
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "base_commit": {
+      "title": "Base Commit",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^att_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "mutation": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RetryMutation"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "number": {
+      "minimum": 1,
+      "title": "Number",
+      "type": "integer"
+    },
+    "status": {
+      "$ref": "#/$defs/AttemptStatus",
+      "default": "created"
+    },
+    "task_id": {
+      "pattern": "^task_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "workspace": {
+      "format": "path",
+      "title": "Workspace",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "task_id",
+    "number",
+    "agent_id",
+    "workspace",
+    "base_commit"
+  ],
+  "title": "Attempt",
+  "type": "object"
+}

@@ -1,0 +1,53 @@
+{
+  "additionalProperties": false,
+  "description": "A parsed user goal.",
+  "properties": {
+    "constraints": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Constraints",
+      "type": "array"
+    },
+    "goal": {
+      "title": "Goal",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "coding",
+        "research",
+        "review",
+        "security",
+        "devops",
+        "docs",
+        "other"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "risk": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Risk",
+      "type": "string"
+    },
+    "target_paths": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Target Paths",
+      "type": "array"
+    }
+  },
+  "required": [
+    "goal",
+    "kind",
+    "risk"
+  ],
+  "title": "Intent",
+  "type": "object"
+}

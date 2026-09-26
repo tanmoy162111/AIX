@@ -1,0 +1,263 @@
+{
+  "$defs": {
+    "DiffSummary": {
+      "additionalProperties": false,
+      "description": "What changed in the workspace, computed by the control plane, never by the agent (\u00a710.4).",
+      "properties": {
+        "files_changed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Files Changed",
+          "type": "integer"
+        },
+        "lines_added": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Lines Added",
+          "type": "integer"
+        },
+        "lines_removed": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Lines Removed",
+          "type": "integer"
+        },
+        "patch_sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Patch Sha256"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Paths",
+          "type": "array"
+        }
+      },
+      "title": "DiffSummary",
+      "type": "object"
+    },
+    "FailureClass": {
+      "description": "Failure taxonomy (\u00a719.1). Every typed error maps to exactly one class.",
+      "enum": [
+        "agent_failure",
+        "agent_no_changes",
+        "tool_failure",
+        "network_failure",
+        "auth_failure",
+        "rate_limited",
+        "timeout",
+        "verification_failure",
+        "scope_violation",
+        "policy_failure",
+        "merge_conflict",
+        "context_failure",
+        "resource_failure",
+        "budget_exceeded",
+        "no_eligible_agent",
+        "interrupted",
+        "human_rejection"
+      ],
+      "title": "FailureClass",
+      "type": "string"
+    },
+    "ToolCallRecord": {
+      "additionalProperties": false,
+      "description": "A tool call observed in an agent stream.",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ok": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ok"
+        },
+        "ts": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ts"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ToolCallRecord",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": false,
+      "description": "Token and cost accounting. ``cost_usd`` is ``None`` if unknown; ``estimated`` if derived.",
+      "properties": {
+        "cost_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cost Usd"
+        },
+        "estimated": {
+          "default": false,
+          "title": "Estimated",
+          "type": "boolean"
+        },
+        "input_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Tokens"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "output_tokens": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Output Tokens"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Process-level outcome of an attempt. ``claim`` is the agent's own words, NOT evidence.",
+  "properties": {
+    "attempt_id": {
+      "pattern": "^att_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Attempt Id",
+      "type": "string"
+    },
+    "claim": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Claim"
+    },
+    "diff": {
+      "$ref": "#/$defs/DiffSummary"
+    },
+    "duration_ms": {
+      "minimum": 0,
+      "title": "Duration Ms",
+      "type": "integer"
+    },
+    "exit_code": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Exit Code"
+    },
+    "failure": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FailureClass"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "status": {
+      "enum": [
+        "completed",
+        "failed",
+        "timeout",
+        "cancelled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "stream_path": {
+      "format": "path",
+      "title": "Stream Path",
+      "type": "string"
+    },
+    "tool_calls": {
+      "items": {
+        "$ref": "#/$defs/ToolCallRecord"
+      },
+      "title": "Tool Calls",
+      "type": "array"
+    },
+    "usage": {
+      "$ref": "#/$defs/Usage"
+    }
+  },
+  "required": [
+    "attempt_id",
+    "exit_code",
+    "status",
+    "duration_ms",
+    "stream_path"
+  ],
+  "title": "ExecutionResult",
+  "type": "object"
+}

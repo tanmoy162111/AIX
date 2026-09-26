@@ -1,0 +1,26 @@
+{
+  "additionalProperties": false,
+  "description": "Per-run limits; defaults mirror the config defaults in \u00a79.",
+  "properties": {
+    "max_attempts_total": {
+      "default": 20,
+      "minimum": 1,
+      "title": "Max Attempts Total",
+      "type": "integer"
+    },
+    "max_cost_usd": {
+      "default": 10.0,
+      "exclusiveMinimum": 0,
+      "title": "Max Cost Usd",
+      "type": "number"
+    },
+    "max_wall_seconds": {
+      "default": 7200,
+      "minimum": 1,
+      "title": "Max Wall Seconds",
+      "type": "integer"
+    }
+  },
+  "title": "Budget",
+  "type": "object"
+}

@@ -1,0 +1,158 @@
+{
+  "$defs": {
+    "AgentSupports": {
+      "additionalProperties": false,
+      "description": "Feature flags an adapter declares; the policy engine uses them for eligibility (\u00a720.2).",
+      "properties": {
+        "cancel": {
+          "default": true,
+          "title": "Cancel",
+          "type": "boolean"
+        },
+        "cost_reporting": {
+          "default": "none",
+          "enum": [
+            "none",
+            "partial",
+            "full"
+          ],
+          "title": "Cost Reporting",
+          "type": "string"
+        },
+        "model_select": {
+          "default": false,
+          "title": "Model Select",
+          "type": "boolean"
+        },
+        "non_interactive": {
+          "default": true,
+          "title": "Non Interactive",
+          "type": "boolean"
+        },
+        "sessions": {
+          "default": false,
+          "title": "Sessions",
+          "type": "boolean"
+        },
+        "streaming": {
+          "default": false,
+          "title": "Streaming",
+          "type": "boolean"
+        }
+      },
+      "title": "AgentSupports",
+      "type": "object"
+    },
+    "Capability": {
+      "description": "Vocabulary of agent capabilities (\u00a710.2, \u00a711, \u00a713.3).",
+      "enum": [
+        "implement",
+        "debug",
+        "test",
+        "review",
+        "design",
+        "research",
+        "summarize",
+        "security",
+        "document"
+      ],
+      "title": "Capability",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Manifest plus probe result for one agent.",
+  "properties": {
+    "capabilities": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "propertyNames": {
+        "$ref": "#/$defs/Capability"
+      },
+      "title": "Capabilities",
+      "type": "object"
+    },
+    "cost_class": {
+      "default": "medium",
+      "enum": [
+        "free",
+        "low",
+        "medium",
+        "high"
+      ],
+      "title": "Cost Class",
+      "type": "string"
+    },
+    "default_model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Default Model"
+    },
+    "health": {
+      "default": "unavailable",
+      "enum": [
+        "ready",
+        "degraded",
+        "unavailable",
+        "disabled"
+      ],
+      "title": "Health",
+      "type": "string"
+    },
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "cli",
+        "api",
+        "local"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "models": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Models",
+      "type": "array"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "supports": {
+      "$ref": "#/$defs/AgentSupports"
+    },
+    "version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Version"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "kind"
+  ],
+  "title": "AgentSpec",
+  "type": "object"
+}

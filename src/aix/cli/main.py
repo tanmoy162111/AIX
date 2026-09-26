@@ -9,6 +9,7 @@ from __future__ import annotations
 import typer
 
 from aix import __version__
+from aix.cli.dev import dev_app
 
 app = typer.Typer(
     name="aix",
@@ -16,6 +17,8 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+
+app.add_typer(dev_app)
 
 
 def _version_callback(value: bool) -> None:

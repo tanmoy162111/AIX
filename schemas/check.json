@@ -1,0 +1,137 @@
+{
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "description": "Reference to a stored artifact (log, junit xml, sarif ...).",
+      "properties": {
+        "id": {
+          "pattern": "^art_[0-9A-HJKMNP-TV-Z]{26}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "CheckKind": {
+      "description": "Kind of verification check (\u00a76, \u00a717.3).",
+      "enum": [
+        "build",
+        "tests",
+        "lint",
+        "typecheck",
+        "security_sast",
+        "secrets",
+        "deps",
+        "ai_review",
+        "policy",
+        "custom"
+      ],
+      "title": "CheckKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "One executed verification step and its evidence.",
+  "properties": {
+    "command": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Command"
+    },
+    "duration_ms": {
+      "default": 0,
+      "minimum": 0,
+      "title": "Duration Ms",
+      "type": "integer"
+    },
+    "evidence": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Evidence",
+      "type": "array"
+    },
+    "id": {
+      "pattern": "^chk_[0-9A-HJKMNP-TV-Z]{26}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/CheckKind"
+    },
+    "metrics": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Metrics",
+      "type": "object"
+    },
+    "required": {
+      "title": "Required",
+      "type": "boolean"
+    },
+    "severity": {
+      "default": "info",
+      "enum": [
+        "info",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "passed",
+        "failed",
+        "warning",
+        "skipped",
+        "error"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "status",
+    "required",
+    "summary"
+  ],
+  "title": "Check",
+  "type": "object"
+}

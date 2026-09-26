@@ -1,0 +1,50 @@
+{
+  "additionalProperties": false,
+  "description": "Who or what produced an artifact.",
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "agent",
+        "check",
+        "control_plane",
+        "reviewer"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Version"
+    }
+  },
+  "required": [
+    "kind",
+    "id"
+  ],
+  "title": "Producer",
+  "type": "object"
+}

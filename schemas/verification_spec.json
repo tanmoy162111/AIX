@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "CheckKind": {
+      "description": "Kind of verification check (\u00a76, \u00a717.3).",
+      "enum": [
+        "build",
+        "tests",
+        "lint",
+        "typecheck",
+        "security_sast",
+        "secrets",
+        "deps",
+        "ai_review",
+        "policy",
+        "custom"
+      ],
+      "title": "CheckKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Which checks must / may run for a task.",
+  "properties": {
+    "optional": {
+      "items": {
+        "$ref": "#/$defs/CheckKind"
+      },
+      "title": "Optional",
+      "type": "array"
+    },
+    "required": {
+      "items": {
+        "$ref": "#/$defs/CheckKind"
+      },
+      "title": "Required",
+      "type": "array"
+    }
+  },
+  "title": "VerificationSpec",
+  "type": "object"
+}
