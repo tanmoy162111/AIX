@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Final, Literal
@@ -20,6 +20,9 @@ import anyio
 from aix.agents.protocol import AgentAdapter, AgentHandle, AgentPermissions, AgentRequest
 from aix.agents.registry import AdapterRegistry
 from aix.config.schema import AixConfig
+from aix.core.budget import BudgetTracker, Overrun
+from aix.core.escalation import Step as EscStep
+from aix.core.failure import Classified, candidates_for, classify_attempt, classify_verification
 from aix.core.orchestrator.attempt import (
     conflict_files,
     execute_agent,
@@ -30,14 +33,24 @@ from aix.core.orchestrator.attempt import (
 )
 from aix.core.orchestrator.plan import PlanRunRequest, choose, plan_into
 from aix.core.orchestrator.recorder import RunRecorder, new_run
+from aix.core.orchestrator.task_policy import NextAction, TaskPolicy
 from aix.core.planner.agent import make_adapter_runner
-from aix.core.router.rules import RoutingContext, route
+from aix.core.retry import RetryFingerprint, RetryLedger, remaining_mutations, split_task
+from aix.core.router.rules import RoutingContext, RoutingDecision, route
 from aix.core.scheduler.engine import Scheduler
 from aix.core.workspace.manager import DiffCapture, Workspace, WorkspaceManager
 from aix.core.workspace.scope import scope_violations
+from aix.decision import state as dstate
+from aix.decision.gates import GateFacts
+from aix.decision.provider import DecisionProvider
+from aix.decision.providers.rules import RulesProvider
+from aix.decision.service import DecisionService
 from aix.domain.agents import AgentSpec
+from aix.domain.decisions import Approval, DecisionRecord
 from aix.domain.enums import (
     AttemptStatus,
+    DecisionOutcome,
+    DecisionPoint,
     FailureClass,
     RetryMutation,
     RunStatus,
@@ -103,11 +116,16 @@ class RunOutcome:
     usage: Usage
     duration_ms: int
     warnings: list[str] = field(default_factory=list[str])
+    pending_approvals: list[str] = field(default_factory=list[str])
 
     @property
     def exit_code(self) -> int:
-        """PLAYBOOK §23.2: 0 success, 1 run failed, 4 cancelled."""
-        return {RunStatus.COMPLETED: 0, RunStatus.CANCELLED: 4}.get(self.status, 1)
+        """PLAYBOOK §23.2: 0 success, 1 failed, 3 waiting for approval, 4 cancelled, 6 budget."""
+        if self.failure is FailureClass.BUDGET_EXCEEDED:
+            return 6
+        return {RunStatus.COMPLETED: 0, RunStatus.CANCELLED: 4, RunStatus.WAITING_APPROVAL: 3}.get(
+            self.status, 1
+        )
 
 
 def _utc() -> datetime:
@@ -124,9 +142,11 @@ class _Live:
 class _End:
     """How one attempt ended."""
 
-    kind: Literal["completed", "failed", "cancelled", "conflict"]
+    kind: Literal["completed", "failed", "cancelled", "conflict", "retry", "waiting"]
     failure: FailureClass | None = None
     files: list[str] = field(default_factory=list[str])
+    action: NextAction | None = None
+    cost: float | None = None
 
 
 @dataclass
@@ -153,7 +173,21 @@ class _Driver:
         registry: AdapterRegistry,
         config: AixConfig,
         keep_worktrees: bool,
+        service: DecisionService,
+        tracker: BudgetTracker,
+        on_stop: Callable[[], None],
+        backoff_scale: float = 1.0,
     ) -> None:
+        self._service = service
+        self._tracker = tracker
+        self._on_stop = on_stop
+        self._backoff_scale = backoff_scale
+        self._policies: dict[str, TaskPolicy] = {}
+        self._ledgers: dict[str, RetryLedger] = {}
+        self._unavailable: set[str] = set()
+        self.superseded: set[str] = set()
+        self.stop_reason: FailureClass | None = None
+        self.pending_approvals: list[str] = []
         self._rec = rec
         self._wm = wm
         self._specs = specs
@@ -168,6 +202,14 @@ class _Driver:
         self._baseline_lock = anyio.Lock()
         self._baseline_result: Baseline | None = None
         self.book: dict[str, _Book] = {t.id: _Book() for t in graph.tasks}
+        for t in graph.tasks:
+            self._register(t)
+
+    def _register(self, task: Task) -> None:
+        ladder = [EscStep(x) for x in self._config.execution.escalation_ladder]
+        self._policies[task.id] = TaskPolicy(task.max_attempts, ladder, task.file_scope)
+        self._ledgers[task.id] = RetryLedger()
+        self.book.setdefault(task.id, _Book())
 
     # ---- TaskDriver protocol --------------------------------------------------------------
 
@@ -202,26 +244,58 @@ class _Driver:
                         await live.adapter.cancel(live.handle, CANCEL_GRACE_S)
                 await anyio.sleep(0.05)
 
+    def _spec(self, agent_id: str) -> AgentSpec:
+        return next(sp for sp in self._specs if sp.id == agent_id)
+
+    def _route(
+        self, task: Task, policy: TaskPolicy, exclude: set[str], force: str | None
+    ) -> tuple[str, RoutingDecision | None]:
+        """Pick an agent: a forced escalation target if usable, else the router's choice."""
+        usable = [sp for sp in self._specs if sp.id not in self._unavailable]
+        if force is not None and any(
+            sp.id == force and sp.health in ("ready", "degraded") for sp in usable
+        ):
+            return force, None
+        ctx = RoutingContext(
+            task=task,
+            agents=[sp for sp in usable if sp.id not in exclude],
+            failed_agents=frozenset(policy.failed_agents),
+            authored_by=frozenset(self._authors_for(task)),
+            config=self._config.routing,
+        )
+        try:
+            decision = route(ctx)
+        except NoEligibleAgent:
+            if not exclude:
+                raise
+            decision = route(replace(ctx, agents=usable))  # nobody else can take over
+        return decision.primary, decision
+
     async def run_task(self, task: Task) -> None:
-        """Route and run attempts until the task is terminal (or the run is cancelled)."""
-        failed_agents: set[str] = set()
+        """Route and run attempts, deciding after each, until the task is terminal or waiting."""
+        policy = self._policies[task.id]
+        ledger = self._ledgers[task.id]
         notes: list[str] = []
         mutation: RetryMutation | None = None
-        number = 0
+        exclude: set[str] = set[str]()
+        force: str | None = None
+        model: str | None = None
+        review = False
+        wait_s = 0.0
         while True:
             task = self._tasks[task.id]
-            if self._cancelled:
+            if self._cancelled or self.stop_reason is not None:
                 return  # the scheduler cancels whatever is still non-terminal
+            if (over := self._tracker.can_start_attempt()) is not None:
+                await self._budget_stop(over)
+                return
+            if wait_s > 0:
+                await anyio.sleep(wait_s * self._backoff_scale)
+                wait_s = 0.0
+                if self._cancelled:
+                    return
             try:
-                decision = route(
-                    RoutingContext(
-                        task=task,
-                        agents=self._specs,
-                        failed_agents=frozenset(failed_agents),
-                        authored_by=frozenset(self._authors_for(task)),
-                        config=self._config.routing,
-                    )
-                )
+                agent_id, decision = self._route(task, policy, exclude, force)
             except NoEligibleAgent as exc:
                 self.book[task.id].failure = FailureClass.NO_ELIGIBLE_AGENT
                 await self._rec.emit(
@@ -233,23 +307,29 @@ class _Driver:
                 )
                 await self.apply(task.id, TaskEvent.NO_ELIGIBLE_AGENT, "router:no_eligible_agent")
                 return
-            agent_id = decision.primary
             await self._rec.emit(
                 "agent.selected",
                 ev.AgentSelectedPayload(
                     agent_id=agent_id,
-                    model=model_override(self._config, agent_id),
-                    fallbacks=decision.fallbacks,
-                    scores=decision.scores,
-                    reason_codes=decision.reason_codes,
+                    model=model or model_override(self._config, agent_id),
+                    fallbacks=decision.fallbacks if decision else [],
+                    scores=decision.scores if decision else {},
+                    reason_codes=decision.reason_codes if decision else ["escalation:forced"],
                 ),
                 task_id=task.id,
             )
             await self.apply(task.id, TaskEvent.ASSIGN)
-            number += 1
+            policy.begin_attempt()
+            self._tracker.start_attempt()
             book = self.book[task.id]
-            book.agent_id, book.attempts = agent_id, number
-            end = await self._attempt(task, agent_id, number, mutation, notes)
+            book.agent_id = agent_id
+            book.attempts += 1
+            end = await self._attempt(
+                task, agent_id, book.attempts, mutation, notes, ledger, policy,
+                model=model, require_review=review,
+            )  # fmt: skip
+            self._tracker.add_cost(end.cost)
+            exclude, force, model, review = set[str](), None, None, False
             if end.kind == "conflict":
                 mutation = RetryMutation.REBASE_AND_RETRY
                 notes.append(
@@ -257,12 +337,162 @@ class _Driver:
                     f"merged into the run branch in: {', '.join(end.files) or 'unknown files'}. "
                     "This workspace starts from the updated branch; redo the work on top of it."
                 )
-                continue
-            if end.kind == "failed":
+            elif end.kind == "retry" and end.action is not None:
+                act = end.action
+                mutation = act.mutation
+                notes.extend(act.notes)
+                if end.failure not in (
+                    None,
+                    FailureClass.AGENT_NO_CHANGES,
+                    FailureClass.RATE_LIMITED,
+                    FailureClass.NETWORK_FAILURE,
+                    FailureClass.AUTH_FAILURE,
+                ):
+                    policy.failed_agents.add(agent_id)
+                if act.exclude_agent:
+                    exclude = {act.exclude_agent}
+                if act.mark_unavailable:
+                    self._unavailable.add(act.mark_unavailable)
+                force, model, review, wait_s = (
+                    act.force_agent,
+                    act.model,
+                    act.require_review,
+                    act.wait_s,
+                )
+                if act.split:
+                    await self._split(task)
+                    return
+            else:
                 book.failure = end.failure
                 if end.failure not in (None, FailureClass.AGENT_NO_CHANGES):
-                    failed_agents.add(agent_id)
+                    policy.failed_agents.add(agent_id)
+            if (over := self._tracker.exceeded()) is not None:
+                await self._budget_stop(over)
+                return
+            if end.kind not in ("conflict", "retry"):
+                return
+
+    async def _split(self, task: Task) -> None:
+        """Replace a timed-out task with chained subtasks (§19.2 ``split_task``)."""
+        dependents = [t for t in self._tasks.values() if task.id in t.depends_on]
+        subs, rewired = split_task(task, dependents, parts=3)
+        for d in rewired:
+            self._tasks[d.id] = d
+        for sub in subs:
+            self._tasks[sub.id] = sub
+            self._register(sub)
+            await self._rec.emit("task.created", ev.TaskCreatedPayload(task=sub), task_id=sub.id)
+        self.superseded.add(task.id)
+        await self.apply(task.id, TaskEvent.CANCEL, "split_into:" + ",".join(s.id for s in subs))
+
+    async def _budget_stop(self, over: Overrun) -> None:
+        """Record a budget overrun, ask the ``budget`` decision point and stop the run."""
+        if self.stop_reason is not None:
             return
+        rec = self._rec
+        await rec.emit(
+            "budget.exceeded",
+            ev.BudgetExceededPayload(budget=over.budget, limit=over.limit, actual=over.actual),
+        )
+        live = [t for t in self._tasks.values() if t.id not in self.superseded]
+        state = dstate.build_budget_state(
+            over.budget,
+            used=over.actual,
+            limit=over.limit,
+            tasks_completed=sum(1 for t in live if t.status is TaskStatus.COMPLETED),
+            tasks_total=len(live),
+        )
+        record = await self._service.decide(
+            DecisionPoint.BUDGET, rec.run.id, state,
+            GateFacts(attempt=1, max_attempts=1, budget_exhausted=True),
+        )  # fmt: skip
+        await self._emit_decision(record)
+        if record.outcome is DecisionOutcome.ASK_HUMAN:
+            await self._request_approval(rec.run.id, "budget_override", ["budget:" + over.budget])
+        self.stop_reason = FailureClass.BUDGET_EXCEEDED
+        self._on_stop()
+
+    async def _emit_decision(self, record: DecisionRecord) -> None:
+        await self._rec.emit(
+            "decision.requested",
+            ev.DecisionRequestedPayload(
+                decision_id=record.id, point=record.point, subject=record.subject
+            ),
+        )
+        await self._rec.emit("decision.completed", ev.DecisionCompletedPayload(record=record))
+
+    async def _request_approval(self, subject: str, action: str, reasons: list[str]) -> str:
+        """Record a pending approval; ``aix approve|deny`` resolves it (M5.11)."""
+        approval = Approval(
+            id=new_id(IdPrefix.APPROVAL),
+            subject=subject,
+            action=action,
+            scope={"reasons": list(reasons)},
+            requested_at=self._rec.now(),
+        )
+        await self._rec.emit("approval.requested", ev.ApprovalRequestedPayload(approval=approval))
+        self.pending_approvals.append(approval.id)
+        return approval.id
+
+    async def _decide_attempt(
+        self,
+        task: Task,
+        agent_id: str,
+        policy: TaskPolicy,
+        cls: Classified | None,
+        report: VerificationReport | None,
+        capture: DiffCapture,
+        scope_ok: bool,
+        detail: str,
+        model: str | None,
+    ) -> NextAction:
+        """Gates, provider, record and the concrete next action for one finished attempt."""
+        prev = [
+            (c.failure, c.sub_kind.value if c.sub_kind else None) for c in policy.previous_failures
+        ]
+        facts = GateFacts(
+            report=report,
+            attempt=max(policy.consumed, 1),
+            max_attempts=task.max_attempts,
+            approval_required_for=list(self._config.security.approval_required_for),
+            budget_exhausted=self._tracker.exceeded() is not None,
+            escalation_remaining=policy.escalation_remaining,
+        )
+        if report is not None:
+            point = DecisionPoint.TASK_COMPLETION
+            state = dstate.build_task_completion_state(
+                task,
+                attempt=facts.attempt,
+                report=report,
+                diff=capture.summary,
+                touches_scope_only=scope_ok,
+                previous_failures=prev,
+                agent_switched=policy.agent_switched,
+            )
+        else:
+            assert cls is not None
+            point = DecisionPoint.FAILURE_TRIAGE
+            state = dstate.build_failure_triage_state(
+                task,
+                attempt=facts.attempt,
+                failure=cls.failure,
+                sub_kind=cls.sub_kind.value if cls.sub_kind else None,
+                candidates=candidates_for(cls.failure),
+                mutations=remaining_mutations(cls, policy.used.get(cls.label, [])),
+                report=None,
+                previous_failures=prev,
+                agent_switched=policy.agent_switched,
+            )
+        record = await self._service.decide(point, task.id, state, facts)
+        await self._emit_decision(record)
+        return policy.plan_next(
+            record.outcome,
+            cls,
+            current=self._spec(agent_id),
+            current_model=model,
+            candidates=[sp for sp in self._specs if sp.id not in self._unavailable],
+            detail=detail,
+        )
 
     def _authors_for(self, task: Task) -> set[str]:
         """Agents that authored write tasks this task (transitively) depends on."""
@@ -317,18 +547,22 @@ class _Driver:
         attempt_id: str,
         agent_id: str,
         stream_path: Path,
+        require_review: bool = False,
     ) -> VerificationReport | None:
         """Run the verification engine for a write task and record every check (§17)."""
         if not task.file_scope:
             return None
         rec = self._rec
         reviewer = None
-        if K.AI_REVIEW in task.verification.required or K.AI_REVIEW in task.verification.optional:
+        spec = task.verification
+        if require_review and K.AI_REVIEW not in spec.required:
+            spec = spec.model_copy(update={"required": [*spec.required, K.AI_REVIEW]})
+        if K.AI_REVIEW in spec.required or K.AI_REVIEW in spec.optional:
             reviewer = self._reviewer(task, agent_id)
         report = await run_verification(
             ws.path,
             attempt_id,
-            task.verification,
+            spec,
             self._config,
             patch=capture.patch,
             changed_paths=capture.summary.paths,
@@ -381,6 +615,11 @@ class _Driver:
         number: int,
         mutation: RetryMutation | None,
         notes: Sequence[str],
+        ledger: RetryLedger,
+        policy: TaskPolicy,
+        *,
+        model: str | None,
+        require_review: bool,
     ) -> _End:
         rec, wm, config = self._rec, self._wm, self._config
         adapter = self._registry.get(agent_id)
@@ -406,7 +645,7 @@ class _Driver:
                 task_id=task.id,
                 number=number,
                 agent_id=agent_id,
-                model=model_override(config, agent_id),
+                model=model or model_override(config, agent_id),
                 mutation=mutation,
                 workspace=ws.path,
                 base_commit=ws.base_commit,
@@ -424,10 +663,12 @@ class _Driver:
 
             stream_path = wm.root / ".aix" / "runs" / run_id / f"{attempt_id}.stream.jsonl"
             write_scope = [] if task.file_scope == ["**"] else list(task.file_scope)
+            prompt = render_prompt(task, notes)
+            ledger.record(RetryFingerprint.of(agent_id, prompt, ws.base_commit))
             agent_req = AgentRequest(
                 attempt_id=attempt_id,
                 workspace=ws.path,
-                prompt=render_prompt(task, notes),
+                prompt=prompt,
                 model=attempt.model,
                 timeout_s=timeout_override(config, agent_id) or config.execution.attempt_timeout_s,
                 permissions=AgentPermissions(
@@ -510,35 +751,64 @@ class _Driver:
                 attempt_id=attempt_id,
             )
 
+            cost = outcome.usage.cost_usd
             if cancelled:
                 await self.apply(task.id, TaskEvent.CANCEL, "attempt:cancelled")
-                return _End("cancelled")
-            if outcome.status != "completed":
+                return _End("cancelled", cost=cost)
+            process_failed = outcome.status != "completed"
+            report: VerificationReport | None = None
+            if process_failed:
+                failure = classify_attempt(
+                    agent_failure=outcome.failure, agent_failed=True, stderr=outcome.stderr_tail
+                )
                 await self.apply(
                     task.id, TaskEvent.ATTEMPT_FAILED, f"failure:{failure.value if failure else ''}"
                 )
-                await self.apply(task.id, TaskEvent.REJECT, "no_retry_until_m5")
-                return _End("failed", failure)
-            await self.apply(task.id, TaskEvent.EXECUTION_FINISHED)
-            report = None
-            if failure is None:
-                report = await self._verify(task, ws, capture, attempt_id, agent_id, stream_path)
-            await self.apply(
-                task.id,
-                TaskEvent.VERIFIED,
-                f"verification:{report.overall}" if report else "verification:skipped",
-            )
-            if report is not None and report.overall in ("failed", "incomplete"):
-                failure = FailureClass.VERIFICATION_FAILURE
+            else:
+                await self.apply(task.id, TaskEvent.EXECUTION_FINISHED)
+                if failure is None:
+                    report = await self._verify(
+                        task, ws, capture, attempt_id, agent_id, stream_path, require_review
+                    )
+                    if report is None:  # read-only task: no checks ran, and none were required
+                        report = VerificationReport(
+                            attempt_id=attempt_id, checks=[], overall="passed"
+                        )
+                await self.apply(
+                    task.id,
+                    TaskEvent.VERIFIED,
+                    f"verification:{report.overall}" if report else "verification:skipped",
+                )
+            cls: Classified | None = Classified(failure) if failure else None
+            detail = outcome.stderr_tail[-500:].strip() if process_failed else ""
+            if report is not None and (vf := classify_verification(report)) is not None:
+                cls = vf
                 bad = next((c for c in report.checks if c.required and c.status != "passed"), None)
-                self.book[task.id].detail = bad.summary if bad else report.overall
-            if failure is not None:
-                await self.apply(task.id, TaskEvent.REJECT, f"failure:{failure.value}")
-                return _End("failed", failure)
-            await self.apply(task.id, TaskEvent.ACCEPT, "verification:acceptable")
-            await self.apply(task.id, TaskEvent.INTEGRATE)
-            end = await self._integrate(task, ws, attempt_id, number)
-            return end
+                detail = bad.summary if bad else report.overall
+                failure = vf.failure
+            if cls is not None:
+                self.book[task.id].failure = cls.failure
+                self.book[task.id].detail = detail or None
+            action = await self._decide_attempt(
+                task, agent_id, policy, cls, report, capture, scope_ok=failure is None
+                or failure is not FailureClass.SCOPE_VIOLATION,
+                detail=detail, model=attempt.model,
+            )  # fmt: skip
+            if action.kind == "accept":
+                await self.apply(task.id, TaskEvent.ACCEPT, "decision:accept")
+                await self.apply(task.id, TaskEvent.INTEGRATE)
+                end = await self._integrate(
+                    task, ws, attempt_id, can_retry=policy.consumed < task.max_attempts
+                )
+                return replace(end, cost=cost)
+            await self.apply(task.id, action.event, *action.reasons)
+            failure_class = cls.failure if cls else failure
+            if action.kind == "ask_human":
+                await self._request_approval(task.id, "task_decision", list(action.reasons))
+                return _End("waiting", failure_class, cost=cost)
+            if action.kind == "fail":
+                return _End("failed", failure_class, cost=cost)
+            return _End("retry", failure_class, action=action, cost=cost)
         except AixError as exc:
             failure = failure or exc.failure_class
             self.book[task.id].failure = failure
@@ -570,7 +840,7 @@ class _Driver:
                         attempt_id=attempt_id,
                     )
 
-    async def _integrate(self, task: Task, ws: object, attempt_id: str, number: int) -> _End:
+    async def _integrate(self, task: Task, ws: object, attempt_id: str, *, can_retry: bool) -> _End:
         """Merge an accepted attempt into the run branch (serialized by the workspace manager)."""
         from aix.core.workspace.manager import Workspace
 
@@ -591,7 +861,7 @@ class _Driver:
                 task_id=task.id,
                 attempt_id=attempt_id,
             )
-            if number < task.max_attempts:
+            if can_retry:
                 await self.apply(task.id, TaskEvent.MERGE_CONFLICT, "retry:rebase_and_retry")
                 return _End("conflict", FailureClass.MERGE_CONFLICT, files)
             await self.apply(task.id, TaskEvent.STOP, "retry:exhausted")
@@ -626,6 +896,31 @@ def _add_usage(a: Usage, b: Usage) -> Usage:
     )
 
 
+def default_decision_service(config: AixConfig) -> DecisionService:
+    """The rules provider, or Jev when configured and a key is present (rules always back it)."""
+    rules = RulesProvider()
+    provider: DecisionProvider = rules
+    if config.decision.provider == "jev":
+        try:
+            from aix.decision.providers.jev import TypeSafeJevClient
+            from aix.decision.providers.jev_provider import JevDecisionProvider
+            from aix.decision.thresholds import Thresholds
+
+            provider = JevDecisionProvider(
+                TypeSafeJevClient(timeout_s=config.decision.jev.timeout_ms / 1000),
+                rules,
+                Thresholds(config.decision.thresholds),
+            )
+        except Exception:  # missing SDK or key: rules decide, the record says which provider ran
+            provider = rules
+    return DecisionService(
+        provider,
+        rules,
+        policy_version="policy-v1",
+        timeout_s=config.decision.jev.timeout_ms / 1000,
+    )
+
+
 async def execute_graph(
     rec: RunRecorder,
     wm: WorkspaceManager,
@@ -638,30 +933,47 @@ async def execute_graph(
     keep_worktrees: bool = False,
     max_parallel: int | None = None,
     cancel: anyio.Event | None = None,
+    decisions: DecisionService | None = None,
+    backoff_scale: float = 1.0,
 ) -> RunOutcome:
-    """Execute a planned run (``rec.run.status == planned``) to a terminal status.
+    """Execute a planned run (``rec.run.status == planned``) until it ends or must wait.
 
     Contract: tasks run through the scheduler with ``max_parallel`` concurrency, each attempt in
-    its own worktree; accepted write attempts are merged into ``aix/run/<id>`` one at a time; a
-    merge conflict retries the task from the new branch head (up to ``max_attempts``). A failed
-    task blocks its dependents. ``cancel`` (or the ``aix cancel`` marker file) stops live agents,
-    cancels every non-terminal task and ends the run ``cancelled``. The user's checked-out branch
-    is never touched.
+    its own worktree; accepted write attempts are merged into ``aix/run/<id>`` one at a time. After
+    every attempt the Decision Service (gates first, then the provider) picks accept / retry /
+    switch / escalate / ask a human / reject; retries follow the §19.2 mutation sequences and the
+    §19.3 ladder, and ``max_attempts`` and the run budget are enforced. A failed task blocks its
+    dependents. ``cancel`` (or the ``aix cancel`` marker file) stops live agents and ends the run
+    ``cancelled``. An exceeded budget records ``budget.exceeded``, asks the ``budget`` decision
+    point and ends the run failed with ``BUDGET_EXCEEDED`` (exit 6). A task waiting for a human
+    leaves the run ``waiting_approval`` (exit 3). The user's checked-out branch is never touched.
     """
     t0 = time.monotonic()
     cancel = cancel or anyio.Event()
+    stop = anyio.Event()
     run_id = rec.run.id
     specs = await registry.probe_all()
     driver = _Driver(
-        rec, wm, graph, specs, registry=registry, config=config, keep_worktrees=keep_worktrees
+        rec,
+        wm,
+        graph,
+        specs,
+        registry=registry,
+        config=config,
+        keep_worktrees=keep_worktrees,
+        service=decisions or default_decision_service(config),
+        tracker=BudgetTracker(rec.run.budget),
+        on_stop=stop.set,
+        backoff_scale=backoff_scale,
     )
     await rec.run_to(RunEvent.START_EXECUTION)
     marker = cancel_marker(wm.root, run_id)
 
-    async def watch_marker() -> None:
-        while not cancel.is_set():
-            if await anyio.Path(marker).exists():
+    async def watch_cancel() -> None:
+        while not stop.is_set():
+            if cancel.is_set() or await anyio.Path(marker).exists():
                 cancel.set()
+                stop.set()
                 return
             await anyio.sleep(0.25)
 
@@ -670,8 +982,8 @@ async def execute_graph(
     )
     try:
         async with anyio.create_task_group() as tg:
-            tg.start_soon(watch_marker)
-            await scheduler.run(cancel)
+            tg.start_soon(watch_cancel)
+            await scheduler.run(stop)
             tg.cancel_scope.cancel()
     except BaseException:
         with anyio.CancelScope(shield=True):
@@ -679,30 +991,41 @@ async def execute_graph(
         raise
 
     final = driver.tasks()
+    live = [t for t in final if t.id not in driver.superseded]
     branch = f"aix/run/{run_id}"
-    await rec.run_to(RunEvent.ALL_TASKS_TERMINAL)
     failure: FailureClass | None = None
-    if all(t.status is TaskStatus.COMPLETED for t in final):
-        await rec.run_to(RunEvent.COMPLETE)
-        await rec.emit("run.completed", ev.RunCompletedPayload(summary=f"merged into {branch}"))
-    elif cancel.is_set():
-        await rec.run_to(RunEvent.CANCEL)
-        await rec.emit("run.cancelled", ev.RunCancelledPayload(reason="cancelled by user"))
+    waiting = [t for t in live if t.status is TaskStatus.WAITING_APPROVAL]
+    if waiting and driver.stop_reason is None and not cancel.is_set():
+        await rec.run_to(RunEvent.AWAIT_APPROVAL)
     else:
-        failure = next(
-            (
-                driver.book[t.id].failure
-                for t in final
-                if t.status is TaskStatus.FAILED and driver.book[t.id].failure
-            ),
-            FailureClass.AGENT_FAILURE,
-        )
-        await rec.run_to(RunEvent.FAIL)
-        failed = [t.title for t in final if t.status is TaskStatus.FAILED]
-        await rec.emit(
-            "run.failed",
-            ev.RunFailedPayload(failure=failure, reason=f"failed tasks: {', '.join(failed)}"),
-        )
+        await rec.run_to(RunEvent.ALL_TASKS_TERMINAL)
+        if driver.stop_reason is not None:
+            failure = driver.stop_reason
+            await rec.run_to(RunEvent.FAIL)
+            await rec.emit(
+                "run.failed", ev.RunFailedPayload(failure=failure, reason="budget exceeded")
+            )
+        elif all(t.status is TaskStatus.COMPLETED for t in live):
+            await rec.run_to(RunEvent.COMPLETE)
+            await rec.emit("run.completed", ev.RunCompletedPayload(summary=f"merged into {branch}"))
+        elif cancel.is_set():
+            await rec.run_to(RunEvent.CANCEL)
+            await rec.emit("run.cancelled", ev.RunCancelledPayload(reason="cancelled by user"))
+        else:
+            failure = next(
+                (
+                    driver.book[t.id].failure
+                    for t in live
+                    if t.status is TaskStatus.FAILED and driver.book[t.id].failure
+                ),
+                FailureClass.AGENT_FAILURE,
+            )
+            await rec.run_to(RunEvent.FAIL)
+            failed = [t.title for t in live if t.status is TaskStatus.FAILED]
+            await rec.emit(
+                "run.failed",
+                ev.RunFailedPayload(failure=failure, reason=f"failed tasks: {', '.join(failed)}"),
+            )
 
     usage = Usage()
     for b in driver.book.values():
@@ -718,7 +1041,7 @@ async def execute_graph(
             failure=driver.book[t.id].failure,
             detail=driver.book[t.id].detail,
         )
-        for t in final
+        for t in live
     ]
     return RunOutcome(
         run_id=run_id,
@@ -730,6 +1053,7 @@ async def execute_graph(
         usage=usage,
         duration_ms=int((time.monotonic() - t0) * 1000),
         warnings=list(warnings),
+        pending_approvals=list(driver.pending_approvals),
     )
 
 

@@ -7,7 +7,13 @@ from pathlib import Path
 
 import yaml
 
-from aix.config.schema import AixConfig, PlannerConfig, SecurityConfig, VerificationConfig
+from aix.config.schema import (
+    AixConfig,
+    ExecutionConfig,
+    PlannerConfig,
+    SecurityConfig,
+    VerificationConfig,
+)
 from aix.domain.enums import CheckKind as K
 
 PY = Path(sys.executable).name
@@ -18,6 +24,7 @@ COMMANDS = {K.BUILD: PASS, K.TESTS: PASS, K.LINT: PASS, K.TYPECHECK: PASS}
 def fast_config(**kw: object) -> AixConfig:
     """Config whose build/tests/lint/typecheck are no-op commands that always pass."""
     kw.setdefault("planner", PlannerConfig(provider="template"))
+    kw.setdefault("execution", ExecutionConfig(escalation_ladder=[]))  # failures end, not ask
     return AixConfig(
         verification=VerificationConfig(commands=dict(COMMANDS)),
         security=SecurityConfig(shell_allow=[PY, "git"]),
@@ -31,5 +38,6 @@ def write_fast_config(project: Path, **commands: list[str]) -> None:
     doc = {
         "verification": {"commands": cmds},
         "security": {"shell_allow": [PY, "git"]},
+        "execution": {"escalation_ladder": []},
     }
     (project / ".aix" / "config.yaml").write_text(yaml.safe_dump(doc))

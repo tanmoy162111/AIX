@@ -109,6 +109,8 @@ class TaskPolicy:
             current_model=model,
             candidates=candidates,
         )
+        if esc is None and not self.ladder:  # no escalation configured: nobody to ask
+            return NextAction("fail", TaskEvent.REJECT, reasons=("escalation:none",))
         if esc is None or esc.step is Step.HUMAN:
             return self._ask(("escalation:human",))
         self.retries += 1

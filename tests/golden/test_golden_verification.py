@@ -16,7 +16,7 @@ import repos
 from aix.agents.adapters.fake.script import FakeMatch, FakeScript, FakeStep
 from aix.agents.fakes import make_fake_entry
 from aix.agents.registry import AdapterRegistry
-from aix.config.schema import AixConfig, PlannerConfig
+from aix.config.schema import AixConfig, ExecutionConfig, PlannerConfig
 from aix.core.orchestrator.executor import RunOutcome, execute_graph
 from aix.core.orchestrator.plan import record_plan
 from aix.core.orchestrator.recorder import RunRecorder, new_run
@@ -51,7 +51,9 @@ async def run_one(
     repo: Path, step: FakeStep, *, scope: list[str]
 ) -> tuple[RunOutcome, EventStore, str]:
     """One write task done by a fake agent, verified with the real toolchain."""
-    cfg = AixConfig(planner=PlannerConfig(provider="template"))
+    cfg = AixConfig(
+        planner=PlannerConfig(provider="template"), execution=ExecutionConfig(escalation_ladder=[])
+    )
     registry = AdapterRegistry(cfg, builtin_ids=())
     script = FakeScript(match=FakeMatch(task_type="implement"), attempts=[step])
     registry.register(

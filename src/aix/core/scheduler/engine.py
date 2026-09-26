@@ -42,11 +42,17 @@ class Scheduler:
     def __init__(self, tasks: Sequence[Task], driver: TaskDriver, *, max_parallel: int) -> None:
         if max_parallel < 1:
             raise ValueError("max_parallel must be at least 1")
-        self._order = [t.id for t in tasks]
+        self._initial = [t.id for t in tasks]
         self._driver = driver
         self._max_parallel = max_parallel
         self._running: set[str] = set()
         self._changed = anyio.Event()
+
+    @property
+    def _order(self) -> list[str]:
+        """Task ids in stable order; tasks the driver adds later (``split_task``) follow."""
+        known = [t.id for t in self._driver.tasks()]
+        return [*self._initial, *(i for i in known if i not in set(self._initial))]
 
     def _current(self) -> list[Task]:
         by_id = {t.id: t for t in self._driver.tasks()}
