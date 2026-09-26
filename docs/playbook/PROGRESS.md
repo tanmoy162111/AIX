@@ -96,7 +96,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M6.1 Project facts from CLAUDE.md/AGENTS.md/CONTRIBUTING/README with caching on HEAD. — `.aix/cache/project_facts.json`; excerpts capped at 4000 chars and secret-redacted.
 - [x] M6.2 Handoff builder (facts + labeled claim). — `domain.context.Handoff` + `core.context.handoff.build_handoff`; claim is quoted line-by-line so it cannot forge fact lines. Executor wiring lands with M6.3/6.4.
 - [x] M6.3 Context pack assembly with token budget (tokenizer-free estimate: chars/4 — ADR) and priority truncation. — ADR-0023; new `execution.context_budget_tokens` (24000). Not yet wired into the executor prompt (M6.4).
-- [ ] M6.4 Prompt templates B.2/B.3 finalized + snapshot tests; prompt captured as artifact per attempt.
+- [x] M6.4 Prompt templates B.2/B.3 finalized + snapshot tests; prompt captured as artifact per attempt. — `task.j2`+`render_task_prompt`; prompt saved as `.aix/runs/<run>/<attempt>.prompt.txt`. Caveat: handoffs are in-memory, so a resumed run does not re-supply handoffs of tasks finished before the crash.
 - [ ] M6.5 Compaction + `context.compacted` event.
 - [ ] M6.6 `test_handoff.py` (G2 asserts agent B prompt contains agent A handoff).
 - [ ] M6.7 Run M6 Exit Gate; tag `m6-done`.
