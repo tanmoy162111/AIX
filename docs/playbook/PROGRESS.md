@@ -66,7 +66,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M4.1 Toolchain detection table + explicit command override; recorded in report.
 - [x] M4.2 Check runner (allowlist, network deny best-effort, artifacts for stdout/stderr).
 - [x] M4.3 Parsers: JUnit XML, SARIF, gitleaks JSON, pip-audit/npm-audit JSON.
-- [ ] M4.4 Check kinds: build/tests/lint/typecheck; missing tool → skipped → report incomplete.
+- [x] M4.4 Check kinds: build/tests/lint/typecheck; missing tool → skipped → report incomplete.
 - [ ] M4.5 Security checks: secrets (gitleaks or builtin regex fallback — ADR), sast (semgrep/bandit when present), deps.
 - [ ] M4.6 Policy check (scope, forbidden files, large binaries).
 - [ ] M4.7 Baseline run + pre_existing handling.
@@ -191,3 +191,4 @@ M3.14 — done; exit gate green: make check (1215 passed, 10 live skipped), test
 M4.1 — done; verification/commands.py resolve_commands -> ResolvedCommand{argv,source,available}; python/node/go/rust then Makefile fallback; config wins. Recording in the report happens when the runner (M4.2/4.4) stores it in Check.command.
 M4.2 — done; verification/runner.py run_command (own anyio runner: contract forbids agents.subprocess). Outcome statuses exited/timeout/blocked/tool_missing; stdout/stderr files in out_dir, bounded tails in memory. Network deny is proxies+offline env vars only (real enforcement = container sandbox, M8).
 M4.3 — done; verification/parsers.py, ParseError on malformed input; junit rejects DTD/entities; gitleaks findings drop the secret text; pip-audit has no severity so every vuln is `high` (conservative; baseline M4.7 protects pre-existing ones).
+M4.4 — done; verification/checks.py run_command_check -> CheckResult{check,outcome}. pytest gets --junitxml; exit 5 (no tests) = warning. Evidence ArtifactRefs stay empty until the artifact store (M7.1); output files are returned via outcome paths.
