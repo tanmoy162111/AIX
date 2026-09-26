@@ -98,8 +98,8 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M6.3 Context pack assembly with token budget (tokenizer-free estimate: chars/4 — ADR) and priority truncation. — ADR-0023; new `execution.context_budget_tokens` (24000). Not yet wired into the executor prompt (M6.4).
 - [x] M6.4 Prompt templates B.2/B.3 finalized + snapshot tests; prompt captured as artifact per attempt. — `task.j2`+`render_task_prompt`; prompt saved as `.aix/runs/<run>/<attempt>.prompt.txt`. Caveat: handoffs are in-memory, so a resumed run does not re-supply handoffs of tasks finished before the crash.
 - [x] M6.5 Compaction + `context.compacted` event. — deterministic digest; `summarizer` hook exists but no agent-backed summarizer is wired yet (falls back to the digest). Triggered when dependency handoffs exceed half the context budget.
-- [ ] M6.6 `test_handoff.py` (G2 asserts agent B prompt contains agent A handoff).
-- [ ] M6.7 Run M6 Exit Gate; tag `m6-done`.
+- [x] M6.6 `test_handoff.py` (G2 asserts agent B prompt contains agent A handoff). — `tests/integration/test_handoff.py` (handoff + compaction) and the G2 assertion in test_golden_multi.py.
+- [x] M6.7 Run M6 Exit Gate; tag `m6-done`. — gate green: make check (1654 tests), unit/context + test_handoff (29).
 
 ## M7 — Artifacts, reports, observability, resume (§21, §22, §8.2)
 - [ ] M7.1 Content-addressed artifact store + provenance.
