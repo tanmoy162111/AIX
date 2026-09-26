@@ -10,7 +10,7 @@ import jinja2
 
 from aix.core.context.facts import ProjectFacts
 from aix.core.context.pack import Section, assemble_pack
-from aix.domain.context import Handoff
+from aix.domain.context import CompactedContext, Handoff
 from aix.domain.tasks import Task
 
 DEFAULT_BUDGET_TOKENS: Final = 24000
@@ -35,6 +35,20 @@ def _handoff_text(handoffs: Sequence[Handoff]) -> str:
     return "\n\n".join(parts)
 
 
+def compacted_text(c: CompactedContext) -> str:
+    """Render a compacted log where the handoffs section normally goes."""
+    lines = ["(earlier work, compacted)", c.summary]
+    for label, items in (
+        ("Decisions", c.decisions),
+        ("Open questions", c.open_questions),
+        ("Known failures", c.known_failures),
+        ("Important files", c.important_files),
+    ):
+        if items:
+            lines.append(f"{label}: " + "; ".join(items))
+    return "\n".join(lines)
+
+
 def _facts_text(facts: ProjectFacts | None) -> str:
     if facts is None:
         return ""
@@ -52,6 +66,7 @@ def render_task_prompt(
     task: Task,
     *,
     handoffs: Sequence[Handoff] = (),
+    compacted: CompactedContext | None = None,
     failure_notes: Sequence[str] = (),
     facts: ProjectFacts | None = None,
     skill_instructions: str | None = None,
@@ -59,16 +74,18 @@ def render_task_prompt(
 ) -> str:
     """Render the Appendix B.2 prompt for ``task``. Deterministic for fixed inputs.
 
-    Contract: the goal, dependency handoffs, previous-attempt failure notes and project facts
-    share ``budget_tokens`` in that priority order (bottom truncated first, secrets redacted);
-    the frame (role, scope, definition of done, prohibitions) and skill instructions are fixed.
-    Failure notes must be control-plane facts, never agent prose. The first line is always
-    ``TASK TYPE: <type>``.
+    Contract: the goal, dependency handoffs (or ``compacted`` when given), previous-attempt
+    failure notes and project facts share ``budget_tokens`` in that priority order (bottom
+    truncated first, secrets redacted); the frame (role, scope, definition of done,
+    prohibitions) and skill instructions are fixed. Failure notes must be control-plane facts,
+    never agent prose. The first line is always ``TASK TYPE: <type>``.
     """
     pack = assemble_pack(
         [
             Section("goal", task.goal),
-            Section("handoffs", _handoff_text(handoffs)),
+            Section(
+                "handoffs", compacted_text(compacted) if compacted else _handoff_text(handoffs)
+            ),
             Section("failures", "".join(f"- {n}\n" for n in failure_notes)),
             Section("facts", _facts_text(facts)),
         ],

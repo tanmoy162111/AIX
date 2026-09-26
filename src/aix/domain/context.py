@@ -21,3 +21,13 @@ class Handoff(DomainModel):
     decisions: list[DecisionId] = Field(default_factory=list[DecisionId])
     open_issues: list[str] = Field(default_factory=list[str])
     artifacts: list[ArtifactId] = Field(default_factory=list[ArtifactId])
+
+
+class CompactedContext(DomainModel):
+    """A run's handoff/decision log squeezed to fit a budget (§15.4)."""
+
+    summary: str
+    decisions: list[str] = Field(default_factory=list[str])
+    open_questions: list[str] = Field(default_factory=list[str])
+    known_failures: list[str] = Field(default_factory=list[str])
+    important_files: list[str] = Field(default_factory=list[str])

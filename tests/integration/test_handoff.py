@@ -82,3 +82,50 @@ async def test_dependent_prompt_contains_dependency_handoff(tmp_path: Path) -> N
         assert "Project rule: run make check." in dependent
     finally:
         await store.close()
+
+
+async def test_oversized_dependency_log_is_compacted_and_recorded(tmp_path: Path) -> None:
+    repo = repos.materialize_sample_py(tmp_path / "proj")
+    (repo / ".aix").mkdir()
+    cfg = fast_config().model_copy(
+        update={
+            "execution": fast_config().execution.model_copy(update={"context_budget_tokens": 500})
+        }
+    )
+    registry = AdapterRegistry(cfg, builtin_ids=())
+    files = {f"pkg/{'m' * 60}{i:02d}.py": "x = 1\n" for i in range(50)}
+    scripts = [
+        FakeScript(
+            match=FakeMatch(prompt_contains="do first"),
+            attempts=[FakeStep(write_files=files, claim="trust me")],
+        ),
+        FakeScript(
+            match=FakeMatch(prompt_contains="do second"),
+            attempts=[FakeStep(write_files={"b.py": "y = 2\n"})],
+        ),
+    ]
+    registry.register(make_fake_entry("fake-a", scripts=scripts, capabilities={C.IMPLEMENT: 0.9}))
+    store = await EventStore.open(repo / ".aix" / "aix.db")
+    try:
+        wm = WorkspaceManager(repo)
+        run_id = new_id(IdPrefix.RUN)
+        await wm.create_run_branch(run_id)
+        now = lambda: datetime.now(UTC)  # noqa: E731
+        rec = RunRecorder(store, new_run(run_id, wm.root, "goal", cfg, now()), now)
+        await rec.start()
+        first = task(run_id, "first", "pkg/**")
+        second = task(run_id, "second", "b.py", [first.id])
+        graph = TaskGraph(id=new_id(IdPrefix.GRAPH), run_id=run_id, tasks=[first, second])
+        await record_plan(rec, Intent(goal="g", kind="coding", risk="low"), graph, "test", [])
+        with anyio.fail_after(120):
+            outcome = await execute_graph(
+                rec, wm, graph, registry=registry, config=cfg, backoff_scale=0
+            )
+        assert outcome.status is RunStatus.COMPLETED, outcome
+        texts = [p.read_text() for p in (repo / ".aix" / "runs" / run_id).glob("*.prompt.txt")]
+        dependent = next(t for t in texts if "do second" in t)
+        assert "(earlier work, compacted)" in dependent and "trust me" not in dependent
+        compacted = await store.events(run_id=run_id, types=["context.compacted"])
+        assert len(compacted) == 1
+    finally:
+        await store.close()

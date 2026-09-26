@@ -22,6 +22,7 @@ from aix.agents.protocol import AgentAdapter, AgentHandle, AgentPermissions, Age
 from aix.agents.registry import AdapterRegistry
 from aix.config.schema import AixConfig
 from aix.core.budget import BudgetTracker, Overrun
+from aix.core.context.compaction import compact_context
 from aix.core.context.facts import ProjectFacts, load_project_facts
 from aix.core.context.handoff import build_handoff
 from aix.core.context.prompt import render_task_prompt
@@ -914,13 +915,25 @@ class _Driver:
             self._skills = self._skills or SkillRegistry.builtin()
             with contextlib.suppress(AixError):
                 instructions = self._skills.get(task.skill).instructions
+        budget = self._config.execution.context_budget_tokens
+        deps = [self._handoffs[d] for d in task.depends_on if d in self._handoffs]
+        compaction = await compact_context(deps, failures=notes, budget_tokens=budget // 2)
+        if compaction is not None:
+            await self._rec.emit(
+                "context.compacted",
+                ev.ContextCompactedPayload(
+                    before_sha256=compaction.before_sha256, after_sha256=compaction.after_sha256
+                ),
+                task_id=task.id,
+            )
         return render_task_prompt(
             task,
-            handoffs=[self._handoffs[d] for d in task.depends_on if d in self._handoffs],
+            handoffs=deps,
+            compacted=compaction.result if compaction else None,
             failure_notes=notes,
             facts=self._facts,
             skill_instructions=instructions,
-            budget_tokens=self._config.execution.context_budget_tokens,
+            budget_tokens=budget,
         )
 
     async def _integrate(self, task: Task, ws: object, attempt_id: str, *, can_retry: bool) -> _End:
