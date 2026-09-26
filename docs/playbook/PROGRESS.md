@@ -4,7 +4,7 @@ Legend: `[ ]` todo · `[x]` done · `[~]` partial (see Blocked) · IDs are stabl
 Rule: work the **first unchecked item of the current milestone**. A milestone is done only when its
 PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
-**Current milestone:** M0
+**Current milestone:** M1
 **Environment notes (M0.1, probed 2026-09-26):** python=3.14.4 system, 3.12.13 via uv (project pins 3.12), uv=0.11.17, git=2.53.0, docker=29.5.2, podman=missing, claude=2.1.283, codex=0.147.0, gemini=0.55.1, opencode=1.18.26, ollama=0.24.0, TYPESAFE_API_KEY present=no, semgrep=missing, gitleaks=missing, pip-audit=missing (auth state of agent CLIs not probed; live tests gated by AIX_LIVE)
 
 ---
@@ -18,7 +18,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M0.6 pytest config: anyio, markers (`live`, `slow`), socket blocker plugin, `AIX_LIVE` gate, coverage config.
 - [x] M0.7 Makefile targets: `fmt`, `fmt-check`, `lint`, `typecheck`, `layers`, `test`, `golden`, `test-live`, `check`.
 - [x] M0.8 Minimal typer app with `--version` and `--help`; smoke test.
-- [ ] M0.9 Run M0 Exit Gate; tag `m0-done`.
+- [x] M0.9 Run M0 Exit Gate; tag `m0-done`.
 
 ## M1 — Domain, store, config (§6–§9)
 - [ ] M1.1 ID types (prefixed ULIDs), enums (`TaskType`, `Capability`, `CheckKind`, `FailureClass`, `RetryMutation`, `DecisionPoint`, `DecisionOutcome`, statuses).
@@ -151,3 +151,4 @@ M0.5 — done; ruff/pyright configured in pyproject; 6 import contracts verified
 M0.6 — done; plugin in tests/aix_pytest_plugin.py (socket blocker, AIX_LIVE gate, anyio=asyncio); ADR-0004 drops pytest-asyncio. Coverage config present, threshold enforced from M3.
 M0.7 — done; `make golden` tolerates pytest exit 5 (no tests) until G-scenarios land in M3.
 M0.8 — done; `aix --version/--help` with smoke tests; committed together with M0.7 so every commit passes `make check`.
+M0.9 — done; gate `make check && uv run aix --help && uv run lint-imports` green; tagged m0-done.
