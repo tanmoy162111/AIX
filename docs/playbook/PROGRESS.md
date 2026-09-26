@@ -77,7 +77,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M4.12 Run M4 Exit Gate; tag `m4-done`.
 
 ## M5 — Decisions, Jev, retries, approvals (§18, §19, §20.4 partial)
-- [ ] M5.1 `DecisionState` builders per point with the §18.6 restrictions + tests (reject claim-sourced / long free text).
+- [x] M5.1 `DecisionState` builders per point with the §18.6 restrictions + tests (reject claim-sourced / long free text).
 - [ ] M5.2 Hard gates (§18.3) + exhaustive tests.
 - [ ] M5.3 DecisionService: gates → provider → outcome mapping → DecisionRecord with `inputs_hash`; provider fallback on error/timeout.
 - [ ] M5.4 `rules` provider for all decision points.
@@ -200,3 +200,4 @@ M4.9 — done; hypothesis properties: order independence, monotonicity, required
 M4.10 — done; verification/engine.py run_verification (single composition point, also for M4.11), tree.py (tracked diff + untracked files as added lines; .aix/ ignored), cli/verify.py. Found+fixed: aix-own .aix/ counted as a change. verify exits 1 for failed AND incomplete. Custom skill checks (skill verification.yaml `custom`) are not yet run by the engine.
 M4.11 — done; ADR-0018. Executor runs run_verification per write attempt (baseline once per run, optional independent ai_review), STUB removed; tests/verif_env.py gives no-op commands for orchestrator tests, goldens G1/G6/G7 use the real toolchain. security/redact.py + EventStore redaction (found by G7: key leaked via the agent claim). Raw adapter stream files are not redacted yet (M8).
 M4.12 — done; exit gate green: make check (1360 passed, 10 live skipped), tests/unit/verification + tests/integration/test_verification.py (149 passed), goldens G1/G6/G7 (3 passed). Tagged m4-done.
+M5.1 — done; decision/state.py (pyright strict). Free text is blocked structurally: Label = ^[a-z0-9_:.-]{1,64}$, metric allowlist, builders take no ExecutionResult/claim (tested by signature inspection). Full suite now ~110s: run make check in the background.
