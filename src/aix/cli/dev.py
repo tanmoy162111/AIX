@@ -41,3 +41,28 @@ def export_schemas(
         if stale.stem not in models:
             stale.unlink()
     typer.echo(f"exported {len(models)} schemas to {out}")
+
+
+@dev_app.command("rebuild-projections")
+def rebuild_projections(
+    db: Annotated[Path, typer.Option("--db", help="Path to the project database.")] = Path(
+        ".aix/aix.db"
+    ),
+) -> None:
+    """Drop all projection rows and rebuild them by replaying the event log."""
+    import anyio
+
+    from aix.store.db import EventStore
+
+    if not db.exists():
+        typer.echo(f"no database at {db}; run `aix init` first", err=True)
+        raise typer.Exit(2)
+
+    async def _run() -> int:
+        store = await EventStore.open(db)
+        try:
+            return await store.rebuild_projections()
+        finally:
+            await store.close()
+
+    typer.echo(f"replayed {anyio.run(_run)} events")

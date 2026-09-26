@@ -15,9 +15,15 @@ import aiosqlite
 import anyio
 from pydantic import BaseModel
 
+from aix.domain.artifacts import Artifact
+from aix.domain.decisions import Approval, DecisionRecord
 from aix.domain.errors import StoreError
+from aix.domain.execution import Attempt, ExecutionResult
 from aix.domain.ids import IdPrefix, new_id
-from aix.store import migrations
+from aix.domain.runs import Run
+from aix.domain.tasks import Task
+from aix.domain.verification import Check, VerificationReport
+from aix.store import migrations, projections
 from aix.store.events import EVENT_PAYLOADS, SCHEMA_VERSION, Event
 
 
@@ -84,9 +90,8 @@ class EventStore:
 
     async def count_events(self) -> int:
         """Total number of stored events."""
-        async with self._conn.execute("SELECT COUNT(*) FROM events") as cur:
-            row = await cur.fetchone()
-        return int(row[0]) if row else 0
+        rows = await self._query("SELECT COUNT(*) AS n FROM events")
+        return int(rows[0]["n"])
 
     async def append(
         self,
@@ -130,22 +135,24 @@ class EventStore:
                     ),
                 )
                 seq = cur.lastrowid
+                assert seq is not None
+                event = Event(
+                    seq=seq,
+                    id=event_id,
+                    run_id=run_id,
+                    task_id=task_id,
+                    attempt_id=attempt_id,
+                    type=event_type,
+                    ts=when,
+                    payload=payload,
+                    schema_version=SCHEMA_VERSION,
+                )
+                await projections.apply(self._conn, event)
                 await self._conn.execute("COMMIT")
             except BaseException:
                 await self._conn.execute("ROLLBACK")
                 raise
-        assert seq is not None
-        return Event(
-            seq=seq,
-            id=event_id,
-            run_id=run_id,
-            task_id=task_id,
-            attempt_id=attempt_id,
-            type=event_type,
-            ts=when,
-            payload=payload,
-            schema_version=SCHEMA_VERSION,
-        )
+        return event
 
     async def events(
         self,
@@ -168,9 +175,111 @@ class EventStore:
             clauses.append(f"type IN ({', '.join('?' for _ in types)})")
             params.extend(types)
         sql = f"SELECT * FROM events WHERE {' AND '.join(clauses)} ORDER BY seq"
-        async with self._conn.execute(sql, params) as cur:
-            rows = await cur.fetchall()
+        async with self._lock:
+            rows = await self._fetch(sql, params)
         return [self._decode(row) for row in rows]
+
+    async def _fetch(self, sql: str, params: Sequence[Any] = ()) -> list[aiosqlite.Row]:
+        """Run a SELECT on the shared connection. Callers must hold ``self._lock``."""
+        async with self._conn.execute(sql, params) as cur:
+            return list(await cur.fetchall())
+
+    async def _query(self, sql: str, params: Sequence[Any] = ()) -> list[aiosqlite.Row]:
+        async with self._lock:
+            return await self._fetch(sql, params)
+
+    async def rebuild_projections(self) -> int:
+        """Clear all projections and replay every event through them in one transaction.
+
+        Returns the number of events replayed. The event log is never modified.
+        """
+        async with self._lock:
+            await self._conn.execute("BEGIN IMMEDIATE")
+            try:
+                await projections.clear(self._conn)
+                rows = await self._fetch("SELECT * FROM events ORDER BY seq")
+                for row in rows:
+                    await projections.apply(self._conn, self._decode(row))
+                await self._conn.execute("COMMIT")
+            except BaseException:
+                await self._conn.execute("ROLLBACK")
+                raise
+        return len(rows)
+
+    async def dump_table(self, table: str) -> list[tuple[Any, ...]]:
+        """All rows of a projection table as tuples, sorted; used to compare projections."""
+        if table not in projections.PROJECTION_TABLES:
+            raise ValueError(f"not a projection table: {table!r}")
+        rows = await self._query(f"SELECT * FROM {table}")
+        return sorted((tuple(r) for r in rows), key=repr)
+
+    # ---- typed readers over the projections ---------------------------------------------
+
+    async def _models[M: BaseModel](
+        self, model: type[M], sql: str, params: Sequence[Any] = ()
+    ) -> list[M]:
+        return [model.model_validate_json(r["data"]) for r in await self._query(sql, params)]
+
+    async def get_run(self, run_id: str) -> Run | None:
+        """The run, or ``None``."""
+        found = await self._models(Run, "SELECT data FROM runs WHERE id = ?", (run_id,))
+        return found[0] if found else None
+
+    async def list_runs(self) -> list[Run]:
+        """All runs, oldest first."""
+        return await self._models(Run, "SELECT data FROM runs ORDER BY created_at, id")
+
+    async def get_tasks(self, run_id: str) -> list[Task]:
+        """Tasks of a run in creation order."""
+        return await self._models(
+            Task, "SELECT data FROM tasks WHERE run_id = ? ORDER BY seq", (run_id,)
+        )
+
+    async def get_attempts(self, task_id: str) -> list[Attempt]:
+        """Attempts of a task by attempt number."""
+        return await self._models(
+            Attempt, "SELECT data FROM attempts WHERE task_id = ? ORDER BY number", (task_id,)
+        )
+
+    async def get_result(self, attempt_id: str) -> ExecutionResult | None:
+        """The recorded ``ExecutionResult`` of a finished attempt."""
+        rows = await self._query("SELECT result FROM attempts WHERE id = ?", (attempt_id,))
+        if not rows or rows[0]["result"] is None:
+            return None
+        return ExecutionResult.model_validate_json(rows[0]["result"])
+
+    async def get_verification(self, attempt_id: str) -> VerificationReport | None:
+        """The verification report of an attempt."""
+        rows = await self._query("SELECT verification FROM attempts WHERE id = ?", (attempt_id,))
+        if not rows or rows[0]["verification"] is None:
+            return None
+        return VerificationReport.model_validate_json(rows[0]["verification"])
+
+    async def get_checks(self, attempt_id: str) -> list[Check]:
+        """Checks recorded for an attempt in completion order."""
+        return await self._models(
+            Check, "SELECT data FROM checks WHERE attempt_id = ? ORDER BY seq", (attempt_id,)
+        )
+
+    async def get_decisions(self, run_id: str) -> list[DecisionRecord]:
+        """Decisions of a run in the order they were made."""
+        return await self._models(
+            DecisionRecord, "SELECT data FROM decisions WHERE run_id = ? ORDER BY seq", (run_id,)
+        )
+
+    async def list_approvals(self, status: str | None = None) -> list[Approval]:
+        """Approvals, optionally only those with ``status``."""
+        if status is None:
+            return await self._models(Approval, "SELECT data FROM approvals ORDER BY seq")
+        return await self._models(
+            Approval, "SELECT data FROM approvals WHERE status = ? ORDER BY seq", (status,)
+        )
+
+    async def get_artifacts(self, run_id: str) -> list[Artifact]:
+        """Artifacts of a run in creation order."""
+        return await self._models(
+            Artifact, "SELECT data FROM artifacts WHERE run_id = ? ORDER BY seq", (run_id,)
+        )
 
     @staticmethod
     def _decode(row: aiosqlite.Row) -> Event:
