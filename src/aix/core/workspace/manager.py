@@ -16,7 +16,7 @@ from pathlib import Path
 import anyio
 
 from aix.domain.base import Sha256
-from aix.domain.errors import ToolFailure
+from aix.domain.errors import MergeConflict, ToolFailure
 from aix.domain.execution import DiffSummary
 from aix.tools.git import git
 
@@ -53,6 +53,7 @@ class WorkspaceManager:
 
     def __init__(self, project_root: Path) -> None:
         self.root = project_root.resolve()
+        self._merge_lock = anyio.Lock()
 
     @property
     def worktrees_dir(self) -> Path:
@@ -142,6 +143,67 @@ class WorkspaceManager:
             ws.path, "-c", "commit.gpgsign=false", "commit", "-q", "--no-verify", "-m", message
         )
         return (await git(ws.path, "rev-parse", "HEAD")).stdout.strip()
+
+    async def merge_attempt(self, run_id: str, ws: Workspace, message: str) -> str:
+        """Merge the attempt branch into the run branch with a ``--no-ff`` style merge commit.
+
+        Uses ``git merge-tree --write-tree`` plus ``commit-tree``/``update-ref`` so nothing is
+        checked out and the user's working tree is untouched. Merges are serialized by a lock.
+
+        Returns the merge commit sha.
+
+        Raises:
+            ToolFailure: the attempt branch has no commits beyond the run branch.
+            MergeConflict: the branches conflict; ``details["files"]`` lists the paths.
+        """
+        run_ref = run_branch_name(run_id)
+        async with self._merge_lock:
+            run_head = (await git(self.root, "rev-parse", "--verify", run_ref)).stdout.strip()
+            att_head = (await git(self.root, "rev-parse", "--verify", ws.branch)).stdout.strip()
+            if (
+                att_head == run_head
+                or (
+                    await git(
+                        self.root, "merge-base", "--is-ancestor", att_head, run_head, check=False
+                    )
+                ).code
+                == 0
+            ):
+                raise ToolFailure(f"attempt branch {ws.branch} has no commits to merge")
+            tree_res = await git(
+                self.root,
+                "merge-tree",
+                "--write-tree",
+                "--no-messages",
+                "--name-only",
+                run_ref,
+                ws.branch,
+                check=False,
+            )
+            lines = tree_res.stdout.splitlines()
+            if tree_res.code == 1:
+                files = sorted(line for line in lines[1:] if line.strip())
+                raise MergeConflict(
+                    f"merging {ws.branch} into {run_ref} conflicts in {len(files)} file(s)",
+                    details={"files": list(files), "branch": ws.branch},
+                )
+            if tree_res.code != 0 or not lines:
+                raise ToolFailure(f"git merge-tree failed: {tree_res.stderr.strip()}")
+            commit = (
+                await git(
+                    self.root,
+                    "commit-tree",
+                    lines[0],
+                    "-p",
+                    run_head,
+                    "-p",
+                    att_head,
+                    "-m",
+                    message,
+                )
+            ).stdout.strip()
+            await git(self.root, "update-ref", f"refs/heads/{run_ref}", commit, run_head)
+            return commit
 
     async def remove_workspace(self, ws: Workspace) -> None:
         """Remove the worktree directory (even if dirty). The attempt branch is kept. Idempotent."""

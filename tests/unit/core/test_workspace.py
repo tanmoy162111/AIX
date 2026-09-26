@@ -198,3 +198,73 @@ async def test_remove_workspace_deletes_dir_keeps_branch_and_is_idempotent(repo:
     assert repos.git(repo, "rev-parse", "--verify", ws.branch).returncode == 0
     assert str(ws.path) not in repos.git(repo, "worktree", "list").stdout
     await mgr.remove_workspace(ws)
+
+
+# ---- merge into the run branch -----------------------------------------------------------------
+
+
+async def test_merge_attempt_creates_a_no_ff_merge_commit_without_touching_the_user_tree(
+    repo: Path,
+) -> None:
+    from aix.core.workspace.manager import run_branch_name
+
+    mgr = WorkspaceManager(repo)
+    run_id = rid()
+    rb = await mgr.create_run_branch(run_id)
+    ws = await mgr.create_attempt_workspace(run_id, aid())
+    repos.apply_patch(ws.path, "hello.diff")
+    assert await mgr.commit_attempt(ws, "aix: hello") is not None
+    merge_sha = await mgr.merge_attempt(run_id, ws, "aix: merge hello")
+    assert head(repo, run_branch_name(run_id)) == merge_sha
+    parents = repos.git(repo, "rev-list", "--parents", "-n", "1", merge_sha).stdout.split()[1:]
+    assert len(parents) == 2 and parents[0] == rb.base_commit
+    assert "/hello" in repos.git(repo, "show", f"{merge_sha}:app/handler.py").stdout
+    assert head(repo, "main") == rb.base_commit
+    assert repos.git(repo, "status", "--porcelain", "--untracked-files=no").stdout == ""
+
+
+async def test_second_merge_builds_on_the_first_and_conflicts_are_detected(repo: Path) -> None:
+    from aix.domain.errors import MergeConflict
+
+    mgr = WorkspaceManager(repo)
+    run_id = rid()
+    await mgr.create_run_branch(run_id)
+    a = await mgr.create_attempt_workspace(run_id, aid())
+    b = await mgr.create_attempt_workspace(run_id, aid())
+    (a.path / "README.md").write_text("from a\n")
+    (b.path / "README.md").write_text("from b\n")
+    (b.path / "other.txt").write_text("b only\n")
+    await mgr.commit_attempt(a, "aix: a")
+    await mgr.commit_attempt(b, "aix: b")
+    await mgr.merge_attempt(run_id, a, "merge a")
+    with pytest.raises(MergeConflict) as ei:
+        await mgr.merge_attempt(run_id, b, "merge b")
+    assert ei.value.details["files"] == ["README.md"]
+
+
+async def test_merge_of_disjoint_attempts_keeps_both_changes(repo: Path) -> None:
+    from aix.core.workspace.manager import run_branch_name
+
+    mgr = WorkspaceManager(repo)
+    run_id = rid()
+    await mgr.create_run_branch(run_id)
+    a = await mgr.create_attempt_workspace(run_id, aid())
+    b = await mgr.create_attempt_workspace(run_id, aid())
+    (a.path / "a.txt").write_text("a\n")
+    (b.path / "b.txt").write_text("b\n")
+    await mgr.commit_attempt(a, "aix: a")
+    await mgr.commit_attempt(b, "aix: b")
+    await mgr.merge_attempt(run_id, a, "merge a")
+    sha = await mgr.merge_attempt(run_id, b, "merge b")
+    files = repos.git(repo, "ls-tree", "-r", "--name-only", sha).stdout.split()
+    assert "a.txt" in files and "b.txt" in files
+    assert head(repo, run_branch_name(run_id)) == sha
+
+
+async def test_merging_an_attempt_without_commits_is_an_error(repo: Path) -> None:
+    mgr = WorkspaceManager(repo)
+    run_id = rid()
+    await mgr.create_run_branch(run_id)
+    ws = await mgr.create_attempt_workspace(run_id, aid())
+    with pytest.raises(ToolFailure, match="no commits"):
+        await mgr.merge_attempt(run_id, ws, "nothing")
