@@ -7,35 +7,286 @@
     "quality_profile": "showcase"
   },
   "components": [
-    { "id": "cli", "type": "external", "label": "aix CLI", "sublabel": "goal in", "pos": [40, 110], "size": [130, 60] },
-    { "id": "planner", "type": "backend", "label": "Planner", "sublabel": "intent + task graph", "pos": [250, 110], "size": [130, 60] },
-    { "id": "router", "type": "backend", "label": "Router", "sublabel": "capability scoring", "pos": [460, 110], "size": [130, 60] },
-    { "id": "executor", "type": "backend", "label": "Executor", "sublabel": "scheduler + attempts", "pos": [670, 110], "size": [130, 60] },
-    { "id": "agents", "type": "external", "label": "Agent adapters", "sublabel": "claude, codex, gemini, opencode", "pos": [880, 110], "size": [150, 60] },
-    { "id": "decision", "type": "security", "label": "Decision Service", "sublabel": "gates, rules, Jev", "pos": [460, 300], "size": [130, 60] },
-    { "id": "verifier", "type": "backend", "label": "Verifier", "sublabel": "executed checks", "pos": [670, 300], "size": [130, 60] },
-    { "id": "workspace", "type": "cloud", "label": "Git worktrees", "sublabel": "isolated attempts", "pos": [880, 300], "size": [150, 60] },
-    { "id": "events", "type": "database", "label": "Event store", "sublabel": "SQLite, append-only", "pos": [460, 480], "size": [130, 60] },
-    { "id": "artifacts", "type": "database", "label": "Artifact store", "sublabel": "content-addressed", "pos": [670, 480], "size": [130, 60] }
+    {
+      "id": "cli",
+      "type": "external",
+      "label": "aix CLI",
+      "sublabel": "goal in",
+      "pos": [
+        40,
+        110
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "planner",
+      "type": "backend",
+      "label": "Planner",
+      "sublabel": "intent + task graph",
+      "pos": [
+        250,
+        110
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "Router",
+      "sublabel": "capability scoring",
+      "pos": [
+        460,
+        110
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "executor",
+      "type": "backend",
+      "label": "Executor",
+      "sublabel": "scheduler + attempts",
+      "pos": [
+        670,
+        110
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "agents",
+      "type": "external",
+      "label": "Agent adapters",
+      "sublabel": "claude, codex, gemini, opencode",
+      "pos": [
+        880,
+        110
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "jev",
+      "type": "external",
+      "label": "Jev",
+      "sublabel": "TypeSafe AI, typed judgment",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ],
+      "tag": "optional"
+    },
+    {
+      "id": "decision",
+      "type": "security",
+      "label": "Decision Service",
+      "sublabel": "hard gates, then judgment",
+      "pos": [
+        460,
+        300
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "verifier",
+      "type": "backend",
+      "label": "Verifier",
+      "sublabel": "executed checks",
+      "pos": [
+        670,
+        300
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "workspace",
+      "type": "cloud",
+      "label": "Git worktrees",
+      "sublabel": "isolated attempts",
+      "pos": [
+        880,
+        300
+      ],
+      "size": [
+        150,
+        60
+      ]
+    },
+    {
+      "id": "events",
+      "type": "database",
+      "label": "Event store",
+      "sublabel": "SQLite, append-only",
+      "pos": [
+        460,
+        480
+      ],
+      "size": [
+        130,
+        60
+      ]
+    },
+    {
+      "id": "artifacts",
+      "type": "database",
+      "label": "Artifact store",
+      "sublabel": "content-addressed",
+      "pos": [
+        670,
+        480
+      ],
+      "size": [
+        130,
+        60
+      ]
+    }
   ],
   "boundaries": [
-    { "kind": "region", "label": "Provider-agnostic core", "wraps": ["planner", "router", "executor", "decision", "verifier", "events", "artifacts"] }
+    {
+      "kind": "region",
+      "label": "Provider-agnostic core",
+      "wraps": [
+        "planner",
+        "router",
+        "executor",
+        "decision",
+        "verifier",
+        "events",
+        "artifacts"
+      ]
+    }
   ],
   "connections": [
-    { "id": "goal", "from": "cli", "to": "planner", "label": "goal", "variant": "emphasis" },
-    { "id": "graph", "from": "planner", "to": "router", "label": "task graph" },
-    { "id": "assign", "from": "router", "to": "executor", "label": "assignment" },
-    { "id": "run", "from": "executor", "to": "agents", "label": "adapter" },
-    { "id": "edits", "from": "agents", "to": "workspace", "label": "edits", "labelDy": 24, "fromSide": "bottom", "toSide": "top" },
-    { "id": "diff", "from": "workspace", "to": "verifier", "label": "diff" },
-    { "id": "evidence", "from": "verifier", "to": "decision", "label": "evidence", "variant": "security" },
-    { "id": "retry", "from": "decision", "to": "router", "label": "retry / switch", "variant": "dashed", "fromSide": "top", "toSide": "bottom" },
-    { "id": "record", "from": "decision", "to": "events", "label": "record", "labelDy": 24, "fromSide": "bottom", "toSide": "top" },
-    { "id": "proof", "from": "verifier", "to": "artifacts", "label": "proof", "labelDy": 24, "fromSide": "bottom", "toSide": "top" }
+    {
+      "id": "goal",
+      "from": "cli",
+      "to": "planner",
+      "label": "goal",
+      "variant": "emphasis"
+    },
+    {
+      "id": "graph",
+      "from": "planner",
+      "to": "router",
+      "label": "task graph"
+    },
+    {
+      "id": "assign",
+      "from": "router",
+      "to": "executor",
+      "label": "assignment"
+    },
+    {
+      "id": "run",
+      "from": "executor",
+      "to": "agents",
+      "label": "adapter"
+    },
+    {
+      "id": "edits",
+      "from": "agents",
+      "to": "workspace",
+      "label": "edits",
+      "labelDy": 24,
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "diff",
+      "from": "workspace",
+      "to": "verifier",
+      "label": "diff"
+    },
+    {
+      "id": "evidence",
+      "from": "verifier",
+      "to": "decision",
+      "label": "evidence",
+      "variant": "security"
+    },
+    {
+      "id": "retry",
+      "from": "decision",
+      "to": "router",
+      "label": "retry / switch",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "judge",
+      "from": "decision",
+      "to": "jev",
+      "label": "typed questions",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "right"
+    },
+    {
+      "id": "record",
+      "from": "decision",
+      "to": "events",
+      "label": "record",
+      "labelDy": 24,
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "proof",
+      "from": "verifier",
+      "to": "artifacts",
+      "label": "proof",
+      "labelDy": 24,
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
   ],
   "cards": [
-    { "dot": "cyan", "title": "Pipeline", "items": ["Intent, plan, route, execute, verify, decide, artifact", "One CLI command drives heterogeneous agents"] },
-    { "dot": "emerald", "title": "Evidence", "items": ["Verification is executed checks, never agent claims", "Every decision is recorded and replayable"] },
-    { "dot": "rose", "title": "Isolation", "items": ["Each attempt runs in its own git worktree", "Core never imports a vendor adapter"] }
+    {
+      "dot": "cyan",
+      "title": "Pipeline",
+      "items": [
+        "Intent, plan, route, execute, verify, decide, artifact",
+        "One CLI command drives heterogeneous agents"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Judgment",
+      "items": [
+        "LLM agents do the work; Jev judges typed decisions",
+        "Code gates are authority; Jev falls back to rules"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Evidence and isolation",
+      "items": [
+        "Checks are executed, never agent claims",
+        "Each attempt runs in its own git worktree"
+      ]
+    }
   ]
 }

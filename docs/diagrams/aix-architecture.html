@@ -5167,8 +5167,9 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <path data-edge-from="workspace" data-edge-to="verifier" data-edge-label="diff" data-edge-key="5" data-edge-id="diff" data-composition-points="880,330;800,330" d="M 880 330 L 800 330" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         <path data-edge-from="verifier" data-edge-to="decision" data-edge-label="evidence" data-edge-key="6" data-edge-id="evidence" data-composition-points="670,330;590,330" d="M 670 330 L 590 330" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
         <path data-edge-from="decision" data-edge-to="router" data-edge-label="retry / switch" data-edge-key="7" data-edge-id="retry" data-composition-points="525,300;525,170" d="M 525 300 L 525 170" class="a-dashed" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
-        <path data-edge-from="decision" data-edge-to="events" data-edge-label="record" data-edge-key="8" data-edge-id="record" data-composition-points="525,360;525,480" d="M 525 360 L 525 480" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
-        <path data-edge-from="verifier" data-edge-to="artifacts" data-edge-label="proof" data-edge-key="9" data-edge-id="proof" data-composition-points="735,360;735,480" d="M 735 360 L 735 480" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="decision" data-edge-to="jev" data-edge-label="typed questions" data-edge-key="8" data-edge-id="judge" data-composition-points="460,330;190,330" d="M 460 330 L 190 330" class="a-security" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        <path data-edge-from="decision" data-edge-to="events" data-edge-label="record" data-edge-key="9" data-edge-id="record" data-composition-points="525,360;525,480" d="M 525 360 L 525 480" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path data-edge-from="verifier" data-edge-to="artifacts" data-edge-label="proof" data-edge-key="10" data-edge-id="proof" data-composition-points="735,360;735,480" d="M 735 360 L 735 480" class="a-default" stroke-width="1.5" marker-end="url(#arrowhead)"/>
 
         <!-- Components -->
         <g id="node-cli" data-node-id="cli" data-node-label="aix CLI" tabindex="0" role="button" aria-label="Focus aix CLI, goal in, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="goal in" data-node-context="Architecture component">
@@ -5228,8 +5229,21 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="context" x="955" y="154" class="t-muted" font-size="7.6" text-anchor="middle">claude, codex, gemini, opencode</text>
         </g>
 
-        <g id="node-decision" data-node-id="decision" data-node-label="Decision Service" tabindex="0" role="button" aria-label="Focus Decision Service, gates, rules, Jev, Provider-agnostic core" aria-pressed="false" data-node-kind="security" data-node-sublabel="gates, rules, Jev" data-node-context="Provider-agnostic core">
-          <title>Decision Service · gates, rules, Jev · Provider-agnostic core</title>
+        <g id="node-jev" data-node-id="jev" data-node-label="Jev" tabindex="0" role="button" aria-label="Focus Jev, TypeSafe AI, typed judgment, Architecture component" aria-pressed="false" data-node-kind="external" data-node-sublabel="TypeSafe AI, typed judgment" data-node-tag="optional" data-node-context="Architecture component">
+          <title>Jev · TypeSafe AI, typed judgment · Architecture component · optional</title>
+          <rect x="40" y="300" width="150" height="60" rx="6" class="c-mask"/>
+          <rect x="40" y="300" width="150" height="60" rx="6" class="c-external" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(46 306) scale(0.6875)">
+            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
+            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="115" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Jev</text>
+        <text data-detail="context" x="115" y="344" class="t-muted" font-size="8.7" text-anchor="middle">TypeSafe AI, typed judgment</text>
+        <text data-detail="fine" x="115" y="352" class="t-external" font-size="7" text-anchor="middle">optional</text>
+        </g>
+
+        <g id="node-decision" data-node-id="decision" data-node-label="Decision Service" tabindex="0" role="button" aria-label="Focus Decision Service, hard gates, then judgment, Provider-agnostic core" aria-pressed="false" data-node-kind="security" data-node-sublabel="hard gates, then judgment" data-node-context="Provider-agnostic core">
+          <title>Decision Service · hard gates, then judgment · Provider-agnostic core</title>
           <rect x="460" y="300" width="130" height="60" rx="6" class="c-mask"/>
           <rect x="460" y="300" width="130" height="60" rx="6" class="c-security" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(466 306) scale(0.6875)">
@@ -5237,7 +5251,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="m5.8 8 1.5 1.5 3-3"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="525" y="328" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Decision Service</text>
-        <text data-detail="context" x="525" y="344" class="t-muted" font-size="9" text-anchor="middle">gates, rules, Jev</text>
+        <text data-detail="context" x="525" y="344" class="t-muted" font-size="8.1" text-anchor="middle">hard gates, then judgment</text>
         </g>
 
         <g id="node-verifier" data-node-id="verifier" data-node-label="Verifier" tabindex="0" role="button" aria-label="Focus Verifier, executed checks, Provider-agnostic core" aria-pressed="false" data-node-kind="backend" data-node-sublabel="executed checks" data-node-context="Provider-agnostic core">
@@ -5319,11 +5333,15 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <rect x="486.4" y="280" width="77.2" height="14" rx="3" class="c-mask"/>
           <text x="525" y="290" class="t-messagebus" font-size="8" text-anchor="middle">retry / switch</text>
         </g>
-        <g data-detail="context" data-edge-from="decision" data-edge-to="events" data-edge-label="record" data-edge-key="8" data-edge-id="record">
+        <g data-detail="context" data-edge-from="decision" data-edge-to="jev" data-edge-label="typed questions" data-edge-key="8" data-edge-id="judge">
+          <rect x="284" y="310" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="325" y="320" class="t-security" font-size="8" text-anchor="middle">typed questions</text>
+        </g>
+        <g data-detail="context" data-edge-from="decision" data-edge-to="events" data-edge-label="record" data-edge-key="9" data-edge-id="record">
           <rect x="505.6" y="364" width="38.8" height="14" rx="3" class="c-mask"/>
           <text x="525" y="374" class="t-muted" font-size="8" text-anchor="middle">record</text>
         </g>
-        <g data-detail="context" data-edge-from="verifier" data-edge-to="artifacts" data-edge-label="proof" data-edge-key="9" data-edge-id="proof">
+        <g data-detail="context" data-edge-from="verifier" data-edge-to="artifacts" data-edge-label="proof" data-edge-key="10" data-edge-id="proof">
           <rect x="718" y="364" width="34" height="14" rx="3" class="c-mask"/>
           <text x="735" y="374" class="t-muted" font-size="8" text-anchor="middle">proof</text>
         </g>
@@ -5558,22 +5576,22 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
       <div class="card">
         <div class="card-header">
           <div class="card-dot emerald"></div>
-          <h3>Evidence</h3>
+          <h3>Judgment</h3>
         </div>
         <ul>
-          <li>&bull; Verification is executed checks, never agent claims</li>
-          <li>&bull; Every decision is recorded and replayable</li>
+          <li>&bull; LLM agents do the work; Jev judges typed decisions</li>
+          <li>&bull; Code gates are authority; Jev falls back to rules</li>
         </ul>
       </div>
 
       <div class="card">
         <div class="card-header">
-          <div class="card-dot rose"></div>
-          <h3>Isolation</h3>
+          <div class="card-dot amber"></div>
+          <h3>Evidence and isolation</h3>
         </div>
         <ul>
+          <li>&bull; Checks are executed, never agent claims</li>
           <li>&bull; Each attempt runs in its own git worktree</li>
-          <li>&bull; Core never imports a vendor adapter</li>
         </ul>
       </div>
     </div>
