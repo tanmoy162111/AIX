@@ -15,6 +15,7 @@ HELP = {
     "--model --resume",
     "codex": "--json --sandbox --model --cd --config resume",
     "gemini": "--prompt --output-format --approval-mode --model --skip-trust --resume",
+    "opencode": "run --format --model --session --dir --agent",
 }
 
 

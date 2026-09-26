@@ -1,0 +1,20 @@
+# `synthetic: true`: hand-authored from the event emission code embedded in the installed CLI (the
+# `run` command handler: emit("tool_use"|"step_start"|"step_finish"|"text"|"error", ...)); no model
+# call was made. Part field names (`tokens`, `cost`, `reason`, `state.status`) come from opencode's
+# message-part schema and are unconfirmed by a live capture. Replace via `aix dev record opencode`
+# (M10.1).
+agent: opencode
+synthetic: true
+cli_version_documented_against: "1.18.26"
+authored: "2026-09-26"
+invocation: "opencode run --format json --dir <ws> [--agent plan] [--model p/m] [--session id] (prompt on stdin)"
+files:
+  success.jsonl: "read + edit tool calls over three steps, final text, step_finish reason stop"
+  read_only.jsonl: "text only"
+  auth_failure.jsonl: "error ProviderAuthError"
+  rate_limit.jsonl: "error APIError 429"
+  network.jsonl: "error UnknownError, ENOTFOUND"
+  context.jsonl: "error ContextOverflowError"
+  malformed.jsonl: "garbage lines mixed into a valid stream"
+  no_result.jsonl: "stream ends without a final step_finish"
+  permission_rejected.jsonl: "plain-text 'auto-rejecting' line in JSON mode; the run still completes"

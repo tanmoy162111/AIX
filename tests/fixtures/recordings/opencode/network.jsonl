@@ -1,0 +1,1 @@
+{"type":"error","timestamp":1790000002000,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","error":{"name":"UnknownError","data":{"message":"Unable to connect. Is the computer able to access the url? (ENOTFOUND api.anthropic.com)"}}}

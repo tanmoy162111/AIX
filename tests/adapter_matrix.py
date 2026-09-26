@@ -13,6 +13,7 @@ from aix.agents.adapters.codex import CodexAdapter
 from aix.agents.adapters.fake import FakeAdapter
 from aix.agents.adapters.fake.script import FakeScript, FakeStep
 from aix.agents.adapters.gemini import GeminiAdapter
+from aix.agents.adapters.opencode import OpenCodeAdapter
 from aix.agents.protocol import AgentAdapter, AgentPermissions, AgentRequest
 from aix.domain.ids import IdPrefix, new_id
 from binaries import make_replay_binary
@@ -45,12 +46,14 @@ HELP = {
     "--model --resume",
     "codex": "--json --sandbox --model --cd --config resume",
     "gemini": "--prompt --output-format --approval-mode --model --skip-trust --resume",
+    "opencode": "run --format --model --session --dir --agent",
 }
 
 CLI_ADAPTERS: dict[str, Any] = {
     "claude": ClaudeAdapter,
     "codex": CodexAdapter,
     "gemini": GeminiAdapter,
+    "opencode": OpenCodeAdapter,
 }
 
 

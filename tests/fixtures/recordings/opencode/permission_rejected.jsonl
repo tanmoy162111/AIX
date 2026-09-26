@@ -1,0 +1,5 @@
+{"type":"step_start","timestamp":1790000000000,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","part":{"id":"prt_1","type":"step-start"}}
+!  permission requested: external_directory (/etc/*); auto-rejecting
+{"type":"tool_use","timestamp":1790000001000,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","part":{"id":"prt_2","type":"tool","callID":"call_1","tool":"read","state":{"status":"error","input":{"filePath":"/etc/passwd"},"error":"The user rejected permission to use this specific tool call."}}}
+{"type":"text","timestamp":1790000002000,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","part":{"id":"prt_3","type":"text","text":"I could not read that file.","time":{"start":1,"end":2}}}
+{"type":"step_finish","timestamp":1790000002100,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","part":{"id":"prt_4","type":"step-finish","reason":"stop","cost":0,"tokens":{"input":10,"output":5,"reasoning":0,"cache":{"read":0,"write":0}}}}

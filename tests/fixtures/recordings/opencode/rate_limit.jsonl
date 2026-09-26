@@ -1,0 +1,2 @@
+{"type":"step_start","timestamp":1790000000000,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","part":{"id":"prt_1","type":"step-start"}}
+{"type":"error","timestamp":1790000005000,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","error":{"name":"APIError","data":{"message":"429 Too Many Requests: rate limit exceeded","statusCode":429,"isRetryable":true}}}

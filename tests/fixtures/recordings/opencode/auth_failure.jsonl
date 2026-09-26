@@ -1,0 +1,1 @@
+{"type":"error","timestamp":1790000000300,"sessionID":"ses_5e1a2b3c4d5eFgHiJkLmNoPqRs","error":{"name":"ProviderAuthError","data":{"providerID":"anthropic","message":"Authentication failed: invalid x-api-key (401)"}}}

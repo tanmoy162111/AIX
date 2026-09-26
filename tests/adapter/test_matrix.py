@@ -14,7 +14,7 @@ from aix.domain.errors import UnsupportedError
 
 pytestmark = pytest.mark.anyio
 
-KINDS = ["fake", "claude", "codex", "gemini"]
+KINDS = ["fake", "claude", "codex", "gemini", "opencode"]
 
 
 @pytest.fixture(params=KINDS)
@@ -91,7 +91,7 @@ async def test_rate_limit_classification(rig: Rig) -> None:
 async def test_usage_parsing(rig: Rig) -> None:
     _, out = await run_scenario(rig, "usage_parsing")
     assert (out.usage.input_tokens or 0) > 0 and (out.usage.output_tokens or 0) > 0
-    if rig.kind in ("fake", "claude"):
+    if rig.kind in ("fake", "claude", "opencode"):
         assert out.usage.cost_usd is not None  # reported cost
     else:
         assert out.usage.cost_usd is None  # codex and gemini report tokens only
@@ -121,6 +121,8 @@ async def test_permission_translation(rig: Rig) -> None:
         assert "Edit" in argv[argv.index("--disallowedTools") + 1]
     elif rig.kind == "gemini":
         assert argv[argv.index("--approval-mode") + 1] == "plan"
+    elif rig.kind == "opencode":
+        assert argv[argv.index("--agent") + 1] == "plan"
     else:
         assert argv[argv.index("-s") + 1] == "read-only"
 

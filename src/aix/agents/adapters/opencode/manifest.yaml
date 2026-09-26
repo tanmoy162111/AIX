@@ -1,0 +1,45 @@
+id: opencode
+name: OpenCode
+kind: cli
+binary: opencode
+probe:
+  version_args: ["--version"]
+  help_args: ["run", "--help"]
+  auth_check: run_smoke
+required_flags:
+  - --format
+  - --model
+  - --session
+  - --dir
+  - --agent
+capabilities:
+  implement: 0.7
+  debug: 0.65
+  test: 0.6
+  review: 0.6
+  design: 0.6
+  research: 0.6
+  summarize: 0.6
+  security: 0.4
+  document: 0.6
+cost_class: medium
+supports:
+  streaming: true
+  sessions: true
+  non_interactive: true
+  cancel: true
+  cost_reporting: partial
+  model_select: true
+env_allowlist:
+  - ANTHROPIC_API_KEY
+  - OPENAI_API_KEY
+  - GEMINI_API_KEY
+  - GOOGLE_GENERATIVE_AI_API_KEY
+  - OPENROUTER_API_KEY
+  - GROQ_API_KEY
+  - XDG_CONFIG_HOME
+  - XDG_DATA_HOME
+  - XDG_STATE_HOME
+  - XDG_CACHE_HOME
+  - OPENCODE_CONFIG
+  - OPENCODE_CONFIG_DIR
