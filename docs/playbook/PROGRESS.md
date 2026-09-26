@@ -47,7 +47,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M2.12 Run M2 Exit Gate; tag `m2-done`.
 
 ## M3 — Planning, routing, scheduling (§12–§14, §16)
-- [ ] M3.1 Repo facts inspector (languages, managers, commands, size) — shared with §17.1 detection.
+- [x] M3.1 Repo facts inspector (languages, managers, commands, size) — shared with §17.1 detection.
 - [ ] M3.2 Intent engine (rules); risk keywords; tests.
 - [ ] M3.3 Skills: schemas for 4 files, loader, registry, 7 builtin skills, `aix skill list|inspect`.
 - [ ] M3.4 TemplatePlanner from skill `workflow.yaml`.
@@ -174,3 +174,4 @@ M2.9 — done; tests/adapter/test_matrix.py runs the 11 §10.5 rows identically 
 M2.10 — done; `aix agent list|inspect|test|enable|disable` (+ alias `aix agents`) and `aix doctor` (fail = python/git/config -> exit 5; everything else warns). `agent test` only probes unless --live or fake. Verified on this machine: real claude 2.1.283 and codex 0.147.0 both probe 'ready' (manifest required_flags exist). Tests use a hermetic PATH (tests/unit/conftest.py env fixture + tests/cli_env.py).
 M2.11 — done; core/orchestrator/single.py + `aix run "<goal>" --agent <id> [--scope] [--allow-dirty] [--keep-worktrees] [--json]`: run branch -> worktree -> agent -> control-plane diff -> scope check -> accept/reject stand-in (replaced by M4 verification / M5 decisions) -> commit + checkout-free merge -> cleanup; full event trail, replay-equal projections, exit codes 0/1/2/5. Interim prompt (B.2 template in M6.4); fake agent scriptable via AIX_FAKE_SCRIPTS. Single attempt, no retries yet (max_attempts=1).
 M2.12 — done; gate green (make check; tests/adapter 141 passed/2 documented n/a; test_single_task_run 13 passed; agent list ids ⊇ {claude,codex,fake}); tagged m2-done.
+M3.1 — done; inspect_repo() in verification/detect.py returns new domain RepoFacts (ADR-0009, schema exported); reads markers/metadata only, command resolution stays M4.1.
