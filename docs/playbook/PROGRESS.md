@@ -71,7 +71,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M4.6 Policy check (scope, forbidden files, large binaries).
 - [x] M4.7 Baseline run + pre_existing handling.
 - [x] M4.8 `ai_review` check: independent reviewer routing, B.3 prompt, findings JSON parse, error on unparseable.
-- [ ] M4.9 `VerificationReport.overall` rule with property tests.
+- [x] M4.9 `VerificationReport.overall` rule with property tests.
 - [ ] M4.10 `aix verify`, `aix review`.
 - [ ] M4.11 Remove M3 verification stub flag; golden G1, G6, G7.
 - [ ] M4.12 Run M4 Exit Gate; tag `m4-done`.
@@ -196,3 +196,4 @@ M4.5 — done; ADR-0016; verification/security.py. External tools (gitleaks/semg
 M4.6 — done; verification/policy.py run_policy_check (reuses core scope glob rules; .env/.env.* except .example/.sample/.template/.dist, *.pem/*.key/*.p12/*.pfx/*.keystore, id_rsa, .aws/credentials; binary > 1 MiB = NUL in first 8 KiB).
 M4.7 — done; ADR-0017; verification/baseline.py (Baseline model, run_baseline, apply_baseline). Wiring (run once before the first write attempt of a run, on the run-branch head) happens in the engine/orchestrator, M4.9-M4.11.
 M4.8 — done; verification/ai_review.py + core/prompts/review.j2 (snapshot-tested; M6.4 finalizes B.2/B.3 wording). Reviewer runs via the same read-only throwaway-worktree runner as the planner; pick_reviewer reuses route() so independence is the §12 penalty. Optional by default (required only if the caller says so); unparseable reply = error.
+M4.9 — done; hypothesis properties: order independence, monotonicity, required failure => failed, required skipped never passes, optional-only can only warn, AI review cannot rescue, report validator accepts only the computed overall. Rule itself was already implemented in M1.
