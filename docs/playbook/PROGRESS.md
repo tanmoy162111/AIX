@@ -73,7 +73,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M4.8 `ai_review` check: independent reviewer routing, B.3 prompt, findings JSON parse, error on unparseable.
 - [x] M4.9 `VerificationReport.overall` rule with property tests.
 - [x] M4.10 `aix verify`, `aix review`.
-- [ ] M4.11 Remove M3 verification stub flag; golden G1, G6, G7.
+- [x] M4.11 Remove M3 verification stub flag; golden G1, G6, G7.
 - [ ] M4.12 Run M4 Exit Gate; tag `m4-done`.
 
 ## M5 — Decisions, Jev, retries, approvals (§18, §19, §20.4 partial)
@@ -198,3 +198,4 @@ M4.7 — done; ADR-0017; verification/baseline.py (Baseline model, run_baseline,
 M4.8 — done; verification/ai_review.py + core/prompts/review.j2 (snapshot-tested; M6.4 finalizes B.2/B.3 wording). Reviewer runs via the same read-only throwaway-worktree runner as the planner; pick_reviewer reuses route() so independence is the §12 penalty. Optional by default (required only if the caller says so); unparseable reply = error.
 M4.9 — done; hypothesis properties: order independence, monotonicity, required failure => failed, required skipped never passes, optional-only can only warn, AI review cannot rescue, report validator accepts only the computed overall. Rule itself was already implemented in M1.
 M4.10 — done; verification/engine.py run_verification (single composition point, also for M4.11), tree.py (tracked diff + untracked files as added lines; .aix/ ignored), cli/verify.py. Found+fixed: aix-own .aix/ counted as a change. verify exits 1 for failed AND incomplete. Custom skill checks (skill verification.yaml `custom`) are not yet run by the engine.
+M4.11 — done; ADR-0018. Executor runs run_verification per write attempt (baseline once per run, optional independent ai_review), STUB removed; tests/verif_env.py gives no-op commands for orchestrator tests, goldens G1/G6/G7 use the real toolchain. security/redact.py + EventStore redaction (found by G7: key leaked via the agent claim). Raw adapter stream files are not redacted yet (M8).
