@@ -120,5 +120,8 @@ def test_events_are_queryable_after_the_run(repo: Path) -> None:
     aix_run(repo, "hello.yaml")
     con = sqlite3.connect(repo / ".aix" / "aix.db")
     types = [r[0] for r in con.execute("SELECT type FROM events ORDER BY seq")]
-    assert types[0] == "run.created" and types[-1] == "run.completed"
+    assert (
+        types[0] == "run.created"
+        and [t for t in types if t != "artifact.created"][-1] == "run.completed"
+    )
     assert con.execute("SELECT status FROM runs").fetchone()[0] == "completed"

@@ -250,7 +250,7 @@ async def test_grant_then_resume_completes_the_run(tmp_path: Path) -> None:
         assert repos.git(proj, "show", f"{second.branch}:feature.py").stdout.strip() == "x = 2"
         types = [e.type for e in await store.events(run_id=first.run_id)]
         assert types.index("approval.requested") < types.index("approval.granted")
-        assert types[-1] == "run.completed"
+        assert [t for t in types if t != "artifact.created"][-1] == "run.completed"
     finally:
         await store.close()
 

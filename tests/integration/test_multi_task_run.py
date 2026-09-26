@@ -109,7 +109,10 @@ async def test_happy_path_merges_every_write_task_and_uses_two_agents(repo: Path
         events = await store.events(run_id=outcome.run_id)
         types = [e.type for e in events]
         assert types.count("agent.selected") == 6 and types.count("workspace.merged") == 3
-        assert types.count("workspace.removed") == 6 and types[-1] == "run.completed"
+        assert (
+            types.count("workspace.removed") == 6
+            and [t for t in types if t != "artifact.created"][-1] == "run.completed"
+        )
         run = await store.get_run(outcome.run_id)
         assert run is not None and run.status is RunStatus.COMPLETED
     finally:

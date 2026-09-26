@@ -1151,6 +1151,8 @@ async def execute_graph(
                 ev.RunFailedPayload(failure=failure, reason=f"failed tasks: {', '.join(failed)}"),
             )
 
+    if rec.run.status in (RunStatus.COMPLETED, RunStatus.FAILED, RunStatus.CANCELLED):
+        await write_run_artifacts(rec, wm.root)
     usage = Usage()
     for b in driver.book.values():
         usage = _add_usage(usage, b.usage)
@@ -1179,6 +1181,22 @@ async def execute_graph(
         warnings=list(warnings),
         pending_approvals=list(driver.pending_approvals),
     )
+
+
+async def write_run_artifacts(rec: RunRecorder, root: Path) -> None:
+    """Persist the run's standard artifacts and manifest (§21.3) under ``.aix/``."""
+    from aix import __version__
+    from aix.artifacts.standard import write_manifest, write_standard_artifacts
+    from aix.artifacts.store import ArtifactWriter, ObjectStore
+
+    run_id = rec.run.id
+    writer = ArtifactWriter(
+        ObjectStore(root / ".aix" / "artifacts" / "objects"), rec, aix_version=__version__
+    )
+    entries = await write_standard_artifacts(
+        rec.store, writer, run_id, runs_dir=root / ".aix" / "runs" / run_id
+    )
+    await write_manifest(writer, run_id, entries)
 
 
 async def _plan_review(

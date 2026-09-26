@@ -37,6 +37,11 @@ class RunRecorder:
         self._clock = clock
 
     @property
+    def store(self) -> EventStore:
+        """The event store this recorder appends to."""
+        return self._store
+
+    @property
     def run(self) -> Run:
         """The current run state."""
         return self._run

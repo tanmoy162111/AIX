@@ -318,4 +318,4 @@ def test_g10_budget_stops_the_run_with_exit_6(
         con.close()
     assert "budget.exceeded" in kinds and json.loads(budget[0])["budget"] == "cost_usd"
     assert decision == ("stop",)
-    assert kinds[-1] == "run.failed"
+    assert [k for k in kinds if k != "artifact.created"][-1] == "run.failed"
