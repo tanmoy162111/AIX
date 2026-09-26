@@ -89,7 +89,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M5.10 Escalation ladder (§19.3) + attempt/budget limits; `budget` decision point.
 - [x] M5.11 Approvals: model, `aix approvals|approve|deny`, TTY confirmation, token file, `AIX_AGENT_CONTEXT` guard, exit code 3 on wait, resume after grant.
 - [x] M5.12 `plan_review` for high-risk intents; `tool_risk` for control-plane-executed gated commands.
-- [ ] M5.13 Golden G3, G4, G8, G10.
+- [x] M5.13 Golden G3, G4, G8, G10. — added `aix run --budget-usd` and `--decision-provider` overrides (config copy, not persisted).
 - [ ] M5.14 Run M5 Exit Gate; tag `m5-done`.
 
 ## M6 — Context fabric (§15)
