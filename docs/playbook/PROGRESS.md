@@ -24,7 +24,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M1.1 ID types (prefixed ULIDs), enums (`TaskType`, `Capability`, `CheckKind`, `FailureClass`, `RetryMutation`, `DecisionPoint`, `DecisionOutcome`, statuses).
 - [x] M1.2 Domain models from §6 with validators (TaskGraph invariants: acyclic, unique ids, deps exist).
 - [x] M1.3 Typed errors in `aix.domain.errors`, each mapped to a `FailureClass`.
-- [ ] M1.4 Run + Task state machines (§7), table-driven; hypothesis state-machine tests; terminal absorption; blocked propagation.
+- [x] M1.4 Run + Task state machines (§7), table-driven; hypothesis state-machine tests; terminal absorption; blocked propagation.
 - [ ] M1.5 `aix dev export-schemas` → `schemas/*.json`; drift test.
 - [ ] M1.6 SQLite store: migrations, WAL, append-only trigger on `events`, event payload schemas per type (§8.3).
 - [ ] M1.7 Projections updated transactionally; `aix dev rebuild-projections`; replay-equality test.
@@ -155,3 +155,4 @@ M0.9 — done; gate `make check && uv run aix --help && uv run lint-imports` gre
 M1.1 — done; StrEnum values asserted against spec sets; ULID ids via Annotated patterns. DecisionOutcome.CHOOSE carries its arg in DecisionRecord.choice (ADR-0005 with M1.2). Added Capability vocabulary.
 M1.2 — done; 12 models + supporting types, pyright-strict clean; shapes recorded in ADR-0005.
 M1.3 — done; one error type per FailureClass (test asserts coverage) + classify(); internal errors mapped in module docstring.
+M1.4 — done; 560 tests total incl. hypothesis state machines (task+run) and random-DAG blocked propagation; ADR-0006 lists added edges.
