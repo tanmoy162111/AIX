@@ -190,3 +190,17 @@ async def test_deps_unparseable_output_is_an_error(tmp_path: Path) -> None:
 async def test_deps_with_no_manifest_is_skipped(tmp_path: Path) -> None:
     r = await run_deps_check(tmp_path, mode="auto", path_env=sys.path[0])
     assert r is not None and r.check.status == "skipped" and "manifest" in r.check.summary
+
+
+# ---- redaction --------------------------------------------------------------------------------
+
+
+def test_redact_secrets_removes_values_and_keeps_context() -> None:
+    from aix.security.redact import redact_secrets
+
+    text = 'key = "AKIAIOSFODNN7EXAMPLE"\npassword = "correct-horse-battery-staple"\nx = 1\n'
+    out = redact_secrets(text)
+    assert "AKIAIOSFODNN7EXAMPLE" not in out and "correct-horse" not in out
+    assert 'password = "[REDACTED]"' in out and "x = 1" in out
+    assert redact_secrets("nothing to hide") == "nothing to hide"
+    assert redact_secrets(PLANTED).count("AKIAIOSFODNN7EXAMPLE") == 0

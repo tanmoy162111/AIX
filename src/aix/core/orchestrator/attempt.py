@@ -18,6 +18,7 @@ from aix.core.workspace.manager import DiffCapture
 from aix.domain.errors import MergeConflict, classify
 from aix.domain.execution import ToolCallRecord
 from aix.domain.tasks import Task
+from aix.security.redact import redact_secrets
 from aix.store import events as ev
 
 Emit = Callable[..., Awaitable[None]]
@@ -84,7 +85,7 @@ async def execute_agent(
             task_id=task_id, attempt_id=attempt_id,
         )  # fmt: skip
         async for event in adapter.events(handle):
-            normalized.append(event.model_dump_json(exclude={"raw"}))
+            normalized.append(redact_secrets(event.model_dump_json(exclude={"raw"})))
             if event.kind == "tool_call":
                 name = str(event.data.get("name", ""))
                 tool_calls.append(ToolCallRecord(name=name, ts=event.ts))
@@ -96,7 +97,9 @@ async def execute_agent(
                 last_output = time.monotonic()
                 await emit(
                     "agent.output",
-                    ev.AgentOutputPayload(text=str(event.data.get("text", ""))[:200]),
+                    ev.AgentOutputPayload(
+                        text=redact_secrets(str(event.data.get("text", "")))[:200]
+                    ),
                     task_id=task_id,
                     attempt_id=attempt_id,
                 )
@@ -124,7 +127,7 @@ async def persist_artifacts(stream_path: Path, normalized: list[str], capture: D
     if capture.patch:
         await anyio.Path(
             stream_path.with_name(stream_path.name.replace(".stream.jsonl", ".patch"))
-        ).write_text(capture.patch)
+        ).write_text(redact_secrets(capture.patch))
 
 
 def conflict_files(exc: MergeConflict) -> list[str]:

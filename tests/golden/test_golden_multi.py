@@ -1,6 +1,6 @@
 """Golden scenarios G2 (multi-agent) and G5 (unavailable primary), PLAYBOOK §28.
 
-Verification is the M3 stub (STUB_VERIFICATION); G1/G6/G7 arrive with M4.
+Verification uses fast no-op commands (tests/verif_env.py); G1/G6/G7 use real checks.
 """
 
 from __future__ import annotations
@@ -16,10 +16,10 @@ import repos
 from aix.agents.adapters.fake.script import FakeMatch, FakeScript, FakeStep
 from aix.agents.fakes import make_fake_entry
 from aix.agents.registry import AdapterRegistry
-from aix.config.schema import AixConfig, PlannerConfig
 from aix.core.orchestrator.executor import RunOutcome, RunRequest, execute_run
 from aix.domain.enums import Capability, RunStatus, TaskStatus
 from aix.store.db import EventStore
+from verif_env import fast_config
 
 pytestmark = pytest.mark.anyio
 C = Capability
@@ -43,7 +43,7 @@ def writer_scripts(implement: Mapping[str, object]) -> list[FakeScript]:
 async def go(
     repo: Path, agents: list[tuple[str, dict[str, object]]], goal: str
 ) -> tuple[RunOutcome, EventStore]:
-    cfg = AixConfig(planner=PlannerConfig(provider="template"))
+    cfg = fast_config()
     registry = AdapterRegistry(cfg, builtin_ids=())
     for agent_id, kw in agents:
         registry.register(make_fake_entry(agent_id, base_dir=SCRIPTS, **kw))  # type: ignore[arg-type]

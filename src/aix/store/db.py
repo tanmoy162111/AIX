@@ -23,6 +23,7 @@ from aix.domain.ids import IdPrefix, new_id
 from aix.domain.runs import Run
 from aix.domain.tasks import Task
 from aix.domain.verification import Check, VerificationReport
+from aix.security.redact import redact_secrets
 from aix.store import migrations, projections
 from aix.store.events import EVENT_PAYLOADS, SCHEMA_VERSION, Event
 
@@ -116,7 +117,10 @@ class EventStore:
             )
         when = ts or self._clock()
         event_id = new_id(IdPrefix.EVENT)
-        body = payload.model_dump_json()
+        raw = payload.model_dump_json()
+        body = redact_secrets(raw)
+        if body != raw:  # projections must see exactly what a replay will see
+            payload = payload_cls.model_validate_json(body)
         async with self._lock:
             await self._conn.execute("BEGIN IMMEDIATE")
             try:

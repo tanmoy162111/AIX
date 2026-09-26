@@ -13,6 +13,7 @@ from typer.testing import CliRunner
 import repos
 from aix.cli.main import app
 from cli_env import hermetic
+from verif_env import write_fast_config
 
 runner = CliRunner()
 PLAN = {
@@ -36,6 +37,7 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.delenv("AIX_FAKE_SCRIPTS", raising=False)
     proj = repos.materialize_sample_py(tmp_path / "proj")
     assert runner.invoke(app, ["init", "--project", str(proj)]).exit_code == 0
+    write_fast_config(proj)
     return proj
 
 

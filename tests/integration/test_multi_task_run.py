@@ -11,11 +11,11 @@ import repos
 from aix.agents.adapters.fake.script import FakeMatch, FakeScript, FakeStep
 from aix.agents.fakes import make_fake_entry
 from aix.agents.registry import AdapterRegistry
-from aix.config.schema import AixConfig, PlannerConfig
 from aix.core.orchestrator.executor import RunOutcome, RunRequest, cancel_marker, execute_run
 from aix.domain.enums import Capability, FailureClass, RunStatus, TaskStatus
 from aix.domain.errors import ToolFailure
 from aix.store.db import EventStore
+from verif_env import fast_config
 
 pytestmark = pytest.mark.anyio
 
@@ -56,7 +56,7 @@ async def run_it(
     cancel: anyio.Event | None = None,
     **req: object,
 ) -> tuple[RunOutcome, EventStore]:
-    cfg = AixConfig(planner=PlannerConfig(provider="template"))
+    cfg = fast_config()
     registry = AdapterRegistry(cfg, builtin_ids=())
     for agent_id, kw in agents:
         registry.register(make_fake_entry(agent_id, **kw))  # type: ignore[arg-type]

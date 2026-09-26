@@ -12,7 +12,6 @@ import repos
 from aix.agents.adapters.fake.script import FakeMatch, FakeScript, FakeStep
 from aix.agents.fakes import make_fake_entry
 from aix.agents.registry import AdapterRegistry
-from aix.config.schema import AixConfig
 from aix.core.orchestrator.executor import RunOutcome, execute_graph
 from aix.core.orchestrator.plan import record_plan
 from aix.core.orchestrator.recorder import RunRecorder, new_run
@@ -28,6 +27,7 @@ from aix.domain.enums import (
 from aix.domain.ids import IdPrefix, new_id
 from aix.domain.tasks import Intent, Task, TaskGraph
 from aix.store.db import EventStore
+from verif_env import fast_config
 
 pytestmark = pytest.mark.anyio
 
@@ -50,7 +50,7 @@ def repo(tmp_path: Path) -> Path:
 async def run_pair(
     repo: Path, *, max_attempts: int, scripts: list[FakeScript]
 ) -> tuple[RunOutcome, EventStore]:
-    cfg = AixConfig()
+    cfg = fast_config()
     registry = AdapterRegistry(cfg, builtin_ids=())
     registry.register(make_fake_entry("fake-x", scripts=scripts))
     store = await EventStore.open(repo / ".aix" / "aix.db")

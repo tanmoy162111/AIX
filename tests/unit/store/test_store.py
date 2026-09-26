@@ -161,3 +161,22 @@ async def test_injected_clock_is_used(tmp_path: Path) -> None:
         assert e.ts == f.NOW
     finally:
         await store.close()
+
+
+async def test_secrets_are_redacted_before_storage_and_projection(tmp_path: Path) -> None:
+    from aix.store.events import AgentOutputPayload
+
+    key = "AKIAIOSFODNN7EXAMPLE"
+    store = await _open(tmp_path)
+    try:
+        run = f.run()
+        await store.append("run.created", RunCreatedPayload(run=run), run_id=run.id)
+        ev = await store.append(
+            "agent.output", AgentOutputPayload(text=f"key is {key}"), run_id=run.id
+        )
+        assert key not in ev.payload.text  # type: ignore[attr-defined]
+        (stored,) = await store.events(run_id=run.id, types=["agent.output"])
+        assert stored.payload.text == "key is [REDACTED]"  # type: ignore[attr-defined]
+    finally:
+        await store.close()
+    assert key.encode() not in (tmp_path / "aix.db").read_bytes()

@@ -1,9 +1,9 @@
 """Multi-task run execution (PLAYBOOK §14): plan, route, schedule, attempt, integrate, finalize.
 
-Until verification (M4) and the Decision Service (M5) exist, an attempt is accepted when the agent
-finished, stayed inside its file scope and, for write tasks, changed something. That rule is
-``STUB_VERIFICATION`` and is removed in M4.11. The agent's claim is stored, never used as a signal
-(§10.4).
+An attempt is accepted when the agent finished, stayed inside its file scope, changed something
+(write tasks) and the verification report is ``passed`` or ``warning``. Until the Decision Service
+and retries exist (M5) any other outcome rejects the attempt. The agent's claim is stored, never
+used as a signal (§10.4).
 """
 
 from __future__ import annotations
@@ -30,9 +30,10 @@ from aix.core.orchestrator.attempt import (
 )
 from aix.core.orchestrator.plan import PlanRunRequest, choose, plan_into
 from aix.core.orchestrator.recorder import RunRecorder, new_run
+from aix.core.planner.agent import make_adapter_runner
 from aix.core.router.rules import RoutingContext, route
 from aix.core.scheduler.engine import Scheduler
-from aix.core.workspace.manager import WorkspaceManager
+from aix.core.workspace.manager import DiffCapture, Workspace, WorkspaceManager
 from aix.core.workspace.scope import scope_violations
 from aix.domain.agents import AgentSpec
 from aix.domain.enums import (
@@ -42,17 +43,22 @@ from aix.domain.enums import (
     RunStatus,
     TaskStatus,
 )
+from aix.domain.enums import CheckKind as K
 from aix.domain.errors import AixError, MergeConflict, NoEligibleAgent, classify
 from aix.domain.execution import Attempt, ExecutionResult, ToolCallRecord, Usage
 from aix.domain.ids import IdPrefix, new_id
 from aix.domain.state import RunEvent, TaskEvent, transition_task
 from aix.domain.tasks import Task, TaskGraph
+from aix.domain.verification import Check, VerificationReport
 from aix.skills.registry import SkillRegistry
 from aix.store import events as ev
 from aix.store.db import EventStore
+from aix.tools.git import git
+from aix.verification.ai_review import pick_reviewer, run_ai_review
+from aix.verification.baseline import Baseline, run_baseline
+from aix.verification.commands import resolve_commands
+from aix.verification.engine import CHECK_TIMEOUT_S, COMMAND_KINDS, Reviewer, run_verification
 
-STUB_VERIFICATION: Final = True
-"""M3 stand-in for verification + decisions (see module docstring). Removed in M4.11."""
 CANCEL_GRACE_S: Final = 10.0
 
 
@@ -82,6 +88,8 @@ class TaskSummary:
     agent_id: str | None
     attempts: int
     failure: FailureClass | None
+    detail: str | None = None
+    """First failing check's summary, for humans."""
 
 
 @dataclass(frozen=True)
@@ -128,6 +136,7 @@ class _Book:
     agent_id: str | None = None
     attempts: int = 0
     failure: FailureClass | None = None
+    detail: str | None = None
     usage: Usage = field(default_factory=Usage)
 
 
@@ -156,6 +165,8 @@ class _Driver:
         self._active = 0
         self._cancelled = False
         self._authors: dict[str, str] = {}
+        self._baseline_lock = anyio.Lock()
+        self._baseline_result: Baseline | None = None
         self.book: dict[str, _Book] = {t.id: _Book() for t in graph.tasks}
 
     # ---- TaskDriver protocol --------------------------------------------------------------
@@ -264,6 +275,102 @@ class _Driver:
             seen.add(dep)
             stack.extend(self._tasks[dep].depends_on)
         return {self._authors[d] for d in seen if d in self._authors}
+
+    # ---- verification ---------------------------------------------------------------------
+
+    async def _baseline(self) -> Baseline:
+        """Checks on the untouched run branch, computed once before the first verification."""
+        async with self._baseline_lock:
+            if self._baseline_result is None:
+                kinds = sorted(
+                    {
+                        k
+                        for t in self._tasks.values()
+                        if t.file_scope
+                        for k in t.verification.required
+                        if k in COMMAND_KINDS
+                    },
+                    key=lambda k: k.value,
+                )
+                run_id = self._rec.run.id
+                ws = await self._wm.create_attempt_workspace(run_id, new_id(IdPrefix.ATTEMPT))
+                try:
+                    self._baseline_result = await run_baseline(
+                        ws.path,
+                        resolve_commands(ws.path, self._config.verification.commands),
+                        kinds,
+                        allow=list(self._config.security.shell_allow),
+                        timeout_s=CHECK_TIMEOUT_S,
+                        network=self._config.security.network.checks,
+                    )
+                finally:
+                    with anyio.CancelScope(shield=True):
+                        await self._wm.remove_workspace(ws)
+                        await git(self._wm.root, "branch", "-D", ws.branch, check=False)
+            return self._baseline_result
+
+    async def _verify(
+        self,
+        task: Task,
+        ws: Workspace,
+        capture: DiffCapture,
+        attempt_id: str,
+        agent_id: str,
+        stream_path: Path,
+    ) -> VerificationReport | None:
+        """Run the verification engine for a write task and record every check (§17)."""
+        if not task.file_scope:
+            return None
+        rec = self._rec
+        reviewer = None
+        if K.AI_REVIEW in task.verification.required or K.AI_REVIEW in task.verification.optional:
+            reviewer = self._reviewer(task, agent_id)
+        report = await run_verification(
+            ws.path,
+            attempt_id,
+            task.verification,
+            self._config,
+            patch=capture.patch,
+            changed_paths=capture.summary.paths,
+            file_scope=task.file_scope,
+            baseline=await self._baseline(),
+            out_dir=stream_path.parent / attempt_id / "verification",
+            reviewer=reviewer,
+            goal=task.goal,
+        )
+        for check in report.checks:
+            await rec.emit(
+                "check.finished",
+                ev.CheckFinishedPayload(check=check),
+                task_id=task.id,
+                attempt_id=attempt_id,
+            )
+        await rec.emit(
+            "verification.completed",
+            ev.VerificationCompletedPayload(report=report),
+            task_id=task.id,
+            attempt_id=attempt_id,
+        )
+        return report
+
+    def _reviewer(self, task: Task, agent_id: str) -> Reviewer:
+        async def review(diff: str, checks: Sequence[Check]) -> Check | None:
+            try:
+                reviewer_id = pick_reviewer(self._specs, {agent_id}, self._config.routing)
+            except NoEligibleAgent:
+                return None
+            override = self._config.agents.overrides.get(reviewer_id)
+            runner = make_adapter_runner(
+                self._registry.get(reviewer_id),
+                self._wm,
+                self._rec.run.id,
+                timeout_s=(override.timeout_s if override and override.timeout_s else None)
+                or self._config.execution.attempt_timeout_s,
+                model=override.model if override else None,
+            )
+            return await run_ai_review(task.goal, diff, checks, runner, reviewer_id=reviewer_id)
+
+        return review
 
     # ---- one attempt ----------------------------------------------------------------------
 
@@ -410,14 +517,25 @@ class _Driver:
                 await self.apply(
                     task.id, TaskEvent.ATTEMPT_FAILED, f"failure:{failure.value if failure else ''}"
                 )
-                await self.apply(task.id, TaskEvent.REJECT, "m3:no_retry")
+                await self.apply(task.id, TaskEvent.REJECT, "no_retry_until_m5")
                 return _End("failed", failure)
             await self.apply(task.id, TaskEvent.EXECUTION_FINISHED)
-            await self.apply(task.id, TaskEvent.VERIFIED, "m3:stub_verification")
+            report = None
+            if failure is None:
+                report = await self._verify(task, ws, capture, attempt_id, agent_id, stream_path)
+            await self.apply(
+                task.id,
+                TaskEvent.VERIFIED,
+                f"verification:{report.overall}" if report else "verification:skipped",
+            )
+            if report is not None and report.overall in ("failed", "incomplete"):
+                failure = FailureClass.VERIFICATION_FAILURE
+                bad = next((c for c in report.checks if c.required and c.status != "passed"), None)
+                self.book[task.id].detail = bad.summary if bad else report.overall
             if failure is not None:
                 await self.apply(task.id, TaskEvent.REJECT, f"failure:{failure.value}")
                 return _End("failed", failure)
-            await self.apply(task.id, TaskEvent.ACCEPT, "m3:in_scope")
+            await self.apply(task.id, TaskEvent.ACCEPT, "verification:acceptable")
             await self.apply(task.id, TaskEvent.INTEGRATE)
             end = await self._integrate(task, ws, attempt_id, number)
             return end
@@ -598,6 +716,7 @@ async def execute_graph(
             agent_id=driver.book[t.id].agent_id,
             attempts=driver.book[t.id].attempts,
             failure=driver.book[t.id].failure,
+            detail=driver.book[t.id].detail,
         )
         for t in final
     ]

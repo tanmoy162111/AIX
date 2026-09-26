@@ -19,6 +19,7 @@ import anyio
 from aix.domain.enums import CheckKind
 from aix.domain.ids import IdPrefix, new_id
 from aix.domain.verification import Check, CheckStatus
+from aix.security.redact import SECRET_PATTERNS
 from aix.verification.checks import CheckResult
 from aix.verification.detect import detect_toolchain
 from aix.verification.parsers import (
@@ -35,20 +36,6 @@ from aix.verification.runner import CommandOutcome, run_command
 
 Mode = Literal["auto", "on", "off"]
 
-_SECRET_PATTERNS: Final[tuple[tuple[str, re.Pattern[str]], ...]] = (
-    ("aws-access-key-id", re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b")),
-    ("github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b")),
-    ("private-key", re.compile(r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----")),
-    ("slack-token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}")),
-    ("google-api-key", re.compile(r"\bAIza[0-9A-Za-z_\-]{35}\b")),
-    (
-        "generic-secret",
-        re.compile(
-            r"""(?ix)\b(?:api[_-]?key|secret(?:[_-]?key)?|token|password|passwd)["']?\s*[:=]\s*
-            ["'](?P<v>[^"'\s]{16,})["']"""
-        ),
-    ),
-)
 _HUNK: Final = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)")
 
 
@@ -73,7 +60,7 @@ def scan_patch_for_secrets(patch: str) -> Findings:
         if not raw.startswith("+"):
             continue
         text = raw[1:]
-        for rule, pattern in _SECRET_PATTERNS:
+        for rule, pattern in SECRET_PATTERNS:
             if pattern.search(text):
                 findings.append(
                     Finding("critical", rule, f"possible {rule.replace('-', ' ')}", path, line_no)
