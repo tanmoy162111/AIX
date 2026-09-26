@@ -56,7 +56,11 @@ class FakeAdapter:
         health: Literal["ready", "degraded", "unavailable", "disabled"] = "ready",
         health_reason: str | None = None,
         name: str | None = None,
+        models: list[str] | None = None,
+        default_model: str | None = None,
     ) -> None:
+        self._models = list(models or [])
+        self._default_model = default_model
         self.id = id
         self._scripts = scripts or []
         self._base_dir = (base_dir or Path.cwd()).resolve()
@@ -72,7 +76,14 @@ class FakeAdapter:
             name=self._name,
             kind="local",
             capabilities=self._caps,
-            supports=AgentSupports(streaming=True, cancel=True, cost_reporting="full"),
+            supports=AgentSupports(
+                streaming=True,
+                cancel=True,
+                cost_reporting="full",
+                model_select=bool(self._models),
+            ),
+            models=self._models,
+            default_model=self._default_model,
             cost_class="free",
             health=self._health,
             health_reason=self._reason,

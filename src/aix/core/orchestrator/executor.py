@@ -359,6 +359,11 @@ class _Driver:
                     act.require_review,
                     act.wait_s,
                 )
+                same_agent = act.mutation is not None and act.mutation.value.startswith(
+                    "same_agent"
+                )
+                if force is None and (same_agent or act.mutation is RetryMutation.WAIT_AND_RETRY):
+                    force = agent_id  # the router's failed-agent penalty must not undo "same agent"
                 if act.split:
                     await self._split(task)
                     return
@@ -792,7 +797,7 @@ class _Driver:
             action = await self._decide_attempt(
                 task, agent_id, policy, cls, report, capture, scope_ok=failure is None
                 or failure is not FailureClass.SCOPE_VIOLATION,
-                detail=detail, model=attempt.model,
+                detail=detail, model=attempt.model or self._spec(agent_id).default_model,
             )  # fmt: skip
             if action.kind == "accept":
                 await self.apply(task.id, TaskEvent.ACCEPT, "decision:accept")

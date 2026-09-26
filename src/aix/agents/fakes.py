@@ -21,6 +21,8 @@ def make_fake_entry(
     base_dir: Path | None = None,
     health: Literal["ready", "degraded", "unavailable", "disabled"] = "ready",
     health_reason: str | None = None,
+    models: list[str] | None = None,
+    default_model: str | None = None,
 ) -> AdapterEntry:
     """A registry entry for a scripted fake agent with its own id and capability priors."""
     adapter = FakeAdapter(
@@ -30,6 +32,8 @@ def make_fake_entry(
         capabilities=capabilities,
         health=health,
         health_reason=health_reason,
+        models=models,
+        default_model=default_model,
     )
     manifest = AdapterManifest(
         id=agent_id,
