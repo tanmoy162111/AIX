@@ -10,6 +10,7 @@ import typer
 
 from aix import __version__
 from aix.cli.agent import agent_app, list_agents
+from aix.cli.cancel import cancel
 from aix.cli.config import config_app
 from aix.cli.dev import dev_app
 from aix.cli.doctor import doctor
@@ -28,6 +29,7 @@ app = typer.Typer(
 app.command("init")(init)
 app.command("doctor")(doctor)
 app.command("run")(run)
+app.command("cancel")(cancel)
 app.add_typer(agent_app)
 app.command("agents", help="Alias for `aix agent list`.")(list_agents)
 app.add_typer(config_app)

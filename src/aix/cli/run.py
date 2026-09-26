@@ -1,4 +1,4 @@
-"""`aix run` (PLAYBOOK §23.1). M2 scope: one goal, one explicit agent, one attempt."""
+"""`aix run` (PLAYBOOK §23.1): routed multi-task runs, `--plan-only`, or `--agent` single task."""
 
 from __future__ import annotations
 
@@ -27,6 +27,12 @@ def run(
     skill: Annotated[
         str | None, typer.Option("--skill", help="Use this skill instead of choosing one.")
     ] = None,
+    max_parallel: Annotated[
+        int | None,
+        typer.Option(
+            "--max-parallel", min=1, help="Concurrent tasks (default: execution.max_parallel)."
+        ),
+    ] = None,
     scope: Annotated[
         list[str] | None,
         typer.Option("--scope", help="Glob the agent may change; repeatable. Default: everything."),
@@ -54,7 +60,18 @@ def run(
         _plan_only(root, goal, agent, skill, allow_dirty, as_json, resolved, registry)
         return
     if agent is None:
-        fail("--agent is required (automatic routing arrives in a later milestone)")
+        _routed(
+            root,
+            goal,
+            skill,
+            max_parallel,
+            allow_dirty,
+            keep_worktrees,
+            as_json,
+            resolved,
+            registry,
+        )
+        return
     request = SingleTaskRequest(
         project_root=root,
         goal=goal,
@@ -160,3 +177,93 @@ def _plan_only(root, goal, agent, skill, allow_dirty, as_json, resolved, registr
         print_plan(doc)
         typer.echo("")
         typer.echo(f"Plan recorded. Show again with: aix plan show {result.run_id}")
+
+
+def _routed(
+    root, goal, skill, max_parallel, allow_dirty, keep_worktrees, as_json, resolved, registry
+) -> None:  # type: ignore[no-untyped-def]
+    """Plan, route and execute a goal across agents; Ctrl-C cancels gracefully."""
+    import signal
+
+    from aix.core.orchestrator.executor import RunOutcome, RunRequest, execute_run
+    from aix.domain.errors import ConfigError, ToolFailure
+    from aix.store.db import EventStore
+
+    request = RunRequest(
+        project_root=root,
+        goal=goal,
+        skill=skill,
+        allow_dirty=allow_dirty,
+        keep_worktrees=keep_worktrees,
+        max_parallel=max_parallel,
+    )
+
+    async def _go() -> RunOutcome:
+        cancel = anyio.Event()
+        outcome: RunOutcome | None = None
+        store = await EventStore.open(root / ".aix" / "aix.db")
+        try:
+            async with anyio.create_task_group() as tg:
+
+                async def watch_signals() -> None:
+                    with anyio.open_signal_receiver(signal.SIGINT, signal.SIGTERM) as signals:
+                        async for _ in signals:
+                            cancel.set()
+
+                tg.start_soon(watch_signals)
+                outcome = await execute_run(
+                    request, registry=registry, store=store, config=resolved.config, cancel=cancel
+                )
+                tg.cancel_scope.cancel()
+        finally:
+            await store.close()
+        assert outcome is not None
+        return outcome
+
+    try:
+        outcome = anyio.run(_go)
+    except ConfigError as exc:
+        fail(str(exc))
+    except ToolFailure as exc:
+        reason = exc.details.get("reason")
+        fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
+
+    if as_json:
+        doc = asdict(outcome)
+        doc["status"] = outcome.status.value
+        doc["failure"] = outcome.failure.value if outcome.failure else None
+        doc["usage"] = outcome.usage.model_dump(mode="json")
+        doc["exit_code"] = outcome.exit_code
+        for t in doc["tasks"]:
+            t["status"] = t["status"].value
+            t["failure"] = t["failure"].value if t["failure"] else None
+        typer.echo(json.dumps(doc, indent=2))
+    else:
+        _print_outcome(outcome, goal)
+    raise typer.Exit(outcome.exit_code)
+
+
+def _print_outcome(outcome, goal: str) -> None:  # type: ignore[no-untyped-def]
+    """Interim summary (the full §23.3 layout arrives with reports in M7.3)."""
+    tasks = outcome.tasks
+    done = sum(1 for t in tasks if t.status.value == "completed")
+    typer.echo(f"RUN {outcome.run_id} {outcome.status.value.upper()}    branch: {outcome.branch}")
+    typer.echo(f"Goal: {goal}")
+    typer.echo("")
+    typer.echo(f"Tasks        {done}/{len(tasks)} completed")
+    agents = sorted({t.agent_id for t in tasks if t.agent_id})
+    typer.echo(f"Agents       {', '.join(agents) or 'none'}")
+    typer.echo(f"Planner      {outcome.planner}")
+    for t in tasks:
+        extra = f"  [{t.failure.value}]" if t.failure else ""
+        who = f"  ({t.agent_id})" if t.agent_id else ""
+        typer.echo(f"  - {t.type:<16} {t.status.value:<10}{who}{extra}")
+    if outcome.failure is not None:
+        typer.echo(f"Failure      {outcome.failure.value}")
+    cost = f"${outcome.usage.cost_usd:.4f}" if outcome.usage.cost_usd is not None else "n/a"
+    typer.echo(f"Cost         {cost}   Duration {outcome.duration_ms / 1000:.1f}s")
+    for w in outcome.warnings:
+        typer.echo(f"Note         {w}")
+    if outcome.status.value == "completed":
+        typer.echo("")
+        typer.echo(f"Next: git merge {outcome.branch}")
