@@ -58,7 +58,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M3.9 Integration: serialized merges into run branch, conflict detection → MERGE_CONFLICT; `test_merge_conflict.py`.
 - [x] M3.10 `gemini` adapter (as M2.7).
 - [x] M3.11 `opencode` adapter (as M2.7).
-- [ ] M3.12 `aix status` live table.
+- [x] M3.12 `aix status` live table.
 - [ ] M3.13 Golden G2, G5 passing (verification may be stubbed to "passed" behind a clearly named test-only flag removed in M4).
 - [ ] M3.14 Run M3 Exit Gate; tag `m3-done`.
 
@@ -185,3 +185,4 @@ M3.9 — done; core/orchestrator/executor.py execute_graph/execute_run (per-atte
 M3.8 — done; ADR-0014; core/scheduler/engine.py (TaskDriver protocol; driver owns state), executor `_Driver`, cli/cancel.py + core/orchestrator/cancel.py; e2e tests send real SIGINT and run `aix cancel` against a live subprocess. Budget checks deferred to M5.10; handoff-in-prompt to M6 (so G2 in M3.13 asserts routing/independence only).
 M3.10 — done; adapters/gemini/ (gemini-cli 0.55.1 installed here: probes ready; event schema read from its bundle source, no paid call). Recordings synthetic. Prompt on stdin with a fixed -p instruction; write mode = --approval-mode auto_edit (no shell approval; ADR-0015 with opencode). Resume by session id unverified live. Matrix now has 4 kinds; docs/adapters/gemini.md.
 M3.11 — done; ADR-0015 (gemini+opencode discovered behavior, no --auto/yolo); adapters/opencode/ (opencode 1.18.26 installed here: probes ready; event types read from the binary handler; part field names unconfirmed live). No result event: completion = final step_finish. Recordings synthetic; matrix now 5 kinds.
+M3.12 — done; core/orchestrator/status.py snapshot() (reused by the API in M9), cli/status.py: TTY redraws with rich Live, non-TTY `--watch` prints a frame only when the run changes; tested against a live slow subprocess run.
