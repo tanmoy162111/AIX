@@ -1,4 +1,4 @@
-"""The §10.5 adapter test matrix, run identically against fake, claude and codex."""
+"""The §10.5 adapter test matrix, run identically against every adapter."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from aix.domain.errors import UnsupportedError
 
 pytestmark = pytest.mark.anyio
 
-KINDS = ["fake", "claude", "codex"]
+KINDS = ["fake", "claude", "codex", "gemini"]
 
 
 @pytest.fixture(params=KINDS)
@@ -94,7 +94,7 @@ async def test_usage_parsing(rig: Rig) -> None:
     if rig.kind in ("fake", "claude"):
         assert out.usage.cost_usd is not None  # reported cost
     else:
-        assert out.usage.cost_usd is None  # codex reports tokens only
+        assert out.usage.cost_usd is None  # codex and gemini report tokens only
 
 
 async def test_session_resume(rig: Rig) -> None:
@@ -119,6 +119,8 @@ async def test_permission_translation(rig: Rig) -> None:
     if rig.kind == "claude":
         assert argv[argv.index("--permission-mode") + 1] == "dontAsk"
         assert "Edit" in argv[argv.index("--disallowedTools") + 1]
+    elif rig.kind == "gemini":
+        assert argv[argv.index("--approval-mode") + 1] == "plan"
     else:
         assert argv[argv.index("-s") + 1] == "read-only"
 

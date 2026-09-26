@@ -1,0 +1,41 @@
+id: gemini
+name: Gemini CLI
+kind: cli
+binary: gemini
+probe:
+  version_args: ["--version"]
+  help_args: ["--help"]
+  auth_check: prompt_smoke
+required_flags:
+  - --prompt
+  - --output-format
+  - --approval-mode
+  - --model
+  - --skip-trust
+  - --resume
+capabilities:
+  implement: 0.7
+  debug: 0.65
+  test: 0.6
+  review: 0.75
+  design: 0.8
+  research: 0.85
+  summarize: 0.85
+  security: 0.5
+  document: 0.7
+cost_class: low
+supports:
+  streaming: true
+  sessions: true
+  non_interactive: true
+  cancel: true
+  cost_reporting: partial
+  model_select: true
+env_allowlist:
+  - GEMINI_API_KEY
+  - GOOGLE_API_KEY
+  - GOOGLE_GENAI_USE_VERTEXAI
+  - GOOGLE_CLOUD_PROJECT
+  - GOOGLE_CLOUD_LOCATION
+  - GOOGLE_APPLICATION_CREDENTIALS
+  - GEMINI_CLI_HOME

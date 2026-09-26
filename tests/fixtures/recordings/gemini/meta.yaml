@@ -1,0 +1,17 @@
+# `synthetic: true`: hand-authored from the event schema read out of the installed CLI's own source
+# (`JsonStreamEventType`, `StreamJsonFormatter`, `emitFinalResult`); no paid call was made. Replace
+# via `aix dev record gemini` (M10.1).
+agent: gemini
+synthetic: true
+cli_version_documented_against: "0.55.1"
+authored: "2026-09-26"
+invocation: "gemini --output-format stream-json --approval-mode <plan|auto_edit> --skip-trust --prompt <fixed instruction> (task on stdin)"
+files:
+  success.jsonl: "reads + edits a file via tools, assistant text deltas, result with stats"
+  read_only.jsonl: "assistant message only"
+  auth_failure.jsonl: "result status error: no auth method"
+  rate_limit.jsonl: "warning then result error 429 RESOURCE_EXHAUSTED"
+  network.jsonl: "result error: fetch failed"
+  context.jsonl: "result error: input token count exceeds the maximum"
+  malformed.jsonl: "garbage lines mixed into a valid stream"
+  no_result.jsonl: "stream ends without a result event"

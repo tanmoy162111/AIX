@@ -12,6 +12,7 @@ from aix.agents.adapters.claude import ClaudeAdapter
 from aix.agents.adapters.codex import CodexAdapter
 from aix.agents.adapters.fake import FakeAdapter
 from aix.agents.adapters.fake.script import FakeScript, FakeStep
+from aix.agents.adapters.gemini import GeminiAdapter
 from aix.agents.protocol import AgentAdapter, AgentPermissions, AgentRequest
 from aix.domain.ids import IdPrefix, new_id
 from binaries import make_replay_binary
@@ -43,6 +44,13 @@ HELP = {
     "claude": "--output-format --verbose --permission-mode --allowedTools --disallowedTools "
     "--model --resume",
     "codex": "--json --sandbox --model --cd --config resume",
+    "gemini": "--prompt --output-format --approval-mode --model --skip-trust --resume",
+}
+
+CLI_ADAPTERS: dict[str, Any] = {
+    "claude": ClaudeAdapter,
+    "codex": CodexAdapter,
+    "gemini": GeminiAdapter,
 }
 
 
@@ -54,7 +62,7 @@ class Case:
 
 
 class Rig:
-    """Builds ``Case``s for one adapter. ``kind`` is ``fake``, ``claude`` or ``codex``."""
+    """Builds ``Case``s for one adapter. ``kind`` is ``fake`` or a CLI adapter id."""
 
     def __init__(self, kind: str, tmp: Path) -> None:
         self.kind, self.tmp = kind, tmp
@@ -84,16 +92,14 @@ class Rig:
             **kw,
         )
         env = {"PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}", "HOME": str(self.tmp)}
-        return (
-            ClaudeAdapter(env_source=env) if self.kind == "claude" else CodexAdapter(env_source=env)
-        )
+        return CLI_ADAPTERS[self.kind](env_source=env)  # type: ignore[no-any-return]
 
     def _fake(self, **step: Any) -> AgentAdapter:
         return FakeAdapter("fake", scripts=[FakeScript(attempts=[FakeStep.model_validate(step)])])
 
     def build(self, scenario: str) -> Case:
         fake = self.kind == "fake"
-        no_result = "no_result.jsonl" if self.kind == "claude" else "no_completion.jsonl"
+        no_result = "no_completion.jsonl" if self.kind == "codex" else "no_result.jsonl"
         req = self.req()
         match scenario:
             case "success":
@@ -148,6 +154,4 @@ class Rig:
         if self.kind == "fake":
             return FakeAdapter("fake", health="unavailable", health_reason="scripted outage")
         env = {"PATH": str(self.tmp / "nothing-here")}
-        return (
-            ClaudeAdapter(env_source=env) if self.kind == "claude" else CodexAdapter(env_source=env)
-        )
+        return CLI_ADAPTERS[self.kind](env_source=env)  # type: ignore[no-any-return]
