@@ -93,7 +93,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M5.14 Run M5 Exit Gate; tag `m5-done`. — all four gate commands green (eval 70/70).
 
 ## M6 — Context fabric (§15)
-- [ ] M6.1 Project facts from CLAUDE.md/AGENTS.md/CONTRIBUTING/README with caching on HEAD.
+- [x] M6.1 Project facts from CLAUDE.md/AGENTS.md/CONTRIBUTING/README with caching on HEAD. — `.aix/cache/project_facts.json`; excerpts capped at 4000 chars and secret-redacted.
 - [ ] M6.2 Handoff builder (facts + labeled claim).
 - [ ] M6.3 Context pack assembly with token budget (tokenizer-free estimate: chars/4 — ADR) and priority truncation.
 - [ ] M6.4 Prompt templates B.2/B.3 finalized + snapshot tests; prompt captured as artifact per attempt.
