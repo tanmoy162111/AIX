@@ -25,3 +25,12 @@ build/
 # local tooling
 .claude/settings.local.json
 .planning/
+
+# editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# logs and local artifacts
+*.log
