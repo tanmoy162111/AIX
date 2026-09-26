@@ -58,6 +58,10 @@ class RunCreatedPayload(Payload):
 class RunPlannedPayload(Payload):
     intent: Intent
     graph: TaskGraph
+    planner: str = "template"
+    """Which planner produced the graph: ``template`` or ``agent:<id>`` (M3.6, ADR-0011)."""
+    warnings: list[str] = Field(default_factory=list)
+    """Post-processing and fallback notes (dropped capabilities, merged tasks, added edges)."""
 
 
 class RunStateChangedPayload(Payload):

@@ -14,6 +14,7 @@ from aix.cli.config import config_app
 from aix.cli.dev import dev_app
 from aix.cli.doctor import doctor
 from aix.cli.init import init
+from aix.cli.plan import plan_app
 from aix.cli.run import run
 from aix.cli.skill import skill_app
 
@@ -31,6 +32,7 @@ app.add_typer(agent_app)
 app.command("agents", help="Alias for `aix agent list`.")(list_agents)
 app.add_typer(config_app)
 app.add_typer(dev_app)
+app.add_typer(plan_app)
 app.add_typer(skill_app)
 
 

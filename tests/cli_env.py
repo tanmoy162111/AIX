@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
+
+import pytest
 
 from binaries import make_replay_binary
 
@@ -25,3 +28,17 @@ def install(env: Path, kind: str, recording: str | None = None, **kw: object) ->
         log_dir=env / f"log-{kind}",
         **kw,  # type: ignore[arg-type]
     )
+
+
+def hermetic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """PATH holds only git, so no real agent CLI on the machine can be probed or run."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(exist_ok=True)
+    git = shutil.which("git")
+    assert git
+    if not (bin_dir / "git").exists():
+        (bin_dir / "git").symlink_to(git)
+    monkeypatch.setenv("PATH", str(bin_dir))
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "xdg"))
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)

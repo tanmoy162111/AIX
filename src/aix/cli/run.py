@@ -15,7 +15,18 @@ from aix.cli.common import EXIT_ENVIRONMENT, fail, load_or_exit, registry_or_exi
 
 def run(
     goal: Annotated[str, typer.Argument(help="What you want done.")],
-    agent: Annotated[str, typer.Option("--agent", help="Agent id (routing arrives in M3).")],
+    agent: Annotated[
+        str | None,
+        typer.Option(
+            "--agent", help="Agent id (routing arrives in M3.7); the planner for --plan-only."
+        ),
+    ] = None,
+    plan_only: Annotated[
+        bool, typer.Option("--plan-only", help="Plan the run, print the plan and stop.")
+    ] = False,
+    skill: Annotated[
+        str | None, typer.Option("--skill", help="Use this skill instead of choosing one.")
+    ] = None,
     scope: Annotated[
         list[str] | None,
         typer.Option("--scope", help="Glob the agent may change; repeatable. Default: everything."),
@@ -39,6 +50,11 @@ def run(
     if not (root / ".aix" / "config.yaml").exists():
         fail("not initialized: run `aix init` first")
     registry = registry_or_exit(resolved)
+    if plan_only:
+        _plan_only(root, goal, agent, skill, allow_dirty, as_json, resolved, registry)
+        return
+    if agent is None:
+        fail("--agent is required (automatic routing arrives in a later milestone)")
     request = SingleTaskRequest(
         project_root=root,
         goal=goal,
@@ -100,3 +116,47 @@ def _print_summary(result, goal: str) -> None:  # type: ignore[no-untyped-def]
     if done:
         typer.echo("")
         typer.echo(f"Next: git merge {result.branch}")
+
+
+def _plan_only(root, goal, agent, skill, allow_dirty, as_json, resolved, registry) -> None:  # type: ignore[no-untyped-def]
+    """Plan without executing: create the run, record the plan, print it."""
+    from aix.cli.plan import plan_document, print_plan
+    from aix.core.orchestrator.plan import PlanRunRequest, plan_run
+    from aix.domain.errors import ConfigError, ToolFailure
+    from aix.store.db import EventStore
+
+    request = PlanRunRequest(
+        project_root=root, goal=goal, skill=skill, planner_agent=agent, allow_dirty=allow_dirty
+    )
+
+    async def _go():  # type: ignore[no-untyped-def]
+        store = await EventStore.open(root / ".aix" / "aix.db")
+        try:
+            result = await plan_run(request, registry=registry, store=store, config=resolved.config)
+            run = await store.get_run(result.run_id)
+            return result, run
+        finally:
+            await store.close()
+
+    try:
+        result, run = anyio.run(_go)
+    except ConfigError as exc:
+        fail(str(exc))
+    except ToolFailure as exc:
+        reason = exc.details.get("reason")
+        fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
+    doc = plan_document(
+        run_id=result.run_id,
+        status=run.status.value if run else "planned",
+        goal=goal,
+        intent=result.intent,
+        planner=result.planner,
+        warnings=result.warnings,
+        tasks=list(result.graph.tasks),
+    )
+    if as_json:
+        typer.echo(json.dumps(doc, indent=2))
+    else:
+        print_plan(doc)
+        typer.echo("")
+        typer.echo(f"Plan recorded. Show again with: aix plan show {result.run_id}")
