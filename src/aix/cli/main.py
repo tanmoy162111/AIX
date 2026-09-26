@@ -9,6 +9,7 @@ from __future__ import annotations
 import typer
 
 from aix import __version__
+from aix.cli.config import config_app
 from aix.cli.dev import dev_app
 
 app = typer.Typer(
@@ -18,6 +19,7 @@ app = typer.Typer(
     add_completion=False,
 )
 
+app.add_typer(config_app)
 app.add_typer(dev_app)
 
 
