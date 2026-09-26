@@ -107,7 +107,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M7.3 `report.md` + `report.html` (jinja2, deterministic) + snapshot tests; §23.3 summary on stdout. — `artifacts/report.py` + `templates/`; report.* written before the manifest; `aix run` prints the §23.3 block (Artifacts line shows a file count, not the bundle path: bundles arrive in M7.4). Cost is "estimated" only when adapters flag it (M7.5).
 - [x] M7.4 Bundle export + `aix artifact verify`. — `artifacts/bundle.py`, `cli/artifact.py`; deterministic zip with manifest.sha256, written automatically at run end when `artifacts.bundle`. Limit: an attacker who rewrites both manifest files is undetectable without a signature (documented in verify_bundle).
 - [x] M7.5 Cost accounting (reported vs estimated), price table in config; budget enforcement uses it. — ADR-0025; `pricing.models` is empty by default (no guessed prices), so codex/gemini stay uncounted until the user adds prices.
-- [ ] M7.6 `agent_stats` projection; router uses Bayesian observed rate; `aix stats agents`.
+- [x] M7.6 `agent_stats` projection; router uses Bayesian observed rate; `aix stats agents`. — projection counters + percentiles computed from recorded durations; router loads history once at run start (merged across models). Verification pass rate is a share of attempts.
 - [ ] M7.7 `aix trace`, `aix logs [--follow]`, `--json` everywhere.
 - [ ] M7.8 Crash resume (`--resume`, INTERRUPTED) + `test_resume.py`; golden G9.
 - [ ] M7.9 All golden G1–G10 green; run M7 Exit Gate; tag `m7-done`.
