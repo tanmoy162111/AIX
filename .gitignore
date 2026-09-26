@@ -1,0 +1,27 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# aix runtime
+.aix/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+.mypy_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# local tooling
+.claude/settings.local.json
+.planning/
