@@ -96,6 +96,7 @@ def _build_task_table() -> dict[tuple[TaskStatus, TaskEvent], TaskStatus]:
         (_T.RUNNING, _E.ATTEMPT_FAILED): _T.DECIDING,
         (_T.INTEGRATING, _E.MERGE_CONFLICT): _T.READY,
         (_T.READY, _E.NO_ELIGIBLE_AGENT): _T.FAILED,
+        (_T.INTEGRATING, _E.STOP): _T.FAILED,  # merge-conflict retries exhausted (ADR-0013)
     }
     for status in TaskStatus:
         if status in TASK_TERMINAL:

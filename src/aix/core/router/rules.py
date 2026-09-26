@@ -54,8 +54,8 @@ class RoutingContext:
     """Agents that already failed this task."""
     same_agent_new_context: bool = False
     """The retry mutation that intentionally reuses a failed agent (§19.3)."""
-    authored_by: str | None = None
-    """Agent that authored the change under review, for review tasks."""
+    authored_by: frozenset[str] = frozenset()
+    """Agents that authored the change under review, for review tasks."""
     budget_remaining_usd: float | None = None
     expected_cost_usd: Mapping[str, float] = field(default_factory=dict[str, float])
     config: RoutingConfig = field(default_factory=RoutingConfig)
@@ -166,7 +166,7 @@ def route(ctx: RoutingContext) -> RoutingDecision:
         if (
             task.type in _REVIEW_TYPES
             and cfg.prefer_independent_reviewer
-            and ctx.authored_by == agent.id
+            and agent.id in ctx.authored_by
         ):
             score -= PENALTY_NOT_INDEPENDENT
             reasons.append(f"penalty:not_independent:{agent.id}")

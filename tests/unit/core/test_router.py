@@ -175,9 +175,9 @@ def test_reviewer_independence_penalty_applies_to_review_tasks_only() -> None:
     author = agent("author", {C.REVIEW: 0.95, C.IMPLEMENT: 0.95})
     other = agent("other", {C.REVIEW: 0.7, C.IMPLEMENT: 0.7})
     review = task(TaskType.REVIEW, [C.REVIEW])
-    d = route(ctx([author, other], review, authored_by="author"))
+    d = route(ctx([author, other], review, authored_by=frozenset({"author"})))
     assert d.primary == "other" and "penalty:not_independent:author" in d.reason_codes
-    impl = route(ctx([author, other], authored_by="author"))
+    impl = route(ctx([author, other], authored_by=frozenset({"author"})))
     assert impl.primary == "author"
 
 
@@ -186,13 +186,13 @@ def test_independence_penalty_can_be_disabled_and_covers_security_review() -> No
     other = agent("other", {C.SECURITY: 0.7})
     t = task(TaskType.SECURITY_REVIEW, [C.SECURITY])
     off = RoutingConfig(prefer_independent_reviewer=False)
-    assert route(ctx([author, other], t, authored_by="author", config=off)).primary == "author"
-    assert route(ctx([author, other], t, authored_by="author")).primary == "other"
+    assert route(ctx([author, other], t, authored_by=frozenset({"author"}), config=off)).primary == "author"
+    assert route(ctx([author, other], t, authored_by=frozenset({"author"}))).primary == "other"
 
 
 def test_sole_agent_may_review_its_own_change_despite_the_penalty() -> None:
     only = agent("only", {C.REVIEW: 0.9})
-    d = route(ctx([only], task(TaskType.REVIEW, [C.REVIEW]), authored_by="only"))
+    d = route(ctx([only], task(TaskType.REVIEW, [C.REVIEW]), authored_by=frozenset({"only"})))
     assert d.primary == "only" and d.scores["only"] < 0
 
 

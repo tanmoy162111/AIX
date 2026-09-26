@@ -152,6 +152,7 @@ def test_failed_attempt_goes_to_deciding_without_verification() -> None:
 
 def test_merge_conflict_returns_task_to_ready() -> None:
     assert _walk(TaskStatus.INTEGRATING, TaskEvent.MERGE_CONFLICT) is TaskStatus.READY
+    assert _walk(TaskStatus.INTEGRATING, TaskEvent.STOP) is TaskStatus.FAILED  # ADR-0013
 
 
 def test_no_eligible_agent_fails_a_ready_task() -> None:
