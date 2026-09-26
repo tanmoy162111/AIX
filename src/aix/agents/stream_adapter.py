@@ -15,6 +15,7 @@ from contextlib import AsyncExitStack
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from aix.agents.container import container_name, kill_container, wrap_command
 from aix.agents.env import build_agent_env
 from aix.agents.manifest import AdapterManifest
 from aix.agents.probe import probe_binary
@@ -32,6 +33,8 @@ class Session[S]:
     lines: AsyncIterator[str]
     state: S
     drained: bool = False
+    container: tuple[str, str] | None = None
+    """``(runtime, name)`` when the attempt runs in a container."""
 
 
 def _now() -> datetime:
@@ -94,12 +97,17 @@ class StreamingCliAdapter[S]:
 
     async def start(self, req: AgentRequest) -> AgentHandle:
         stack = AsyncExitStack()
+        argv, env = self.build_argv(req), self._env(req.env)
+        container: tuple[str, str] | None = None
+        if req.container is not None:
+            argv, env = wrap_command(argv, req, env)
+            container = (req.container.runtime, container_name(req))
         try:
             proc = await stack.enter_async_context(
                 spawn(
-                    self.build_argv(req),
+                    argv,
                     cwd=req.workspace,
-                    env=self._env(req.env),
+                    env=env,
                     timeout_s=req.timeout_s,
                     capture_path=req.stream_path,
                     stdin_data=req.prompt.encode("utf-8"),
@@ -109,8 +117,9 @@ class StreamingCliAdapter[S]:
             await stack.aclose()
             raise
         session: Session[S] = Session(
-            stack=stack, proc=proc, lines=proc.lines(), state=self.new_state()
-        )
+            stack=stack, proc=proc, lines=proc.lines(), state=self.new_state(),
+            container=container,
+        )  # fmt: skip
         return AgentHandle(
             attempt_id=req.attempt_id, adapter_id=self.id, pid=proc.pid, state=session
         )
@@ -134,6 +143,9 @@ class StreamingCliAdapter[S]:
 
     async def cancel(self, h: AgentHandle, grace_s: float = 10) -> None:
         await h.state.proc.cancel(grace_s)
+        if h.state.container is not None:  # the runtime client dying does not stop the container
+            runtime, name = h.state.container
+            await kill_container(runtime, name)
 
     async def resume(self, session_ref: str, req: AgentRequest) -> AgentHandle:
         return await self.start(req.model_copy(update={"session_ref": session_ref}))

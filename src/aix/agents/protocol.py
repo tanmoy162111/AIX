@@ -30,6 +30,18 @@ class AgentPermissions(DomainModel):
     network: Literal["deny", "provider_default", "allow"] = "provider_default"
 
 
+class ContainerSpec(DomainModel):
+    """Run the agent process inside a container (§20.3): only the workspace is mounted."""
+
+    runtime: Literal["docker", "podman"]
+    image: str
+    network: Literal["none", "bridge"] = "none"
+    memory: str | None = None
+    pids_limit: int = 512
+    uid: int
+    gid: int
+
+
 class AgentRequest(DomainModel):
     """Everything an adapter needs to run one attempt."""
 
@@ -43,6 +55,9 @@ class AgentRequest(DomainModel):
     env: dict[str, str] = Field(default_factory=dict[str, str])
     """Already filtered by the secrets policy (§20.5)."""
     session_ref: str | None = None
+    container: ContainerSpec | None = None
+    """When set, the CLI runs in this container instead of on the host (adapters that spawn a
+    process honour it; in-process agents ignore it)."""
     stream_path: Path | None = None
     """Where to mirror the raw agent stdout (``.aix/runs/<run>/<attempt>.stream.jsonl``)."""
 

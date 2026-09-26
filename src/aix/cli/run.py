@@ -130,7 +130,7 @@ def run(
         fail(str(exc), EXIT_ENVIRONMENT)
     except ToolFailure as exc:
         reason = exc.details.get("reason")
-        fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
+        fail(str(exc), EXIT_ENVIRONMENT if reason in ("not_git", "container") else 2)
 
     if as_json:
         doc = asdict(result)
@@ -193,7 +193,7 @@ def _plan_only(root, goal, agent, skill, allow_dirty, as_json, resolved, registr
         fail(str(exc))
     except ToolFailure as exc:
         reason = exc.details.get("reason")
-        fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
+        fail(str(exc), EXIT_ENVIRONMENT if reason in ("not_git", "container") else 2)
     doc = plan_document(
         run_id=result.run_id,
         status=run.status.value if run else "planned",
@@ -260,7 +260,7 @@ def _routed(
         fail(str(exc))
     except ToolFailure as exc:
         reason = exc.details.get("reason")
-        fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
+        fail(str(exc), EXIT_ENVIRONMENT if reason in ("not_git", "container") else 2)
 
     if as_json:
         typer.echo(json.dumps(outcome_document(outcome), indent=2))
@@ -326,7 +326,7 @@ def _resume(root, run_id, keep_worktrees, as_json, resolved, registry) -> None: 
         fail(str(exc))
     except ToolFailure as exc:
         reason = exc.details.get("reason")
-        fail(str(exc), EXIT_ENVIRONMENT if reason == "not_git" else 2)
+        fail(str(exc), EXIT_ENVIRONMENT if reason in ("not_git", "container") else 2)
     if as_json:
         typer.echo(json.dumps(outcome_document(outcome), indent=2))
     elif summary is not None:

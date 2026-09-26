@@ -83,6 +83,7 @@ from aix.domain.state import RunEvent, TaskEvent, transition_task
 from aix.domain.tasks import Task, TaskGraph
 from aix.domain.verification import Check, VerificationReport
 from aix.security.policy import Policy
+from aix.security.sandbox import container_spec, ensure_container_ready
 from aix.skills.registry import SkillRegistry
 from aix.store import events as ev
 from aix.store.db import EventStore
@@ -246,6 +247,7 @@ class _Driver:
         self._cancelled = False
         self._authors: dict[str, str] = {}
         self._policy = Policy(config.security)
+        self._container = container_spec(config.security)
         self._handoffs: dict[str, Handoff] = {}
         self._resume_notes: dict[str, str] = {}
         self._router_stats: dict[tuple[str, TaskType], AgentStat] = {}
@@ -688,6 +690,7 @@ class _Driver:
                 timeout_s=(override.timeout_s if override and override.timeout_s else None)
                 or self._config.execution.attempt_timeout_s,
                 model=override.model if override else None,
+                container=self._container,
             )
             return await run_ai_review(task.goal, diff, checks, runner, reviewer_id=reviewer_id)
 
@@ -759,6 +762,7 @@ class _Driver:
                 model=attempt.model,
                 timeout_s=timeout_override(config, agent_id) or config.execution.attempt_timeout_s,
                 permissions=self._policy.agent_permissions(task),
+                container=self._container,
                 stream_path=stream_path,
             )
             tool_calls: list[ToolCallRecord] = []
@@ -1339,6 +1343,7 @@ async def execute_run(
     """
 
     skills = skills or SkillRegistry.builtin()
+    await ensure_container_ready(config.security)  # fail before anything is recorded
     wm = WorkspaceManager(req.project_root)
     plan_req = PlanRunRequest(
         project_root=req.project_root,
@@ -1464,6 +1469,7 @@ async def _resume(
     run = await store.get_run(run_id)
     if run is None:
         raise ConfigError(f"unknown run {run_id!r}")
+    await ensure_container_ready(config.security)
     wm = WorkspaceManager(project_root)
     rec = RunRecorder(store, run, clock)
     notes: dict[str, str] = {}

@@ -112,8 +112,21 @@ class NetworkConfig(DomainModel):
     checks: Literal["deny", "allow"] = "deny"
 
 
+class ContainerConfig(DomainModel):
+    """Settings for ``security.sandbox: container`` (§20.3, ADR-0029)."""
+
+    runtime: Literal["auto", "docker", "podman"] = "auto"
+    image: str | None = None
+    """Image that contains the agent CLI. Required in container mode; aix ships none."""
+    network: Literal["none", "bridge"] = "none"
+    """``none``: no network at all. ``bridge``: unrestricted egress (no allowlist is enforced)."""
+    memory: str | None = "4g"
+    pids_limit: int = Field(default=512, ge=16)
+
+
 class SecurityConfig(DomainModel):
     sandbox: Literal["local", "container"] = "local"
+    container: ContainerConfig = Field(default_factory=ContainerConfig)
     network: NetworkConfig = Field(default_factory=NetworkConfig)
     shell_allow: list[str] = Field(
         default_factory=lambda: [

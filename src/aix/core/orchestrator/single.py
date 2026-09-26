@@ -47,6 +47,7 @@ from aix.domain.ids import IdPrefix, new_id
 from aix.domain.runs import Budget, Run
 from aix.domain.state import RunEvent, TaskEvent, transition_run, transition_task
 from aix.domain.tasks import Intent, Task, TaskGraph, VerificationSpec
+from aix.security.sandbox import container_spec, ensure_container_ready
 from aix.store import events as ev
 from aix.store.db import EventStore
 
@@ -109,6 +110,7 @@ async def run_single_task(
         )
     adapter = registry.get(req.agent_id)
 
+    await ensure_container_ready(config.security)
     wm = WorkspaceManager(req.project_root)
     run_id = new_id(IdPrefix.RUN)
     branch = await wm.create_run_branch(run_id, allow_dirty=req.allow_dirty)  # preflights too
@@ -241,6 +243,7 @@ async def run_single_task(
             model=attempt.model,
             timeout_s=timeout_override(config, req.agent_id) or config.execution.attempt_timeout_s,
             permissions=AgentPermissions(read_only=not task.file_scope, write_scope=write_scope),
+            container=container_spec(config.security),
             stream_path=stream_path,
         )
         outcome = await execute_agent(

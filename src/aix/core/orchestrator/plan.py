@@ -22,6 +22,7 @@ from aix.domain.errors import classify
 from aix.domain.ids import IdPrefix, new_id
 from aix.domain.state import RunEvent
 from aix.domain.tasks import Intent, TaskGraph
+from aix.security.sandbox import container_spec
 from aix.skills.registry import SkillRegistry
 from aix.store import events as ev
 from aix.store.db import EventStore
@@ -122,6 +123,7 @@ async def plan_into(
                 timeout_s=(override.timeout_s if override and override.timeout_s else None)
                 or config.execution.attempt_timeout_s,
                 model=override.model if override else None,
+                container=container_spec(config.security),
             )
             outcome = await AgentPlanner(
                 skills, runner, template, max_tasks=config.planner.max_tasks

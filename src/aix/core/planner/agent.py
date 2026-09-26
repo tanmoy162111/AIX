@@ -12,7 +12,7 @@ import anyio
 import jinja2
 from pydantic import ValidationError
 
-from aix.agents.protocol import AgentAdapter, AgentPermissions, AgentRequest
+from aix.agents.protocol import AgentAdapter, AgentPermissions, AgentRequest, ContainerSpec
 from aix.core.planner.base import Planner
 from aix.core.planner.draft import PlanDraft
 from aix.core.workspace.manager import WorkspaceManager
@@ -238,6 +238,7 @@ def make_adapter_runner(
     *,
     timeout_s: int,
     model: str | None = None,
+    container: ContainerSpec | None = None,
 ) -> PlannerRunner:
     """Build a runner that executes ``adapter`` read-only in a throwaway worktree (§13.2).
 
@@ -257,6 +258,7 @@ def make_adapter_runner(
                     model=model,
                     timeout_s=timeout_s,
                     permissions=AgentPermissions(read_only=True),
+                    container=container,
                 )
             )
             try:
