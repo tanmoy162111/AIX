@@ -111,6 +111,11 @@ async def persist_artifacts(stream_path: Path, normalized: list[str], capture: D
     await sp.parent.mkdir(parents=True, exist_ok=True)
     if not await sp.exists():
         await sp.write_text("".join(line + "\n" for line in normalized))
+    else:  # adapters mirror raw stdout as it arrives; scrub it now that the attempt is over
+        raw = await sp.read_text(encoding="utf-8", errors="replace")
+        clean = redact_secrets(raw)
+        if clean != raw:
+            await sp.write_text(clean)
     if capture.patch:
         await anyio.Path(
             stream_path.with_name(stream_path.name.replace(".stream.jsonl", ".patch"))

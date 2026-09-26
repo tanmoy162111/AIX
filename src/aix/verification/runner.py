@@ -18,6 +18,8 @@ from typing import Final, Literal
 
 import anyio
 
+from aix.security.redact import redact_secrets
+
 TAIL_BYTES: Final = 200_000
 _BASE_ENV: Final = ("PATH", "HOME", "LANG", "LC_ALL", "TERM")
 _OFFLINE: Final = {
@@ -128,7 +130,8 @@ async def run_command(
                 await proc.wait()
         else:
             _killpg(proc.pid, signal.SIGKILL)  # stragglers holding the pipes open
-    stdout, stderr = b"".join(out), b"".join(err)
+    stdout = redact_secrets(b"".join(out).decode("utf-8", errors="replace")).encode("utf-8")
+    stderr = redact_secrets(b"".join(err).decode("utf-8", errors="replace")).encode("utf-8")
     out_path = err_path = None
     if out_dir is not None:
         await anyio.Path(out_dir).mkdir(parents=True, exist_ok=True)

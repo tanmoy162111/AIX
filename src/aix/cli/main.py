@@ -60,6 +60,21 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
+def _register_known_secrets() -> None:
+    """Make credentials from the environment (and the approval token) unwritable (§20.5)."""
+    import os
+
+    from aix.security.approvals import token_path
+    from aix.security.redact import configure_known_secrets, known_secret_values
+
+    values = known_secret_values(os.environ)
+    try:
+        token = token_path().read_text(encoding="utf-8").strip()
+    except OSError:
+        token = ""
+    configure_known_secrets([*values, token] if token else values)
+
+
 @app.callback()
 def main(
     version: bool = typer.Option(
@@ -71,6 +86,7 @@ def main(
     ),
 ) -> None:
     """Coordinate AI coding agents to produce verified, traceable work."""
+    _register_known_secrets()
 
 
 if __name__ == "__main__":  # pragma: no cover
