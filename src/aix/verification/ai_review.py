@@ -8,21 +8,28 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
+import tempfile
 from collections.abc import Awaitable, Callable, Collection, Sequence
 from importlib import resources
+from pathlib import Path
 from typing import Final, Literal
 
+import anyio
 import jinja2
 from pydantic import Field, ValidationError
 
+from aix.agents.protocol import AgentAdapter, AgentPermissions, AgentRequest
 from aix.config.schema import RoutingConfig
 from aix.core.router.rules import RoutingContext, route
 from aix.domain.agents import AgentSpec
 from aix.domain.base import DomainModel
 from aix.domain.enums import Capability, CheckKind, TaskType
+from aix.domain.errors import AgentFailure, ToolFailure
 from aix.domain.ids import IdPrefix, new_id
 from aix.domain.tasks import Task
 from aix.domain.verification import Check
+from aix.tools.git import git
 from aix.verification.parsers import Finding, Findings
 
 ReviewRunner = Callable[[str], Awaitable[str]]
@@ -172,3 +179,51 @@ async def run_ai_review(
         severity=(worst or "info") if worst != "info" else "info",
         metrics=findings.counts(),
     )
+
+
+def make_snapshot_runner(
+    adapter: AgentAdapter, root: Path, *, timeout_s: int, model: str | None = None
+) -> ReviewRunner:
+    """Run ``adapter`` read-only in a detached worktree of ``HEAD`` (for ``aix review``).
+
+    Contract: the worktree lives outside the project tree and is always removed; any file the
+    reviewer changed makes the call raise ``ToolFailure``.
+    """
+
+    async def run(prompt: str) -> str:
+        tmp = Path(tempfile.mkdtemp(prefix="aix-review-"))
+        ws = tmp / "ws"
+        await git(root, "worktree", "add", "-q", "--detach", str(ws), "HEAD")
+        try:
+            handle = await adapter.start(
+                AgentRequest(
+                    attempt_id=new_id(IdPrefix.ATTEMPT),
+                    workspace=ws,
+                    prompt=prompt,
+                    model=model,
+                    timeout_s=timeout_s,
+                    permissions=AgentPermissions(read_only=True),
+                )
+            )
+            try:
+                async for _ in adapter.events(handle):
+                    pass
+                outcome = await adapter.wait(handle)
+            except BaseException:
+                with anyio.CancelScope(shield=True):
+                    await adapter.cancel(handle, 1)
+                raise
+            if outcome.status != "completed":
+                raise AgentFailure(
+                    f"reviewer {outcome.status}: {outcome.stderr_tail[-200:].strip()}"
+                )
+            dirty = (await git(ws, "status", "--porcelain")).stdout.strip()
+            if dirty:
+                raise ToolFailure("reviewer modified files in a read-only workspace")
+            return outcome.claim or ""
+        finally:
+            with anyio.CancelScope(shield=True):
+                await git(root, "worktree", "remove", "--force", str(ws), check=False)
+                await anyio.to_thread.run_sync(shutil.rmtree, tmp, True)
+
+    return run
