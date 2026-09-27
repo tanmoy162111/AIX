@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
 import tempfile
 from pathlib import Path
@@ -11,6 +10,7 @@ import anyio
 import anyio.to_thread
 
 from aix.agents.protocol import AgentAdapter, AgentOutcome, AgentPermissions, AgentRequest
+from aix.artifacts.sanitize import sanitize_stream
 from aix.domain.ids import IdPrefix, new_id
 
 RECORD_PROMPT = "Reply with the single word OK. Do not use any tools."
@@ -35,39 +35,9 @@ def _scratch_repo(root: Path) -> Path:
     return root
 
 
-_DROP_SUBTYPES = frozenset({"hook_started", "hook_response", "commands_changed"})
-_NOISY_KEYS = frozenset(
-    {
-        "tools", "mcp_servers", "slash_commands", "terminal_slash_commands", "skills", "plugins",
-        "agents", "commands", "capabilities", "memory_paths", "messaging_socket_path",
-    }
-)  # fmt: skip
-
-
 def sanitize_recording(path: Path, home: Path | None = None) -> None:
-    """Strip machine-specific noise from a recording so it is safe to commit.
-
-    Drops hook/command-list system events, blanks the user's tool/plugin/skill inventories and
-    replaces the home directory with ``~``. Lines that are not JSON objects are kept verbatim
-    (apart from the home rewrite) because malformed input is a parser concern.
-    """
-    home_str = str(home or Path.home())
-    out: list[str] = []
-    for line in path.read_text().splitlines():
-        try:
-            obj = json.loads(line)
-        except ValueError:
-            out.append(line.replace(home_str, "~"))
-            continue
-        if not isinstance(obj, dict):
-            out.append(line.replace(home_str, "~"))
-            continue
-        if obj.get("type") == "system" and obj.get("subtype") in _DROP_SUBTYPES:
-            continue
-        for key in _NOISY_KEYS & obj.keys():
-            obj[key] = []
-        out.append(json.dumps(obj, separators=(",", ":")).replace(home_str, "~"))
-    path.write_text("\n".join(out) + "\n")
+    """Sanitize a recording in place (see :func:`aix.artifacts.sanitize.sanitize_stream`)."""
+    path.write_text(sanitize_stream(path.read_text(), home))
 
 
 async def record_read_only(adapter: AgentAdapter, out_dir: Path) -> tuple[Path, AgentOutcome]:

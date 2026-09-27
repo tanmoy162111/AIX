@@ -150,3 +150,29 @@ def test_cli_json_and_save(tmp_path: Path) -> None:
     doc = json.loads(r.output)
     assert doc["total"] == 70 and json.loads(out.read_text())["accuracy"] == 1.0
     assert isinstance(DecisionState(), DecisionState) and EvalCase is not None
+
+
+def test_triage_cases_offer_only_mutations_a_real_run_would_offer() -> None:
+    """A case's mutation list must be a suffix of the §19.2 sequence for its failure class.
+
+    The first live Jev eval (ADR-0035/0037) used one generic two-option list for every class, so
+    it measured Jev on choices the product never presents.
+    """
+    from aix.core.failure import Classified
+    from aix.core.retry import sequence_for
+    from aix.domain.enums import FailureClass, VerificationFailureKind
+
+    bad: list[str] = []
+    for case in load_cases(CASES):
+        if case.point is not P.FAILURE_TRIAGE:
+            continue
+        failure = state_from_wire(case.state).failure
+        assert failure is not None
+        sub = failure.sub_kind
+        cls = Classified(
+            FailureClass(failure.failure_class), VerificationFailureKind(sub) if sub else None
+        )
+        seq = [s.mutation.value for s in sequence_for(cls)]
+        if not any(failure.mutations == seq[i:] for i in range(len(seq) + 1)):
+            bad.append(f"{case.id}: {failure.mutations} vs {seq}")
+    assert not bad, "\n".join(bad)

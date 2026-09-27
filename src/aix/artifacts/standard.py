@@ -12,6 +12,7 @@ from typing import Final
 import anyio
 from pydantic import BaseModel
 
+from aix.artifacts.sanitize import sanitize_stream_bytes
 from aix.artifacts.store import ArtifactWriter
 from aix.domain.artifacts import Artifact, Producer
 from aix.domain.enums import ArtifactType
@@ -134,8 +135,9 @@ async def write_standard_artifacts(
                 )  # fmt: skip
             if (stream := await _read(runs_dir / f"{attempt.id}.stream.jsonl")) is not None:
                 await add(
-                    f"stream/{attempt.id}.jsonl", ArtifactType.STREAM, stream,
-                    "application/x-ndjson", agent, task_id=task.id, attempt_id=attempt.id,
+                    f"stream/{attempt.id}.jsonl", ArtifactType.STREAM,
+                    sanitize_stream_bytes(stream), "application/x-ndjson", agent,
+                    task_id=task.id, attempt_id=attempt.id,
                 )  # fmt: skip
             if (patch := await _read(runs_dir / f"{attempt.id}.patch")) is not None:
                 last_patch = (attempt.id, attempt, patch)

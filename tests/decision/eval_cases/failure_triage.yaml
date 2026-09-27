@@ -1,4 +1,6 @@
 # Labeled failure_triage cases (PLAYBOOK §18.7, §19.2).
+# `failure.mutations` is what a real run offers: the remaining suffix of the §19.2 sequence for the class
+# (asserted by tests/unit/decision/test_eval.py), after one step per earlier failure and one for a switch.
 - id: ft-001-verification-first
   point: failure_triage
   state:
@@ -17,6 +19,8 @@
       mutations:
       - same_agent_with_failure_context
       - switch_agent
+      - add_research_step
+      - ask_human
   expected: retry
 - id: ft-002-verification-repeated
   point: failure_triage
@@ -35,8 +39,9 @@
       candidates:
       - verification_failure
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
+      - add_research_step
+      - ask_human
   expected: switch_agent
 - id: ft-003-verification-repeated-after-switch
   point: failure_triage
@@ -55,8 +60,8 @@
       candidates:
       - verification_failure
       mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      - add_research_step
+      - ask_human
   expected: retry
 - id: ft-004-verification-exhausted
   point: failure_triage
@@ -76,8 +81,8 @@
       candidates:
       - verification_failure
       mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      - add_research_step
+      - ask_human
   expected: escalate
 - id: ft-005-no-changes-first
   point: failure_triage
@@ -95,7 +100,7 @@
       candidates:
       - agent_no_changes
       mutations:
-      - same_agent_with_failure_context
+      - same_agent_clarified_prompt
       - switch_agent
   expected: retry
 - id: ft-006-no-changes-repeated
@@ -115,7 +120,6 @@
       candidates:
       - agent_no_changes
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
   expected: switch_agent
 - id: ft-007-agent-failure-first
@@ -134,8 +138,9 @@
       candidates:
       - agent_failure
       mutations:
-      - same_agent_with_failure_context
+      - same_agent_new_context
       - switch_agent
+      - ask_human
   expected: retry
 - id: ft-008-agent-failure-repeated
   point: failure_triage
@@ -154,8 +159,8 @@
       candidates:
       - agent_failure
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
+      - ask_human
   expected: switch_agent
 - id: ft-009-timeout-first
   point: failure_triage
@@ -173,7 +178,7 @@
       candidates:
       - timeout
       mutations:
-      - same_agent_with_failure_context
+      - split_task
       - switch_agent
   expected: retry
 - id: ft-010-timeout-repeated
@@ -193,7 +198,6 @@
       candidates:
       - timeout
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
   expected: switch_agent
 - id: ft-011-scope-first
@@ -212,7 +216,7 @@
       candidates:
       - scope_violation
       mutations:
-      - same_agent_with_failure_context
+      - same_agent_with_scope_reminder
       - switch_agent
   expected: retry
 - id: ft-012-scope-repeated
@@ -232,7 +236,6 @@
       candidates:
       - scope_violation
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
   expected: switch_agent
 - id: ft-013-merge-conflict
@@ -251,8 +254,7 @@
       candidates:
       - merge_conflict
       mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      - rebase_and_retry
   expected: retry
 - id: ft-014-context-failure
   point: failure_triage
@@ -270,8 +272,7 @@
       candidates:
       - context_failure
       mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      - compact_context_and_retry
   expected: retry
 - id: ft-015-rate-limited-first
   point: failure_triage
@@ -289,7 +290,8 @@
       candidates:
       - rate_limited
       mutations:
-      - same_agent_with_failure_context
+      - wait_and_retry
+      - wait_and_retry
       - switch_agent
   expected: retry
 - id: ft-016-rate-limited-twice
@@ -309,7 +311,7 @@
       candidates:
       - rate_limited
       mutations:
-      - same_agent_with_failure_context
+      - wait_and_retry
       - switch_agent
   expected: retry
 - id: ft-017-rate-limited-persistent
@@ -330,7 +332,6 @@
       candidates:
       - rate_limited
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
   expected: switch_agent
 - id: ft-018-network-first
@@ -349,7 +350,8 @@
       candidates:
       - network_failure
       mutations:
-      - same_agent_with_failure_context
+      - wait_and_retry
+      - wait_and_retry
       - switch_agent
   expected: retry
 - id: ft-019-network-persistent
@@ -370,7 +372,6 @@
       candidates:
       - network_failure
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
   expected: switch_agent
 - id: ft-020-auth
@@ -389,7 +390,6 @@
       candidates:
       - auth_failure
       mutations:
-      - same_agent_with_failure_context
       - switch_agent
   expected: switch_agent
 - id: ft-021-auth-repeat
@@ -408,9 +408,7 @@
       class: auth_failure
       candidates:
       - auth_failure
-      mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      mutations: []
   expected: switch_agent
 - id: ft-022-policy
   point: failure_triage
@@ -427,9 +425,7 @@
       class: policy_failure
       candidates:
       - policy_failure
-      mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      mutations: []
   expected: ask_human
   tags:
   - adversarial
@@ -448,9 +444,7 @@
       class: budget_exceeded
       candidates:
       - budget_exceeded
-      mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      mutations: []
   expected: ask_human
 - id: ft-024-human-rejection
   point: failure_triage
@@ -467,9 +461,7 @@
       class: human_rejection
       candidates:
       - human_rejection
-      mutations:
-      - same_agent_with_failure_context
-      - switch_agent
+      mutations: []
   expected: ask_human
 - id: ft-025-tool-failure-first
   point: failure_triage
@@ -487,8 +479,9 @@
       candidates:
       - tool_failure
       mutations:
-      - same_agent_with_failure_context
+      - same_agent_new_context
       - switch_agent
+      - ask_human
   expected: retry
 - id: ft-026-tool-failure-exhausted
   point: failure_triage
@@ -506,6 +499,7 @@
       candidates:
       - tool_failure
       mutations:
-      - same_agent_with_failure_context
+      - same_agent_new_context
       - switch_agent
+      - ask_human
   expected: escalate

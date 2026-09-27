@@ -99,3 +99,32 @@ async def test_binary_media_types_are_not_redacted(tmp_path: Path) -> None:
         assert await ObjectStore(tmp_path / "objects").get(art.sha256) == raw
     finally:
         await db.close()
+
+
+def test_sanitize_stream_strips_inventories_hooks_and_home() -> None:
+    import json
+    from pathlib import Path
+
+    from aix.artifacts.sanitize import sanitize_stream, sanitize_stream_bytes
+
+    home = Path("/h/me")
+    lines = [
+        {"type": "system", "subtype": "hook_response", "output": "secret"},
+        {"type": "system", "subtype": "commands_changed", "commands": ["x"] * 50},
+        {
+            "type": "system",
+            "subtype": "init",
+            "plugins": [{"path": "/h/me/.claude/p"}],
+            "model": "m",
+        },
+        {"type": "result", "path": "/h/me/x"},
+    ]
+    text = "\n".join([*map(json.dumps, lines), "garbage /h/me/y"])
+    out = sanitize_stream(text, home)
+    assert "/h/me" not in out and "secret" not in out and "commands" not in out
+    rows = out.splitlines()
+    assert json.loads(rows[0])["plugins"] == [] and json.loads(rows[0])["model"] == "m"
+    assert json.loads(rows[1])["path"] == "~/x" and rows[2] == "garbage ~/y"
+    assert sanitize_stream(out, home) == out  # idempotent
+    assert sanitize_stream("", home) == ""
+    assert sanitize_stream_bytes(text.encode(), home) == out.encode()
