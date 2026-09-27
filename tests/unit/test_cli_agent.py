@@ -27,7 +27,7 @@ def agents(env: Path) -> dict[str, dict[str, object]]:
 def test_list_shows_every_builtin_even_when_unavailable(env: Path) -> None:
     got = agents(env)
     assert {"fake", "claude", "codex"} <= set(got)
-    assert got["fake"]["health"] == "ready"
+    assert got["fake"]["health"] == "disabled"  # off until enabled (or AIX_FAKE_SCRIPTS is set)
     assert got["claude"]["health"] == "unavailable"
     assert "not found" in str(got["claude"]["health_reason"])
 
@@ -81,6 +81,7 @@ def test_enable_unknown_agent_is_a_usage_error(env: Path) -> None:
 
 
 def test_test_fake_runs_the_smoke_prompt(env: Path) -> None:
+    assert run(env, "agent", "enable", "fake")[0] == 0
     code, out = run(env, "agent", "test", "fake")
     assert code == 0, out
     assert "smoke: status=completed" in out and "claim (unverified)" in out

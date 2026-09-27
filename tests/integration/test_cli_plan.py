@@ -111,6 +111,7 @@ def test_plan_only_with_agent_uses_it_as_the_planner(
 def test_run_without_agent_is_routed_not_a_usage_error(repo: Path) -> None:
     # M2 required --agent; since M3.8 no --agent means plan + route. The unscripted built-in fake
     # writes nothing, so the write task fails as a lazy agent, which proves the routed path ran.
+    assert cli(repo, "agent", "enable", "fake")[0] == 0
     code, out = cli(repo, "run", "Add a retry option")
     assert code == 1, out
     assert "agent_no_changes" in out and "--agent" not in out

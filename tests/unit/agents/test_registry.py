@@ -70,9 +70,21 @@ def test_duplicate_registration_is_an_error() -> None:
         reg.register(entry("a"))
 
 
-def test_is_enabled_follows_config_and_fake_is_always_on() -> None:
-    reg = registry(["a"], entry("a"), entry("b"), entry("fake"))
-    assert reg.is_enabled("a") and not reg.is_enabled("b") and reg.is_enabled("fake")
+def test_is_enabled_follows_config_and_fake_dash_agents_are_always_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("AIX_FAKE_SCRIPTS", raising=False)
+    reg = registry(["a"], entry("a"), entry("b"), entry("fake-x"))
+    assert reg.is_enabled("a") and not reg.is_enabled("b") and reg.is_enabled("fake-x")
+
+
+def test_builtin_fake_is_off_unless_listed_or_scripted(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Found live (M10): an always-on `fake` was routed real tasks and produced nothing."""
+    monkeypatch.delenv("AIX_FAKE_SCRIPTS", raising=False)
+    assert not registry(["a"], entry("a"), entry("fake")).is_enabled("fake")
+    assert registry(["a", "fake"], entry("a"), entry("fake")).is_enabled("fake")
+    monkeypatch.setenv("AIX_FAKE_SCRIPTS", "/some/scripts")
+    assert registry(["a"], entry("a"), entry("fake")).is_enabled("fake")
 
 
 async def test_probe_marks_unlisted_agents_disabled() -> None:

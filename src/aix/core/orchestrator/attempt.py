@@ -83,7 +83,9 @@ async def execute_agent(
                 if policy is not None:
                     raw_input = event.data.get("input", "")
                     found = policy.inspect_tool_call(
-                        name, raw_input if isinstance(raw_input, str) else json.dumps(raw_input)
+                        name,
+                        raw_input if isinstance(raw_input, str) else json.dumps(raw_input),
+                        workspace=str(agent_req.workspace),
                     )
                     if found is not None:
                         payload = ev.PolicyViolationPayload(

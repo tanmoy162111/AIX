@@ -72,3 +72,22 @@ def test_can_write() -> None:
     for bad in ("other/x.py", ".aix/aix.db", ".git/config", "../x", "/etc/passwd"):
         assert not p.can_write(bad, t), bad
     assert not p.can_write("a.py", task([]))
+
+
+WS = "/proj/.aix/worktrees/att_01ARZ3NDEKTSV4RRFFQ69G5FAV"
+
+
+def test_own_worktree_path_is_not_control_plane_state() -> None:
+    """Found live (M10): worktrees sit under `.aix/`, and codex reports absolute paths."""
+    p = Policy(SecurityConfig())
+    call = f'file_change: [{{"path": "{WS}/app/greeting.py", "kind": "add"}}]'
+    assert p.inspect_tool_call("file_change", call, workspace=WS) is None
+    assert p.inspect_tool_call("file_change", call) is not None  # without the root it still flags
+
+
+def test_state_dir_inside_the_worktree_and_outside_it_are_still_flagged() -> None:
+    p = Policy(SecurityConfig())
+    inside = p.inspect_tool_call("Edit", f"{WS}/.aix/aix.db", workspace=WS)
+    assert inside is not None and inside[0] == "control_plane_state"
+    outside = p.inspect_tool_call("Edit", "/proj/.aix/aix.db", workspace=WS)
+    assert outside is not None and outside[0] == "control_plane_state"

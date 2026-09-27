@@ -237,14 +237,14 @@ async def test_probe_reports_configured_health_and_capabilities() -> None:
 
 
 async def test_builtin_fake_and_extra_fakes_in_registry() -> None:
-    reg = AdapterRegistry(AixConfig())
+    reg = AdapterRegistry(AixConfig.model_validate({"agents": {"enabled": ["fake"]}}))
     assert "fake" in reg.ids()
     reg.register(make_fake_entry("fake-a", capabilities={Capability.DESIGN: 0.9}))
     reg.register(make_fake_entry("fake-reviewer", capabilities={Capability.REVIEW: 0.9}))
     specs = {s.id: s for s in await reg.probe_all()}
     assert {"fake", "fake-a", "fake-reviewer"} <= set(specs)
     fakes = [s for i, s in specs.items() if i.startswith("fake")]
-    assert all(s.health == "ready" for s in fakes)  # fake and fake-* are always enabled
+    assert all(s.health == "ready" for s in fakes)  # fake is enabled by config, fake-* always
 
 
 def test_git_available_for_patch_tests() -> None:

@@ -36,7 +36,7 @@ def repo(tmp_path: Path) -> Path:
 async def make_env(
     repo: Path, script: str | None, *, config: AixConfig | None = None, **fake: object
 ):  # type: ignore[no-untyped-def]
-    cfg = config or AixConfig()
+    cfg = config or AixConfig.model_validate({"agents": {"enabled": ["fake"]}})
     registry = AdapterRegistry(cfg, builtin_ids=())
     scripts = load_scripts(SCRIPTS / script) if script else []
     registry.register(make_fake_entry("fake", scripts=scripts, base_dir=SCRIPTS, **fake))  # type: ignore[arg-type]
@@ -202,7 +202,9 @@ async def test_stream_file_exists_and_is_referenced(repo: Path) -> None:
 
 
 async def test_timeout_is_a_failed_attempt(repo: Path) -> None:
-    cfg = AixConfig.model_validate({"execution": {"attempt_timeout_s": 1}})
+    cfg = AixConfig.model_validate(
+        {"execution": {"attempt_timeout_s": 1}, "agents": {"enabled": ["fake"]}}
+    )
     result, _, _, _, attempts, store = await go(repo, "slow.yaml", config=cfg)
     try:
         assert result.failure is FailureClass.TIMEOUT

@@ -110,15 +110,23 @@ class Policy:
             return Verdict(False, f"{exe} is not in security.shell_allow")
         return Verdict(True)
 
-    def inspect_tool_call(self, name: str, tool_input: str) -> tuple[str, str] | None:
+    def inspect_tool_call(
+        self, name: str, tool_input: str, workspace: str | None = None
+    ) -> tuple[str, str] | None:
         """``(kind, detail)`` when an agent tool call touches something agents must never touch.
 
         Covers granting approvals, the approval token, the aix state directory and irreversible
         git actions. This is *detection after the fact* from the agent's own stream: it records
         the attempt and fails it, but it cannot stop a same-user process in ``local`` mode
         (see docs/security.md).
+
+        ``workspace`` is the attempt's own worktree. It lives under ``.aix/worktrees/`` and agents
+        report absolute paths, so that prefix is removed before matching; a path *below* it is
+        judged as a repo-relative path.
         """
         text = f"{name} {tool_input}"
+        if workspace:
+            text = text.replace(workspace.rstrip("/"), ".")
         for kind, pattern in _FORBIDDEN_CALLS:
             if pattern.search(text):
                 return kind, f"{name}: {tool_input[:200]}"

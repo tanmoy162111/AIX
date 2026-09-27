@@ -12,6 +12,7 @@ not enable it: agents still have to be listed in ``agents.enabled``.
 from __future__ import annotations
 
 import importlib
+import os
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from importlib import metadata, resources
@@ -31,7 +32,8 @@ from aix.plugins.manifest import PluginManifest, PluginType
 BUILTIN_IDS: tuple[str, ...] = ("fake", "claude", "codex", "gemini", "opencode", "ollama")
 """Built-in adapter ids; extended as each adapter lands (M2.4 fake, M2.7 claude, ...)."""
 
-ALWAYS_ENABLED: frozenset[str] = frozenset({"fake"})
+SCRIPTED_ENV = "AIX_FAKE_SCRIPTS"
+"""Setting this marks a demo/test session, in which the built-in ``fake`` agent is enabled."""
 
 
 @dataclass(frozen=True)
@@ -188,11 +190,16 @@ class AdapterRegistry:
         return self._entry(agent_id).manifest
 
     def is_enabled(self, agent_id: str) -> bool:
-        """Enabled by config (``agents.enabled``); ``fake`` and ``fake-*`` are always on."""
+        """Enabled by config (``agents.enabled``); ``fake-*`` test agents are always on.
+
+        The built-in ``fake`` does nothing useful without a script, so it is on only when listed
+        in ``agents.enabled`` or when ``AIX_FAKE_SCRIPTS`` is set; otherwise the router could hand
+        it real tasks.
+        """
         return (
-            agent_id in ALWAYS_ENABLED
+            agent_id in self._config.agents.enabled
             or agent_id.startswith("fake-")
-            or agent_id in self._config.agents.enabled
+            or (agent_id == "fake" and bool(os.environ.get(SCRIPTED_ENV)))
         )
 
     async def probe(self, agent_id: str) -> AgentSpec:
