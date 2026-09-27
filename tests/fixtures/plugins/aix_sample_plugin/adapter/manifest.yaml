@@ -1,0 +1,11 @@
+id: sample-agent
+name: Sample plugin agent
+kind: local
+cost_class: free
+capabilities: { implement: 0.99, test: 0.99, document: 0.99 }
+supports:
+  streaming: true
+  cancel: true
+  non_interactive: true
+  cost_reporting: full
+  enforces: [read_only, write_scope, network_deny]

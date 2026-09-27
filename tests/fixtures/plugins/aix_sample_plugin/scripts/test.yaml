@@ -1,0 +1,4 @@
+match: { task_type: test }
+attempts:
+  - write_files:
+      tests/test_feature.py: "def test_feature():\n    assert True\n"

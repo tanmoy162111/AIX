@@ -65,3 +65,41 @@ def test_no_ready_agent_and_missing_init_are_warnings(env: Path) -> None:
 def test_table_output(env: Path) -> None:
     result = runner.invoke(app, ["doctor", "--project", str(env / "proj")])
     assert result.exit_code == 0 and "python" in result.stdout and "git" in result.stdout
+
+
+def test_a_healthy_environment_lists_no_plugins(env: Path) -> None:
+    _, doc = doctor(env)
+    assert not [n for n in by_name(doc) if n.startswith("plugin ")]
+
+
+def test_installed_plugins_are_listed_and_broken_ones_are_warnings(
+    env: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from plugin_env import install_sample_plugin
+
+    install_sample_plugin(tmp_path / "site", monkeypatch)
+    code, doc = doctor(env)
+    checks = by_name(doc)
+    assert code == 0 and doc["ok"] is True  # a broken plugin never fails the CLI
+    good = checks["plugin adapter sample-agent"]
+    assert good["status"] == "ok" and "0.1.0" in good["detail"]
+    assert "spawn_process" in good["detail"]
+    assert checks["plugin check no-todo"]["status"] == "ok"
+    future = checks["plugin adapter future-agent"]
+    assert future["status"] == "warn" and "requires aix >=99.0" in future["detail"]
+    ghost = checks["plugin adapter ghost-agent"]
+    assert ghost["status"] == "warn" and "does_not_exist" in ghost["detail"]
+
+
+def test_a_check_plugin_that_cannot_be_imported_is_reported(
+    env: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from plugin_env import install_sample_plugin
+
+    site = install_sample_plugin(tmp_path / "site", monkeypatch)
+    (site / "aix_sample_plugin" / "checks.py").write_text(
+        "raise RuntimeError('broken on import')\n"
+    )
+    _, doc = doctor(env)
+    check = by_name(doc)["plugin check no-todo"]
+    assert check["status"] == "warn" and "broken on import" in check["detail"]

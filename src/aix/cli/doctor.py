@@ -10,12 +10,15 @@ import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import TYPE_CHECKING, Annotated, Literal
 
 import anyio
 import typer
 
 from aix.cli.common import EXIT_ENVIRONMENT
+
+if TYPE_CHECKING:
+    from aix.plugins.loader import PluginRecord
 
 Status = Literal["ok", "warn", "fail"]
 OPTIONAL_TOOLS = ("semgrep", "gitleaks", "pip-audit", "bandit")
@@ -38,6 +41,39 @@ def _version(binary: str) -> str:
         )
     except (OSError, subprocess.SubprocessError):
         return ""
+
+
+def _plugin_checks(adapter_records: list[PluginRecord]) -> list[Check]:
+    """External plugins of every type: a failing one is a warning, never a doctor failure.
+
+    Adapter records come from the registry (already loaded); other types are discovered here.
+    Valid manifests are activated once (imported) so a plugin broken at import time shows up.
+    """
+    from aix.plugins.loader import BUILTIN, discover, load_object
+    from aix.plugins.manifest import PluginType
+
+    records = [r for r in adapter_records if r.source != BUILTIN]
+    for kind in PluginType:
+        if kind is not PluginType.ADAPTER:
+            records.extend(r for r in discover(kind) if r.source != BUILTIN)
+    out: list[Check] = []
+    for r in records:
+        name = f"plugin {r.type.value} {r.id}"
+        error = r.error
+        if error is None and r.type is not PluginType.ADAPTER:
+            try:
+                load_object(r)
+            except Exception as exc:  # third-party code is imported here
+                error = str(exc)
+        if error is not None:
+            out.append(Check(name, "warn", f"skipped: {error} [{r.source}]"))
+            continue
+        assert r.manifest is not None
+        perms = (
+            f"; permissions: {', '.join(r.manifest.permissions)}" if r.manifest.permissions else ""
+        )
+        out.append(Check(name, "ok", f"v{r.manifest.version} from {r.source}{perms}"))
+    return out
 
 
 def collect_checks(project: Path) -> list[Check]:
@@ -89,6 +125,9 @@ def collect_checks(project: Path) -> list[Check]:
             checks.append(Check(f"agent {s.id}", status, detail))
         if not real_ready:
             checks.append(Check("agents", "warn", "no real agent is ready or enabled"))
+        checks.extend(_plugin_checks(registry.plugin_records()))
+    else:
+        checks.extend(_plugin_checks([]))
 
     runtime = next((r for r in ("docker", "podman") if shutil.which(r)), None)
     checks.append(

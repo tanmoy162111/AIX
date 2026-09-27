@@ -15,6 +15,7 @@ dependencies = [
     "jinja2>=3.1",
     "structlog>=24.1",
     "python-ulid>=2.7",
+    "packaging>=24.0",
 ]
 
 [project.optional-dependencies]

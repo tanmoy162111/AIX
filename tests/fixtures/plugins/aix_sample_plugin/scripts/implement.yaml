@@ -1,0 +1,7 @@
+match: { task_type: implement }
+attempts:
+  - events:
+      - {kind: text, data: {text: "Implemented by the sample plugin agent"}}
+    write_files:
+      feature.py: "def feature():\n    return 'from the sample plugin'\n"
+    claim: "Done."

@@ -1,0 +1,4 @@
+match: { task_type: document }
+attempts:
+  - write_files:
+      docs/feature.md: "# Feature\n"
