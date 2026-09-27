@@ -184,3 +184,7 @@ contract: a [spec](docs/playbook/PLAYBOOK.md), a milestone checklist with exit g
 [decision log](docs/playbook/DECISIONS.md), and a rule that nothing counts as done until `make check`
 is green. All eleven milestones (M0–M10) are tagged. The full account, including what runs live and
 what is fake-only, is in [`docs/playbook/FINAL_REPORT.md`](docs/playbook/FINAL_REPORT.md).
+
+## License
+
+Apache License 2.0. See [`LICENSE`](LICENSE). Copyright 2026 Tanmoy.
