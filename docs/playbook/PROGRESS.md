@@ -130,7 +130,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M9.5 Run M9 Exit Gate; tag `m9-done`. — make check (1788 passed, 11 live skipped) and tests/contract (2 passed) green.
 
 ## M10 — Live validation and final report (§31)
-- [ ] M10.1 Live tests per installed CLI (tiny prompt on scratch fixture copy); record fresh recordings via `aix dev record`.
+- [x] M10.1 Live tests per installed CLI (tiny prompt on scratch fixture copy); record fresh recordings via `aix dev record`.
 - [ ] M10.2 Live Jev eval if key present; ADR with accuracy/calibration vs rules; do NOT change default provider unless criteria in §18.7 met.
 - [ ] M10.3 DoD §31 walk-through with fake agents; attach bundle.
 - [ ] M10.4 `FINAL_REPORT.md`: built vs planned, live vs fake-only matrix, open risks, ADR titles, how to run.
@@ -212,3 +212,4 @@ M5.9 — done; core/retry.py (pure): sequence_for/next_step/remaining_mutations 
 M5.10 — done; ADR-0020. core/{budget,escalation}.py, orchestrator/task_policy.py, executor wired: decisions after every attempt, mutations, ladder, budget stop (exit 6), ask_human -> pending Approval + run waiting_approval (exit 3), split_task (dependents rewired in memory only). tests/integration/test_retry_escalation.py (8 scenarios). Fake agent gained models/model_select. Resume after approval is M5.11.
 M5.11 — done; ADR-0021. security/approvals.py, core/orchestrator/approvals.py (resolve_approval), executor resume_run + ResumeState, cli/approvals.py. Agents always get AIX_AGENT_CONTEXT=1. Exit 3 on wait, deny -> HUMAN_REJECTION. Approval/resume tested in-process and via CLI with a real token file.
 M5.12 — done; ADR-0022. execute_run asks plan_review on high risk (ask_human -> waiting_approval, nothing executed; grant resumes from planned). core/toolrisk.py classifies control-plane commands; the gate covers verification AND the baseline run (found by a test: the baseline had run a deploy-class command). Agent-run tool calls remain outside tool_risk until M8.
+M10.1 — done; live: claude/codex/opencode pass (7 tests), gemini skipped (account rejected by Google: IneligibleTierError, now classified auth_failure), Jev skipped (no key); `aix dev record` added with sanitizer, fresh live_read_only.jsonl for the three working CLIs replayed by adapter tests; ADR-0032.
