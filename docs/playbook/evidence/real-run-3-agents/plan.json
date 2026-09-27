@@ -1,0 +1,211 @@
+{
+  "graph": {
+    "id": "gph_01M3GC7FWMMTQFSB6XXQFWRPK4",
+    "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+    "tasks": [
+      {
+        "depends_on": [],
+        "file_scope": [],
+        "goal": "Read app/users.py, app/handler.py, existing tests and README.md to learn the user data model, routing style, error handling conventions and test layout. Report findings; change nothing.",
+        "id": "task_01M3GC7FWMMTQFSB6XXQFWRPJX",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "research",
+          "summarize"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+        "skill": "inspect-repo",
+        "status": "created",
+        "title": "Survey users store and handler",
+        "type": "inspect",
+        "verification": {
+          "optional": [],
+          "required": []
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GC7FWMMTQFSB6XXQFWRPJX"
+        ],
+        "file_scope": [
+          "app/users.py"
+        ],
+        "goal": "In app/users.py add list_users(search=None, page=1, page_size=10) that filters by username substring (case-insensitive unless conventions say otherwise), validates that page and page_size are positive integers (reject bools, non-ints, values < 1, and cap or reject an excessive page_size), raises the repo's existing error type on invalid input, and returns the requested slice of results in a stable order.",
+        "id": "task_01M3GC7FWMMTQFSB6XXQFWRPJY",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "implement"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+        "skill": "feature-implementation",
+        "status": "created",
+        "title": "Add list_users with search and pagination",
+        "type": "implement",
+        "verification": {
+          "optional": [
+            "typecheck"
+          ],
+          "required": [
+            "tests",
+            "build",
+            "lint"
+          ]
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GC7FWMMTQFSB6XXQFWRPJY"
+        ],
+        "file_scope": [
+          "app/handler.py"
+        ],
+        "goal": "In app/handler.py add a GET /users route that reads the search, page and page_size query parameters, converts page and page_size from strings to ints, calls list_users, returns the results as JSON, and maps validation errors (including non-numeric values) to a 400 response following the existing handler conventions.",
+        "id": "task_01M3GC7FWMMTQFSB6XXQFWRPJZ",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "implement"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+        "skill": "feature-implementation",
+        "status": "created",
+        "title": "Add GET /users route",
+        "type": "implement",
+        "verification": {
+          "optional": [
+            "typecheck"
+          ],
+          "required": [
+            "tests",
+            "build",
+            "lint"
+          ]
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GC7FWMMTQFSB6XXQFWRPJY"
+        ],
+        "file_scope": [
+          "tests/test_users*.py"
+        ],
+        "goal": "Add tests for list_users covering no search, substring match, no matches, first, middle and last pages, a page beyond the end, default arguments, and invalid page and page_size values (zero, negative, non-integer, bool). Follow the existing test layout.",
+        "id": "task_01M3GC7FWMMTQFSB6XXQFWRPK0",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "test"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+        "skill": "write-tests",
+        "status": "created",
+        "title": "Tests for list_users",
+        "type": "test",
+        "verification": {
+          "optional": [],
+          "required": [
+            "tests",
+            "lint",
+            "build"
+          ]
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GC7FWMMTQFSB6XXQFWRPJZ",
+          "task_01M3GC7FWMMTQFSB6XXQFWRPK0"
+        ],
+        "file_scope": [
+          "tests/test_handler*.py"
+        ],
+        "goal": "Add tests for the GET /users route covering the default response, search filtering, pagination parameters, and 400 responses for invalid or non-numeric page and page_size. Follow the existing handler test style.",
+        "id": "task_01M3GC7FWMMTQFSB6XXQFWRPK1",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "test"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+        "skill": "write-tests",
+        "status": "created",
+        "title": "Tests for GET /users route",
+        "type": "test",
+        "verification": {
+          "optional": [],
+          "required": [
+            "tests",
+            "lint",
+            "build"
+          ]
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GC7FWMMTQFSB6XXQFWRPJZ"
+        ],
+        "file_scope": [
+          "docs/USERS.md"
+        ],
+        "goal": "Write a short docs/USERS.md describing list_users and GET /users: parameters and defaults, search semantics, pagination and validation rules, the response shape, error responses, and one example request and response. It must match the implemented behavior.",
+        "id": "task_01M3GC7FWMMTQFSB6XXQFWRPK2",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "document"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+        "skill": "documentation",
+        "status": "created",
+        "title": "Write docs/USERS.md",
+        "type": "document",
+        "verification": {
+          "optional": [],
+          "required": [
+            "policy",
+            "build",
+            "tests",
+            "lint"
+          ]
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GC7FWMMTQFSB6XXQFWRPK1",
+          "task_01M3GC7FWMMTQFSB6XXQFWRPK2"
+        ],
+        "file_scope": [],
+        "goal": "Independently review the full diff for correctness, validation edge cases, test coverage and accuracy of docs/USERS.md against the code. Report structured findings; change nothing.",
+        "id": "task_01M3GC7FWMMTQFSB6XXQFWRPK3",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "review"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GC711J9MEAJXDPQ5PV7PP8",
+        "skill": "code-review",
+        "status": "created",
+        "title": "Review the change",
+        "type": "review",
+        "verification": {
+          "optional": [],
+          "required": []
+        }
+      }
+    ]
+  },
+  "intent": {
+    "constraints": [],
+    "goal": "Add search and pagination to the users store in app/users.py: list_users(search=None, page=1, page_size=10) filtering by username substring, validating page and page_size, plus a GET /users?search=&page=&page_size= route in app/handler.py, tests for both, and a short docs/USERS.md describing the API",
+    "kind": "docs",
+    "risk": "low",
+    "target_paths": [
+      "app/users.py",
+      "app/handler.py",
+      "docs/USERS.md"
+    ]
+  },
+  "planner": "agent:claude",
+  "warnings": []
+}

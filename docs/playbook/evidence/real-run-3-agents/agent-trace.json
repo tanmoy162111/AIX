@@ -1,0 +1,135 @@
+[
+  {
+    "agent_id": "claude",
+    "attempt_id": "att_01M3GC7M8MZMXYTQ8NSEWZCDDZ",
+    "duration_ms": 28269,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GC7FWMMTQFSB6XXQFWRPJX",
+    "usage": {
+      "cost_usd": 0.1682968,
+      "estimated": false,
+      "input_tokens": 115105,
+      "model": "claude-sonnet-5",
+      "output_tokens": 2319
+    }
+  },
+  {
+    "agent_id": "codex",
+    "attempt_id": "att_01M3GC8FX8NGX9J1YNRXZTRSGG",
+    "duration_ms": 49902,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GC7FWMMTQFSB6XXQFWRPJY",
+    "usage": {
+      "cost_usd": null,
+      "estimated": false,
+      "input_tokens": 89971,
+      "model": null,
+      "output_tokens": 1888
+    }
+  },
+  {
+    "agent_id": "codex",
+    "attempt_id": "att_01M3GCA1KSXP11VN6Z6E5H8ACN",
+    "duration_ms": 45415,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GC7FWMMTQFSB6XXQFWRPJZ",
+    "usage": {
+      "cost_usd": null,
+      "estimated": false,
+      "input_tokens": 83506,
+      "model": null,
+      "output_tokens": 1662
+    }
+  },
+  {
+    "agent_id": "codex",
+    "attempt_id": "att_01M3GCA1KV6HG1YQ7Z4VXMSG3C",
+    "duration_ms": 69273,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GC7FWMMTQFSB6XXQFWRPK0",
+    "usage": {
+      "cost_usd": null,
+      "estimated": false,
+      "input_tokens": 106343,
+      "model": null,
+      "output_tokens": 2714
+    }
+  },
+  {
+    "agent_id": "codex",
+    "attempt_id": "att_01M3GCC5SBPHJA99TEQ6XV6CPE",
+    "duration_ms": 38998,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GC7FWMMTQFSB6XXQFWRPK1",
+    "usage": {
+      "cost_usd": null,
+      "estimated": false,
+      "input_tokens": 86732,
+      "model": null,
+      "output_tokens": 1470
+    }
+  },
+  {
+    "agent_id": "claude",
+    "attempt_id": "att_01M3GCBEG7Y0VYCKFDQB9VYA8K",
+    "duration_ms": 28514,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GC7FWMMTQFSB6XXQFWRPK2",
+    "usage": {
+      "cost_usd": 0.2010136,
+      "estimated": false,
+      "input_tokens": 212277,
+      "model": "claude-sonnet-5",
+      "output_tokens": 2239
+    }
+  },
+  {
+    "agent_id": "opencode",
+    "attempt_id": "att_01M3GCDCC6K956XMC68HR240XM",
+    "duration_ms": 96212,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GC7FWMMTQFSB6XXQFWRPK3",
+    "usage": {
+      "cost_usd": null,
+      "estimated": false,
+      "input_tokens": 196007,
+      "model": null,
+      "output_tokens": 12316
+    }
+  }
+]
