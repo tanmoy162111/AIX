@@ -7,11 +7,16 @@ never sets ``required`` or severity itself, the project's configuration does.
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Sequence
+from collections.abc import Awaitable, Callable, Iterable, Sequence
 from dataclasses import dataclass, field
+from importlib import metadata
 from pathlib import Path
+from typing import Any
 
+from aix.config.schema import AixConfig
 from aix.domain.verification import CheckStatus
+from aix.plugins.loader import discover, load_object
+from aix.plugins.manifest import PluginType
 
 
 @dataclass(frozen=True)
@@ -35,3 +40,43 @@ class PluginCheckResult:
 
 
 PluginCheck = Callable[[CheckContext], Awaitable[PluginCheckResult]]
+
+
+@dataclass(frozen=True)
+class ActivePluginCheck:
+    """A configured check plugin: runnable (``run``) or unavailable (``error``)."""
+
+    id: str
+    required: bool
+    run: PluginCheck | None = None
+    error: str | None = None
+
+
+def load_plugin_checks(
+    config: AixConfig,
+    *,
+    entry_points_fn: Callable[..., Iterable[Any]] = metadata.entry_points,
+) -> list[ActivePluginCheck]:
+    """Activate the check plugins named in ``verification.plugin_checks``.
+
+    Never raises: a plugin that is not installed, is incompatible or fails to import comes back
+    with its ``error`` so the engine records an ``error`` check (a required one blocks the task;
+    verification is never silently skipped).
+    """
+    refs = config.verification.plugin_checks
+    if not refs:
+        return []
+    records = {r.id: r for r in discover(PluginType.CHECK, entry_points_fn=entry_points_fn)}
+    active: list[ActivePluginCheck] = []
+    for ref in refs:
+        record = records.get(ref.id)
+        if record is None:
+            active.append(ActivePluginCheck(ref.id, ref.required, error="plugin is not installed"))
+            continue
+        try:
+            fn = load_object(record)
+        except Exception as exc:
+            active.append(ActivePluginCheck(ref.id, ref.required, error=str(exc)))
+            continue
+        active.append(ActivePluginCheck(ref.id, ref.required, run=fn))
+    return active

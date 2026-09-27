@@ -2,7 +2,7 @@ id: sample-agent
 name: Sample plugin agent
 kind: local
 cost_class: free
-capabilities: { implement: 0.99, test: 0.99, document: 0.99 }
+capabilities: { implement: 0.9, debug: 0.9, test: 0.9, review: 0.9, design: 0.9, research: 0.9, summarize: 0.9, security: 0.9, document: 0.9 }
 supports:
   streaming: true
   cancel: true

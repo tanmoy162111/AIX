@@ -94,6 +94,7 @@ from aix.verification.ai_review import pick_reviewer, run_ai_review
 from aix.verification.baseline import Baseline, run_baseline
 from aix.verification.commands import resolve_commands
 from aix.verification.engine import CHECK_TIMEOUT_S, COMMAND_KINDS, Reviewer, run_verification
+from aix.verification.plugins import load_plugin_checks
 
 CANCEL_GRACE_S: Final = 10.0
 
@@ -256,6 +257,7 @@ class _Driver:
         self._resume_notes: dict[str, str] = {}
         self._router_stats: dict[tuple[str, TaskType], AgentStat] = {}
         self._facts: ProjectFacts | None = None
+        self._plugin_checks = load_plugin_checks(config)
         self._skills: SkillRegistry | None = None
         self._baseline_lock = anyio.Lock()
         self._baseline_result: Baseline | None = None
@@ -640,6 +642,7 @@ class _Driver:
             out_dir=stream_path.parent / attempt_id / "verification",
             reviewer=reviewer,
             goal=task.goal,
+            plugin_checks=self._plugin_checks,
         )
         for check in report.checks:
             await rec.emit(

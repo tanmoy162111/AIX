@@ -52,6 +52,7 @@ def verify(
     from aix.domain.ids import IdPrefix, new_id
     from aix.domain.tasks import VerificationSpec
     from aix.verification.engine import run_verification
+    from aix.verification.plugins import load_plugin_checks
     from aix.verification.tree import working_tree_change
 
     root = path.resolve()
@@ -73,6 +74,7 @@ def verify(
         report = await run_verification(
             root, attempt_id, spec, cfg, patch=change.patch, changed_paths=change.paths,
             file_scope=["**"], out_dir=out_dir,
+            plugin_checks=load_plugin_checks(cfg),
         )  # fmt: skip
         return report, change
 

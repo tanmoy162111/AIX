@@ -19,7 +19,7 @@ ADAPTER = {
     "id": "sample-agent",
     "version": "0.1.0",
     "type": "adapter",
-    "capabilities": ["implement", "test"],
+    "capabilities": ["implement", "test", "document"],
     "permissions": ["spawn_process"],
     "requires_aix": ">=0.1",
     "entrypoint": "aix_sample_plugin.adapter:create",

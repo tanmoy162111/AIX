@@ -24,5 +24,5 @@ def create() -> AgentAdapter:
         name="Sample plugin agent",
         scripts=load_scripts(scripts),
         base_dir=scripts,
-        capabilities={Capability.IMPLEMENT: 0.99, Capability.TEST: 0.99, Capability.DOCUMENT: 0.99},
+        capabilities={cap: 0.9 for cap in Capability},
     )

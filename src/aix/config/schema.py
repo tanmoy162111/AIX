@@ -61,6 +61,14 @@ class SecurityChecksConfig(DomainModel):
     deps: Literal["auto", "on", "off"] = "auto"
 
 
+class PluginCheckRef(DomainModel):
+    """A check plugin (entry-point group ``aix.checks``) to run on every verified attempt."""
+
+    id: str = Field(pattern=r"^[a-z][a-z0-9_-]*$")
+    required: bool = False
+    """A required plugin check that fails or cannot run blocks acceptance."""
+
+
 class VerificationConfig(DomainModel):
     required_default: list[CheckKind] = Field(
         default_factory=lambda: [CheckKind.BUILD, CheckKind.TESTS, CheckKind.LINT]
@@ -68,6 +76,8 @@ class VerificationConfig(DomainModel):
     commands: dict[CheckKind, list[str]] = Field(default_factory=dict[CheckKind, list[str]])
     """Explicit command overrides, e.g. ``{tests: [pytest, -q]}``; they always win (§17.1)."""
     security: SecurityChecksConfig = Field(default_factory=SecurityChecksConfig)
+    plugin_checks: list[PluginCheckRef] = Field(default_factory=list[PluginCheckRef])
+    """Check plugins to run (§25); a listed one that is not installed is an ``error`` check."""
 
 
 class JevConfig(DomainModel):
