@@ -1,0 +1,13 @@
+# Generated files no agent change should ever include (used via core.excludesFile by aix's git calls).
+# Only affects untracked files: anything the repository already tracks is left alone.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.hypothesis/
+.coverage
+.coverage.*
+.tox/
+*.egg-info/

@@ -1,7 +1,8 @@
 """Async git helper with a deterministic, minimal environment.
 
 Uses ``anyio.run_process`` (no streaming needed). The user's global/system git config is ignored so
-hooks, signing and excludes cannot change aix's behavior; aix-authored commits use a fixed identity.
+hooks, signing and excludes cannot change aix's behavior (aix supplies its own excludes file for
+generated files); aix-authored commits use a fixed identity.
 """
 
 from __future__ import annotations
@@ -16,6 +17,8 @@ from aix.domain.errors import ToolFailure
 
 AIX_IDENTITY_NAME = "aix"
 AIX_IDENTITY_EMAIL = "aix@localhost"
+GENERATED_EXCLUDES = Path(__file__).with_name("generated_excludes")
+"""Ignore rules for generated files (bytecode, tool caches); see :func:`git_env`."""
 
 
 @dataclass(frozen=True)
@@ -34,6 +37,11 @@ def git_env() -> dict[str, str]:
         "GIT_TERMINAL_PROMPT": "0",
         "GIT_CONFIG_GLOBAL": "/dev/null",
         "GIT_CONFIG_NOSYSTEM": "1",
+        # Bytecode and tool caches appear when tests run in a worktree; they must neither count
+        # as out-of-scope edits nor be committed. Repo-level ignores still apply on top.
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "core.excludesFile",
+        "GIT_CONFIG_VALUE_0": str(GENERATED_EXCLUDES),
         "GIT_AUTHOR_NAME": AIX_IDENTITY_NAME,
         "GIT_AUTHOR_EMAIL": AIX_IDENTITY_EMAIL,
         "GIT_COMMITTER_NAME": AIX_IDENTITY_NAME,

@@ -121,6 +121,22 @@ async def test_empty_diff(repo: Path) -> None:
     assert cap.summary.patch_sha256 is None
 
 
+async def test_generated_caches_are_not_part_of_the_diff_or_the_commit(repo: Path) -> None:
+    """Found live (M10): running pytest in a worktree made bytecode look like scope violations
+    and then got committed onto the run branch."""
+    mgr, ws = await _ws(repo)
+    for junk in ("app/__pycache__/x.cpython-312.pyc", ".pytest_cache/v/cache", ".ruff_cache/a"):
+        (ws.path / junk).parent.mkdir(parents=True, exist_ok=True)
+        (ws.path / junk).write_bytes(b"\0")
+    (ws.path / "app" / "real.py").write_text("x = 1\n")
+    cap = await mgr.capture_diff(ws)
+    assert cap.summary.paths == ["app/real.py"]
+    commit = await mgr.commit_attempt(ws, "msg")
+    assert commit is not None
+    tree = repos.git(repo, "ls-tree", "-r", "--name-only", commit).stdout.split()
+    assert "app/real.py" in tree and not [t for t in tree if "cache" in t or t.endswith(".pyc")]
+
+
 async def test_diff_counts_adds_modifies_and_deletes(repo: Path) -> None:
     mgr, ws = await _ws(repo)
     (ws.path / "new.txt").write_text("a\nb\nc\n")
