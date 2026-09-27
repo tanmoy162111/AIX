@@ -29,7 +29,7 @@ instructions. aix therefore never lets agent prose decide anything (section 6).
 branch only through serialized merges (`aix/run/<id>`), never your checked-out branch.
 
 **Scope check.** After each attempt the control plane computes the diff itself and compares every
-changed path with the task's `file_scope`. `.aix/` and `.git/` are never allowed. A violation is
+changed path with the task's `file_scope`. `.aix/` and `.git/` are never allowed. Tool-call inspection flags commands that name `.aix` (reading or writing it) but not ones that merely exclude it, such as `find . -path ./.aix -prune`. A violation is
 recorded as `policy.violation` and fails the attempt (`scope_violation`).
 
 **Policy engine** (`security/policy.py`). Decides which agents may take a task, what permissions an

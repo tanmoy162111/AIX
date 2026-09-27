@@ -34,6 +34,15 @@ _FORBIDDEN_CALLS: Final[tuple[tuple[str, re.Pattern[str]], ...]] = (
     ),
 )
 
+_STATE_TARGET: Final = r"""['"]?\.?/?\.aix(?:/[^\s'"]*)?['"]?"""
+_STATE_EXCLUSIONS: Final = re.compile(
+    rf"""(?:-path\s+{_STATE_TARGET}\s+-prune"""  # find ... -path ./.aix -prune
+    rf"""|(?:-not|!)\s+-(?:i?path|i?name)\s+{_STATE_TARGET}"""  # find ... -not -path './.aix/*'
+    rf"""|--exclude(?:-dir)?[=\s]+{_STATE_TARGET}"""  # grep --exclude-dir=.aix
+    rf"""|-g\s+['"]?!\.aix[^\s'"]*['"]?)"""  # rg -g '!.aix'
+)
+"""Ways of *skipping* the state directory. Mentioning it to exclude it does not touch it."""
+
 
 @dataclass(frozen=True)
 class Verdict:
@@ -122,11 +131,13 @@ class Policy:
 
         ``workspace`` is the attempt's own worktree. It lives under ``.aix/worktrees/`` and agents
         report absolute paths, so that prefix is removed before matching; a path *below* it is
-        judged as a repo-relative path.
+        judged as a repo-relative path. Commands that only *skip* the state directory
+        (``find -path ./.aix -prune``, ``--exclude-dir=.aix``) are not touching it and pass.
         """
         text = f"{name} {tool_input}"
         if workspace:
             text = text.replace(workspace.rstrip("/"), ".")
+        text = _STATE_EXCLUSIONS.sub(" ", text)
         for kind, pattern in _FORBIDDEN_CALLS:
             if pattern.search(text):
                 return kind, f"{name}: {tool_input[:200]}"

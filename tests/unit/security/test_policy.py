@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from aix.config.schema import SecurityConfig
 from aix.domain.agents import AgentSpec, AgentSupports
 from aix.domain.enums import Capability, TaskType
@@ -91,3 +93,34 @@ def test_state_dir_inside_the_worktree_and_outside_it_are_still_flagged() -> Non
     assert inside is not None and inside[0] == "control_plane_state"
     outside = p.inspect_tool_call("Edit", "/proj/.aix/aix.db", workspace=WS)
     assert outside is not None and outside[0] == "control_plane_state"
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "find . -path ./.git -prune -o -path ./.aix -prune -o -type f -print | sort",
+        "find . -type f -not -path './.git/*' -not -path './.aix/*' | sort",
+        "find . ! -path './.aix/*' -type f",
+        "grep -rn TODO --exclude-dir=.aix --exclude-dir=.git .",
+        "rg TODO -g '!.aix' .",
+    ],
+)
+def test_commands_that_only_exclude_the_state_dir_are_not_flagged(command: str) -> None:
+    """Found live (M10): a reviewer's `find ... -path ./.aix -prune` was called tampering."""
+    assert Policy(SecurityConfig()).inspect_tool_call("bash", command, workspace=WS) is None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "cat .aix/aix.db",
+        "find .aix -type f",
+        "ls -la .aix",
+        "sqlite3 ./.aix/aix.db .dump",
+        "find . -path ./.aix -prune -o -print; cat .aix/aix.db",
+        "grep -r token .aix",
+    ],
+)
+def test_commands_that_touch_the_state_dir_are_still_flagged(command: str) -> None:
+    hit = Policy(SecurityConfig()).inspect_tool_call("bash", command, workspace=WS)
+    assert hit is not None and hit[0] == "control_plane_state"
