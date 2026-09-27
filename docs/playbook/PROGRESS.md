@@ -217,3 +217,4 @@ M10.2 — done as far as the environment allows; no TYPESAFE_API_KEY so no live 
 M10.3 — done; tests/golden/test_dod.py walks §31 items 2 and 5 (7 tasks, 3 agents, real checks, 1 retry, 8 decisions, bundle verified, replay 0 differ); item 4 is G4; bundle attached at docs/playbook/evidence/. `make check` 1796 passed, `make golden` 13 passed.
 M10.4 — done; FINAL_REPORT.md written with live/fake matrix and open risks; added tests/live/test_ollama_live.py (local qwen2.5:0.5b passes) so every installed adapter has a live test.
 M10.5 — done; exit gate: make check (green), make golden (13 passed), FINAL_REPORT.md present, AIX_LIVE=1 make test-live = 8 passed / 2 skipped (gemini auth, Jev key), documented in FINAL_REPORT. Tagged m10-done.
+M10.2 (follow-up) — live Jev eval done via OpenRouter key: 59/70 (84.3%) < rules 100%, default stays rules (ADR-0034/0035); fixed a one-option Choice bug in failure_triage found by the live run.

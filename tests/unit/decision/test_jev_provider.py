@@ -324,3 +324,25 @@ async def test_jev_outage_falls_back_with_a_reason() -> None:
         and "jev:unavailable" in rec.reason_codes
         and rec.outcome is O.ACCEPT
     )
+
+
+def test_triage_omits_the_class_question_when_rules_produced_a_single_candidate() -> None:
+    qs = Q.failure_triage(["timeout"], ["same_agent_with_failure_context", "switch_agent"])
+    assert set(qs) == {"mutation", "likely_transient"}
+
+
+async def test_triage_with_a_single_mutation_is_left_to_the_rules() -> None:
+    """Found by the live eval: one candidate/mutation used to raise instead of deferring."""
+    st = DecisionState(
+        task=TaskFacts(type="implement", risk="low", attempt=1, max_attempts=3),
+        failure=FailureFacts.model_validate(
+            {
+                "failure_class": "timeout",
+                "candidates": ["timeout"],
+                "mutations": ["switch_agent"],
+            }
+        ),
+    )
+    client = FakeJevClient({})
+    ans = await provider(client).decide(P.FAILURE_TRIAGE, st, {O.RETRY, O.SWITCH_AGENT})
+    assert "jev:not_applicable" in ans.reason_codes and not client.calls

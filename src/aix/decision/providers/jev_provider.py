@@ -112,7 +112,7 @@ class JevDecisionProvider:
     def _questions(self, point: P, state: DecisionState) -> dict[str, JevQuestion]:
         if point is P.TASK_COMPLETION and state.verification is not None:
             return Q.task_completion()
-        if point is P.FAILURE_TRIAGE and state.failure and state.failure.mutations:
+        if point is P.FAILURE_TRIAGE and state.failure and len(state.failure.mutations) >= 2:
             return Q.failure_triage(state.failure.candidates, state.failure.mutations)
         if point is P.TOOL_RISK and state.tool is not None:
             return Q.tool_risk()

@@ -49,21 +49,26 @@ def task_completion() -> dict[str, JevQuestion]:
 
 
 def failure_triage(candidates: Sequence[str], mutations: Sequence[str]) -> dict[str, JevQuestion]:
-    """A.2: refine the failure class among rule-produced candidates and pick a retry mutation."""
-    return {
-        "failure_class": choice_q(
+    """A.2: refine the failure class among rule-produced candidates and pick a retry mutation.
+
+    A choice needs two options, so ``failure_class`` is omitted when the rules produced a single
+    candidate. Callers must not ask at all with fewer than two mutations (nothing to choose).
+    """
+    questions: dict[str, JevQuestion] = {}
+    if len(candidates) >= 2:
+        questions["failure_class"] = choice_q(
             "Which failure class best matches the failure facts",
             {c: f"The failure facts match the class {c}" for c in candidates},
-        ),
-        "mutation": choice_q(
-            "Which retry approach is most likely to succeed",
-            {m: f"Retry using the approach {m}" for m in mutations},
-        ),
-        "likely_transient": noul_q(
-            "The failure facts indicate a transient environmental problem rather than a defect "
-            "in the change"
-        ),
-    }
+        )
+    questions["mutation"] = choice_q(
+        "Which retry approach is most likely to succeed",
+        {m: f"Retry using the approach {m}" for m in mutations},
+    )
+    questions["likely_transient"] = noul_q(
+        "The failure facts indicate a transient environmental problem rather than a defect "
+        "in the change"
+    )
+    return questions
 
 
 def tool_risk() -> dict[str, JevQuestion]:

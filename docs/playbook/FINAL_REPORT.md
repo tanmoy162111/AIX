@@ -40,7 +40,7 @@ not a full multi-task run against a real agent.
 | opencode | same | live pass |
 | ollama (`qwen2.5:0.5b`) | fake HTTP server; live tiny prompt | live pass |
 | gemini | recordings + fake binary only | **live blocked**: Google rejects the account (`IneligibleTierError: UNSUPPORTED_CLIENT`, free tier of the CLI retired). aix now classifies this as `auth_failure`; the live test skips with the reason |
-| Jev (typesafe-sdk) | `FakeJevClient` (contract, timeout, fallback, gates-beat-Jev) | **never run live**: no `TYPESAFE_API_KEY` |
+| Jev (typesafe-sdk via OpenRouter, `jev-1.13`) | `FakeJevClient` plus the 70-case live eval | **live eval run: 84.3% vs rules 100%** (ADR-0035); default stays `rules`. Direct TypeSafe key still untested |
 | Container sandbox | real `docker` run with `bash:latest` when Docker is present | passes where Docker exists; no podman tested |
 | Full multi-task run against real agents | fake agents (`test_dod.py`, G1–G10) | **not done live** |
 | Failure-mode recordings (auth, rate limit, context, network) | hand-written from documented schemas (`meta.yaml` says `synthetic: true`) | not captured from real services |
@@ -58,12 +58,12 @@ Only the happy-path stream is real (`tests/fixtures/recordings/<agent>/live_read
    demonstrated end to end with a real agent; no live run bundle is attached.**
 4. Policy-gated actions need a human-channel approval: G4 and the M8 bypass tests.
 5. Decision replay: the walk-through replays its own `decision-log.json` with 0 differences. Jev drift is
-   reported separately but untestable without a key.
+   reported separately; no replay against live Jev was done.
 
 ## 4. Open risks
 
-- **Jev unmeasured.** Default stays `rules` (70/70 on the suite, ADR-0033). Real accuracy, calibration and
-  latency are unknown.
+- **Jev is below rules.** Live eval 59/70 (84.3%) vs 70/70, with non-monotonic calibration (ADR-0035), so it is
+  opt-in only. Latency and cost were not analysed. The live run found and fixed a real bug in the triage question builder.
 - **No end-to-end live run.** Agent behaviour under real multi-task load (long timeouts, tool prompts, rate
   limits mid-run) is only exercised through fakes and recordings.
 - **Gemini adapter unverified live**, and Google has retired the CLI tier this account used.
@@ -86,7 +86,7 @@ uv run aix init && uv run aix doctor
 uv run aix run "Add JWT authentication to this repository"      # needs an enabled agent
 uv run aix artifact export <run> --bundle && uv run aix artifact verify <zip>
 AIX_LIVE=1 uv run aix dev record claude                          # refresh a recording
-AIX_LIVE=1 TYPESAFE_API_KEY=... uv run aix dev eval-decisions --provider jev --save jev-eval.json
+AIX_LIVE=1 OPENROUTER_API_KEY=... uv run aix dev eval-decisions --provider jev --save jev-eval.json   # or TYPESAFE_API_KEY
 ```
 
 ## 6. Architecture decisions
@@ -124,3 +124,5 @@ AIX_LIVE=1 TYPESAFE_API_KEY=... uv run aix dev eval-decisions --provider jev --s
 - ADR-0031: Plugins via entry points, manifest-first activation
 - ADR-0032: `aix dev record` and live-validation findings
 - ADR-0033: Decision provider stays `rules`; live Jev eval not run
+- ADR-0034: Jev via OpenRouter as a key fallback
+- ADR-0035: Live Jev evaluation — default provider stays `rules`
