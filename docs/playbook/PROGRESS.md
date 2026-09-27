@@ -127,7 +127,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M9.2 CLI/API equivalence contract test on G1. — tests/contract/test_cli_api_equivalence.py: real toolchain, per-task and run-level histories equal after normalizing ids/timestamps/paths/hashes (concurrent tasks interleave, so no global order); the SSE stream equals the recorded log.
 - [x] M9.3 Plugin entry points + manifest validation + semver range; builtins migrated; broken plugin reported by doctor. — ADR-0031; adapters and check plugins have consumers, other plugin types are discovered/validated/reported only.
 - [x] M9.4 Sample external plugin fixture (adapter + check) loaded in tests. — tests/fixtures/plugins/aix_sample_plugin installed as a real dist-info (tests/plugin_env.py); full run with plugin adapter + required plugin check; ADR-0031 addendum (verification.plugin_checks).
-- [ ] M9.5 Run M9 Exit Gate; tag `m9-done`.
+- [x] M9.5 Run M9 Exit Gate; tag `m9-done`. — make check (1788 passed, 11 live skipped) and tests/contract (2 passed) green.
 
 ## M10 — Live validation and final report (§31)
 - [ ] M10.1 Live tests per installed CLI (tiny prompt on scratch fixture copy); record fresh recordings via `aix dev record`.
