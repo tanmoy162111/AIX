@@ -15,8 +15,8 @@ pytestmark = [pytest.mark.live, pytest.mark.anyio]
 
 @pytest.fixture(autouse=True)
 def _need_key() -> None:
-    if not os.environ.get("TYPESAFE_API_KEY"):
-        pytest.skip("TYPESAFE_API_KEY not set")
+    if not (os.environ.get("TYPESAFE_API_KEY") or os.environ.get("OPENROUTER_API_KEY")):
+        pytest.skip("TYPESAFE_API_KEY / OPENROUTER_API_KEY not set")
 
 
 async def test_tiny_choice_and_noul() -> None:

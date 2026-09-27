@@ -104,9 +104,12 @@ def eval_decisions(
     if provider == "rules":
         engine = rules
     elif provider == "jev":
-        if os.environ.get("AIX_LIVE") != "1" or not os.environ.get("TYPESAFE_API_KEY"):
+        from aix.decision.providers.jev import jev_key_env
+
+        if os.environ.get("AIX_LIVE") != "1" or jev_key_env() is None:
             fail(
-                "the jev evaluation calls the live service: set AIX_LIVE=1 and TYPESAFE_API_KEY",
+                "the jev evaluation calls the live service: set AIX_LIVE=1 and "
+                "TYPESAFE_API_KEY (or OPENROUTER_API_KEY)",
                 EXIT_ENVIRONMENT,
             )
         from aix.decision.providers.jev import TypeSafeJevClient

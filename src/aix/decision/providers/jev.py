@@ -1,5 +1,8 @@
 """Real Jev client on the TypeSafe SDK (PLAYBOOK §18.4). The only module that imports the SDK.
 
+The key comes from ``TYPESAFE_API_KEY`` (TypeSafe direct) or, failing that, ``OPENROUTER_API_KEY``
+(same SDK pointed at OpenRouter's System One endpoint, model ``jev-1.13``; ADR-0034).
+
 SDK surface verified by introspection of ``typesafe-sdk`` (see ADR-0019): ``AsyncTypeSafeClient
 (api_key=, model=, retry=, timeout=)``, ``await client.system_one(state, questions, *, model=,
 retry=, timeout=)`` returning ``SystemOneResponse{model, usage, answers}`` where answers are
@@ -29,6 +32,17 @@ from typesafe_sdk import Score as SdkScore
 from aix.decision.jev import JevAnswer, JevError, JevQuestion, JevResponse
 
 API_KEY_ENV = "TYPESAFE_API_KEY"
+OPENROUTER_KEY_ENV = "OPENROUTER_API_KEY"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api"
+OPENROUTER_MODEL = "jev-1.13"
+
+
+def jev_key_env() -> str | None:
+    """Name of the env var that supplies the Jev key (TypeSafe first, then OpenRouter), if any."""
+    for name in (API_KEY_ENV, OPENROUTER_KEY_ENV):
+        if os.environ.get(name):
+            return name
+    return None
 
 
 def _to_sdk(q: JevQuestion) -> SdkChoice | SdkScore | SdkNoul:
@@ -69,12 +83,21 @@ class TypeSafeJevClient:
         model: str | None = None,
         timeout_s: float = 3.0,
     ) -> None:
+        self.via = "typesafe"
         if sdk is None:
-            key = os.environ.get(API_KEY_ENV)
-            if not key:
-                raise JevError(f"{API_KEY_ENV} is not set")
+            env = jev_key_env()
+            if env is None:
+                raise JevError(f"{API_KEY_ENV} is not set (or {OPENROUTER_KEY_ENV} for OpenRouter)")
+            base_url: str | None = None
+            if env == OPENROUTER_KEY_ENV:
+                self.via, base_url = "openrouter", OPENROUTER_BASE_URL
+                model = model or OPENROUTER_MODEL
             sdk = AsyncTypeSafeClient(
-                api_key=key, model=model, retry=RetryPolicy(max_retries=1), timeout=timeout_s
+                api_key=os.environ[env],
+                model=model,
+                retry=RetryPolicy(max_retries=1),
+                timeout=timeout_s,
+                base_url=base_url,
             )
         self._sdk: Any = sdk
         self._model = model

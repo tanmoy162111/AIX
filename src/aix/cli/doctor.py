@@ -135,10 +135,17 @@ def collect_checks(project: Path) -> list[Check]:
         if runtime
         else Check("container runtime", "warn", "none (container sandbox unavailable)")
     )
+    jev_env = next(
+        (n for n in ("TYPESAFE_API_KEY", "OPENROUTER_API_KEY") if os.environ.get(n)), None
+    )
     checks.append(
-        Check("jev key", "ok", "TYPESAFE_API_KEY is set")
-        if os.environ.get("TYPESAFE_API_KEY")
-        else Check("jev key", "warn", "TYPESAFE_API_KEY not set (rules provider will be used)")
+        Check("jev key", "ok", f"{jev_env} is set")
+        if jev_env
+        else Check(
+            "jev key",
+            "warn",
+            "TYPESAFE_API_KEY / OPENROUTER_API_KEY not set (rules provider will be used)",
+        )
     )
     for tool in OPTIONAL_TOOLS:
         checks.append(

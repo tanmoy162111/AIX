@@ -129,5 +129,50 @@ async def test_real_client_wraps_sdk_errors_in_jev_error() -> None:
 
 def test_real_client_without_a_key_fails_clearly(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     with pytest.raises(JevError, match="TYPESAFE_API_KEY"):
         TypeSafeJevClient()
+
+
+def _capture_sdk(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
+    seen: dict[str, object] = {}
+
+    def fake_sdk(**kw: object) -> object:
+        seen.update(kw)
+        return object()
+
+    monkeypatch.setattr("aix.decision.providers.jev.AsyncTypeSafeClient", fake_sdk)
+    return seen
+
+
+def test_typesafe_key_wins_and_uses_the_default_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TYPESAFE_API_KEY", "ts-key")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    seen = _capture_sdk(monkeypatch)
+    TypeSafeJevClient()
+    assert seen["api_key"] == "ts-key" and seen["base_url"] is None
+
+
+def test_openrouter_key_is_the_fallback_with_its_base_url_and_model(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+    seen = _capture_sdk(monkeypatch)
+    client = TypeSafeJevClient()
+    assert seen["api_key"] == "or-key"
+    assert seen["base_url"] == "https://openrouter.ai/api"
+    assert seen["model"] == "jev-1.13" and client.via == "openrouter"
+
+
+def test_jev_key_env_reports_which_variable_is_present(monkeypatch: pytest.MonkeyPatch) -> None:
+    from aix.decision.providers.jev import jev_key_env
+
+    monkeypatch.delenv("TYPESAFE_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    assert jev_key_env() is None
+    monkeypatch.setenv("OPENROUTER_API_KEY", "x")
+    assert jev_key_env() == "OPENROUTER_API_KEY"
+    monkeypatch.setenv("TYPESAFE_API_KEY", "y")
+    assert jev_key_env() == "TYPESAFE_API_KEY"
