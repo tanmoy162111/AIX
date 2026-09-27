@@ -14,3 +14,4 @@ files:
   context.jsonl: "turn.failed with context_length_exceeded"
   malformed.jsonl: "garbage lines mixed into a valid stream"
   no_completion.jsonl: "stream ends without turn.completed"
+  live_read_only.jsonl: "REAL capture by `aix dev record codex` (2026-09-27), sanitized; not synthetic"

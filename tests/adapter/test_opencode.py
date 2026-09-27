@@ -76,6 +76,16 @@ async def test_successful_execution(tmp_path: Path) -> None:
     assert out.session_ref == "ses_5e1a2b3c4d5eFgHiJkLmNoPqRs"
 
 
+async def test_live_recording_parses_as_success(tmp_path: Path) -> None:
+    """A stream captured from the real CLI by ``aix dev record`` (M10.1) parses cleanly."""
+    rig = Rig(tmp_path)
+    kinds, out = await run(rig.install("live_read_only.jsonl"), rig.req())
+    assert kinds[0] == "started" and kinds[-1] in {"finished", "usage"}
+    assert out.status == "completed" and out.failure is None
+    assert out.claim and "OK" in out.claim
+    assert out.session_ref
+
+
 async def test_invocation_argv_stdin_and_env(tmp_path: Path) -> None:
     rig = Rig(tmp_path)
     await run(rig.install("success.jsonl"), rig.req(model="anthropic/x"))

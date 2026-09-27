@@ -14,3 +14,4 @@ files:
   rate_limit.jsonl: "result with is_error and a rate limit message"
   malformed.jsonl: "garbage and truncated lines mixed into a valid stream"
   no_result.jsonl: "stream that ends without a result event"
+  live_read_only.jsonl: "REAL capture by `aix dev record claude` (2026-09-27), sanitized; not synthetic"

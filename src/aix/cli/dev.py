@@ -161,3 +161,44 @@ def eval_decisions(
             typer.echo(f"  FAIL {f.id}: expected {f.expected}, got {f.actual} {f.reasons}")
     if fail_under is not None and report.accuracy < fail_under:
         raise typer.Exit(1)
+
+
+@dev_app.command("record")
+def record(
+    agent: Annotated[str, typer.Argument(help="Adapter id, e.g. claude, codex, gemini, opencode.")],
+    out: Annotated[
+        Path, typer.Option("--out", help="Recordings root; writes <out>/<agent>/.")
+    ] = Path("tests/fixtures/recordings"),
+    project: Annotated[Path, typer.Option("--project", help="Project directory.")] = Path("."),
+) -> None:
+    """Capture a fresh raw stream from a real agent CLI. Needs AIX_LIVE=1 (may cost money)."""
+    import os
+
+    import anyio
+
+    from aix.agents.record import record_read_only
+    from aix.cli.common import EXIT_ENVIRONMENT, fail, load_or_exit, registry_or_exit
+    from aix.domain.errors import AixError
+
+    if os.environ.get("AIX_LIVE") != "1":
+        fail("refusing to call a real agent: set AIX_LIVE=1 (live calls may cost money)")
+    registry = registry_or_exit(load_or_exit(project))
+    if agent not in registry.ids():
+        fail(f"unknown agent {agent!r}; known: {', '.join(registry.ids())}")
+
+    async def _run() -> tuple[Path, str, str | None]:
+        spec = await registry.probe(agent)
+        if spec.health != "ready":
+            raise AixError(f"{agent} is not ready: {spec.health_reason}")
+        path, outcome = await record_read_only(registry.get(agent), out / agent)
+        return path, outcome.status, outcome.stderr_tail
+
+    try:
+        path, status, stderr = anyio.run(_run)
+    except AixError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(EXIT_ENVIRONMENT) from exc
+    typer.echo(f"recorded {path} (status: {status})")
+    if status != "completed":
+        typer.echo((stderr or "").strip()[-400:], err=True)
+        raise typer.Exit(1)

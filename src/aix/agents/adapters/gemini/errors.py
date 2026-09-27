@@ -12,7 +12,7 @@ AUTH_EXIT_CODE = 41
 _AUTH = re.compile(
     r"\b401\b|unauthenticated|api key not valid|api_key_invalid|please set an auth method|"
     r"not authenticated|invalid authentication|gemini_api_key|failed to login|"
-    r"permission_denied|\b403\b",
+    r"permission_denied|\b403\b|error authenticating|ineligibletiererror|unsupported_client",
     re.IGNORECASE,
 )
 _RATE = re.compile(

@@ -18,3 +18,4 @@ files:
   malformed.jsonl: "garbage lines mixed into a valid stream"
   no_result.jsonl: "stream ends without a final step_finish"
   permission_rejected.jsonl: "plain-text 'auto-rejecting' line in JSON mode; the run still completes"
+  live_read_only.jsonl: "REAL capture by `aix dev record opencode` (2026-09-27), sanitized; not synthetic"

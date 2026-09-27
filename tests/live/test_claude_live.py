@@ -10,6 +10,7 @@ import pytest
 import repos
 from aix.agents.adapters.claude import ClaudeAdapter
 from aix.agents.protocol import AgentPermissions, AgentRequest
+from aix.domain.enums import FailureClass
 from aix.domain.ids import IdPrefix, new_id
 
 pytestmark = [pytest.mark.live, pytest.mark.anyio]
@@ -40,6 +41,8 @@ async def test_tiny_read_only_prompt(tmp_path: Path) -> None:
     async for _ in adapter.events(h):
         pass
     out = await adapter.wait(h)
+    if out.failure is FailureClass.AUTH_FAILURE:
+        pytest.skip(f"claude CLI not authenticated for this account: {out.stderr_tail[:200]}")
     assert out.status == "completed", out.stderr_tail
     assert out.claim and "OK" in out.claim
     assert repos.git(ws, "status", "--porcelain").stdout == ""

@@ -154,3 +154,12 @@ def test_unknown_and_blank_lines_are_ignored() -> None:
 )
 def test_classify_failure(text: str, code: int | None, expected: FailureClass) -> None:
     assert classify_failure(text, code) is expected
+
+
+def test_ineligible_account_is_an_auth_failure() -> None:
+    """Observed live (M10.1): the retired free tier answers IneligibleTierError, exit 1."""
+    text = (
+        "Error authenticating: IneligibleTierError: This client is no longer supported for "
+        "Gemini Code Assist for individuals. reasonCode: 'UNSUPPORTED_CLIENT'"
+    )
+    assert classify_failure(text, 1) is FailureClass.AUTH_FAILURE
