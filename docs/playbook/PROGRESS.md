@@ -131,7 +131,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
 ## M10 — Live validation and final report (§31)
 - [x] M10.1 Live tests per installed CLI (tiny prompt on scratch fixture copy); record fresh recordings via `aix dev record`.
-- [ ] M10.2 Live Jev eval if key present; ADR with accuracy/calibration vs rules; do NOT change default provider unless criteria in §18.7 met.
+- [x] M10.2 Live Jev eval if key present; ADR with accuracy/calibration vs rules; do NOT change default provider unless criteria in §18.7 met.
 - [ ] M10.3 DoD §31 walk-through with fake agents; attach bundle.
 - [ ] M10.4 `FINAL_REPORT.md`: built vs planned, live vs fake-only matrix, open risks, ADR titles, how to run.
 - [ ] M10.5 Run M10 Exit Gate; tag `m10-done`.
@@ -213,3 +213,4 @@ M5.10 — done; ADR-0020. core/{budget,escalation}.py, orchestrator/task_policy.
 M5.11 — done; ADR-0021. security/approvals.py, core/orchestrator/approvals.py (resolve_approval), executor resume_run + ResumeState, cli/approvals.py. Agents always get AIX_AGENT_CONTEXT=1. Exit 3 on wait, deny -> HUMAN_REJECTION. Approval/resume tested in-process and via CLI with a real token file.
 M5.12 — done; ADR-0022. execute_run asks plan_review on high risk (ask_human -> waiting_approval, nothing executed; grant resumes from planned). core/toolrisk.py classifies control-plane commands; the gate covers verification AND the baseline run (found by a test: the baseline had run a deploy-class command). Agent-run tool calls remain outside tool_risk until M8.
 M10.1 — done; live: claude/codex/opencode pass (7 tests), gemini skipped (account rejected by Google: IneligibleTierError, now classified auth_failure), Jev skipped (no key); `aix dev record` added with sanitizer, fresh live_read_only.jsonl for the three working CLIs replayed by adapter tests; ADR-0032.
+M10.2 — done as far as the environment allows; no TYPESAFE_API_KEY so no live eval; rules baseline 70/70 recorded, default stays rules (ADR-0033). Jev live eval remains an open item for FINAL_REPORT.
