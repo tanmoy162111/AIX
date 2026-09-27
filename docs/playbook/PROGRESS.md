@@ -124,7 +124,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 
 ## M9 — API and plugins (§24, §25)
 - [x] M9.1 FastAPI app, endpoints, SSE events, token scopes, `aix serve` (127.0.0.1). — ADR-0030; api_token (read+run) and approval token (read+approve) are separate; SSE stream closes after the manifest artifact; request_cancel moved into core.
-- [ ] M9.2 CLI/API equivalence contract test on G1.
+- [x] M9.2 CLI/API equivalence contract test on G1. — tests/contract/test_cli_api_equivalence.py: real toolchain, per-task and run-level histories equal after normalizing ids/timestamps/paths/hashes (concurrent tasks interleave, so no global order); the SSE stream equals the recorded log.
 - [ ] M9.3 Plugin entry points + manifest validation + semver range; builtins migrated; broken plugin reported by doctor.
 - [ ] M9.4 Sample external plugin fixture (adapter + check) loaded in tests.
 - [ ] M9.5 Run M9 Exit Gate; tag `m9-done`.
