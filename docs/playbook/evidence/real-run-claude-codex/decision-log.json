@@ -1,0 +1,235 @@
+[
+  {
+    "answers": {},
+    "choice": null,
+    "gate_result": {
+      "allowed_outcomes": [
+        "accept",
+        "retry",
+        "reject",
+        "escalate",
+        "switch_agent",
+        "ask_human"
+      ],
+      "forced_outcome": null,
+      "reason_codes": []
+    },
+    "id": "dec_01M3GA7SM1FP82VRWFKW0Y2H8H",
+    "inputs_hash": "92aa94e2a585c2e0ec1ddc9bfe8278f5c1cf19c18b41a2f6006a1b08ac738bda",
+    "outcome": "accept",
+    "point": "task_completion",
+    "provider": "rules",
+    "provider_meta": {},
+    "questions": {},
+    "reason_codes": [
+      "rules:passed"
+    ],
+    "state": {
+      "diff": {
+        "files_changed": 1,
+        "lines_added": 8,
+        "lines_removed": 0,
+        "touches_scope_only": true
+      },
+      "history": {
+        "agent_switched": false,
+        "previous_failures": []
+      },
+      "task": {
+        "attempt": 1,
+        "max_attempts": 3,
+        "risk": "low",
+        "type": "implement"
+      },
+      "verification": {
+        "checks": [
+          {
+            "kind": "build",
+            "metrics": {},
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "tests",
+            "metrics": {
+              "tests_failed": 0.0,
+              "tests_passed": 5.0,
+              "tests_skipped": 0.0,
+              "tests_total": 5.0
+            },
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "lint",
+            "metrics": {
+              "lint_errors": 0.0
+            },
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "typecheck",
+            "metrics": {},
+            "required": false,
+            "status": "skipped"
+          },
+          {
+            "kind": "policy",
+            "metrics": {
+              "policy_violations": 0.0
+            },
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "secrets",
+            "metrics": {},
+            "required": true,
+            "status": "passed"
+          }
+        ],
+        "overall": "passed"
+      }
+    },
+    "subject": "task_01M3GA6JKC89HWMBRPXJC0FWTW"
+  },
+  {
+    "answers": {},
+    "choice": null,
+    "gate_result": {
+      "allowed_outcomes": [
+        "accept",
+        "retry",
+        "reject",
+        "escalate",
+        "switch_agent",
+        "ask_human"
+      ],
+      "forced_outcome": null,
+      "reason_codes": []
+    },
+    "id": "dec_01M3GA97C564Z6G811KD9S0CK8",
+    "inputs_hash": "d0676c8e94a23056e78813b50ebcb82e958b68acce466a033d53b983e25b8a24",
+    "outcome": "accept",
+    "point": "task_completion",
+    "provider": "rules",
+    "provider_meta": {},
+    "questions": {},
+    "reason_codes": [
+      "rules:passed"
+    ],
+    "state": {
+      "diff": {
+        "files_changed": 1,
+        "lines_added": 16,
+        "lines_removed": 0,
+        "touches_scope_only": true
+      },
+      "history": {
+        "agent_switched": false,
+        "previous_failures": []
+      },
+      "task": {
+        "attempt": 1,
+        "max_attempts": 3,
+        "risk": "low",
+        "type": "test"
+      },
+      "verification": {
+        "checks": [
+          {
+            "kind": "build",
+            "metrics": {},
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "tests",
+            "metrics": {
+              "tests_failed": 0.0,
+              "tests_passed": 9.0,
+              "tests_skipped": 0.0,
+              "tests_total": 9.0
+            },
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "lint",
+            "metrics": {
+              "lint_errors": 0.0
+            },
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "policy",
+            "metrics": {
+              "policy_violations": 0.0
+            },
+            "required": true,
+            "status": "passed"
+          },
+          {
+            "kind": "secrets",
+            "metrics": {},
+            "required": true,
+            "status": "passed"
+          }
+        ],
+        "overall": "passed"
+      }
+    },
+    "subject": "task_01M3GA6JKC89HWMBRPXJC0FWTX"
+  },
+  {
+    "answers": {},
+    "choice": null,
+    "gate_result": {
+      "allowed_outcomes": [
+        "accept",
+        "retry",
+        "reject",
+        "escalate",
+        "switch_agent",
+        "ask_human"
+      ],
+      "forced_outcome": null,
+      "reason_codes": []
+    },
+    "id": "dec_01M3GA9W93MSSCDW4E03ZN9D8W",
+    "inputs_hash": "7c5ef82cd34a2d265a1be08970fd37d58442fb0750bb7676cb4de05c49958d18",
+    "outcome": "accept",
+    "point": "task_completion",
+    "provider": "rules",
+    "provider_meta": {},
+    "questions": {},
+    "reason_codes": [
+      "rules:passed"
+    ],
+    "state": {
+      "diff": {
+        "files_changed": 0,
+        "lines_added": 0,
+        "lines_removed": 0,
+        "touches_scope_only": true
+      },
+      "history": {
+        "agent_switched": false,
+        "previous_failures": []
+      },
+      "task": {
+        "attempt": 1,
+        "max_attempts": 3,
+        "risk": "low",
+        "type": "review"
+      },
+      "verification": {
+        "checks": [],
+        "overall": "passed"
+      }
+    },
+    "subject": "task_01M3GA6JKC89HWMBRPXJC0FWTY"
+  }
+]

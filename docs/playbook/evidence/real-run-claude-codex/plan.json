@@ -1,0 +1,98 @@
+{
+  "graph": {
+    "id": "gph_01M3GA6JKC89HWMBRPXJC0FWTZ",
+    "run_id": "run_01M3GA69MB9GSPNFQSQGNATQM3",
+    "tasks": [
+      {
+        "depends_on": [],
+        "file_scope": [
+          "app/greeting.py"
+        ],
+        "goal": "Create app/greeting.py with greet(name) returning 'Hello, <name>!' (e.g. greet('World') -> 'Hello, World!'). Follow existing conventions in the repo.",
+        "id": "task_01M3GA6JKC89HWMBRPXJC0FWTW",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "implement"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GA69MB9GSPNFQSQGNATQM3",
+        "skill": "feature-implementation",
+        "status": "created",
+        "title": "Implement greet function",
+        "type": "implement",
+        "verification": {
+          "optional": [
+            "typecheck"
+          ],
+          "required": [
+            "tests",
+            "build",
+            "lint"
+          ]
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GA6JKC89HWMBRPXJC0FWTW"
+        ],
+        "file_scope": [
+          "tests/test_greeting.py"
+        ],
+        "goal": "Create tests/test_greeting.py covering greet(name): a typical name, an empty string, and names with spaces or non-ASCII characters. Run with pytest -q.",
+        "id": "task_01M3GA6JKC89HWMBRPXJC0FWTX",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "test"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GA69MB9GSPNFQSQGNATQM3",
+        "skill": "write-tests",
+        "status": "created",
+        "title": "Add greeting tests",
+        "type": "test",
+        "verification": {
+          "optional": [],
+          "required": [
+            "tests",
+            "lint",
+            "build"
+          ]
+        }
+      },
+      {
+        "depends_on": [
+          "task_01M3GA6JKC89HWMBRPXJC0FWTX"
+        ],
+        "file_scope": [],
+        "goal": "Independently review app/greeting.py and tests/test_greeting.py for correctness, convention adherence and test coverage.",
+        "id": "task_01M3GA6JKC89HWMBRPXJC0FWTY",
+        "max_attempts": 3,
+        "required_capabilities": [
+          "review"
+        ],
+        "risk": "low",
+        "run_id": "run_01M3GA69MB9GSPNFQSQGNATQM3",
+        "skill": "code-review",
+        "status": "created",
+        "title": "Review change",
+        "type": "review",
+        "verification": {
+          "optional": [],
+          "required": []
+        }
+      }
+    ]
+  },
+  "intent": {
+    "constraints": [],
+    "goal": "Add a function greet(name) in app/greeting.py that returns 'Hello, <name>!' with tests in tests/test_greeting.py",
+    "kind": "coding",
+    "risk": "low",
+    "target_paths": [
+      "app/greeting.py",
+      "tests/test_greeting.py"
+    ]
+  },
+  "planner": "agent:claude",
+  "warnings": []
+}

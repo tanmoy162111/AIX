@@ -42,7 +42,7 @@ not a full multi-task run against a real agent.
 | gemini | recordings + fake binary only | **live blocked**: Google rejects the account (`IneligibleTierError: UNSUPPORTED_CLIENT`, free tier of the CLI retired). aix now classifies this as `auth_failure`; the live test skips with the reason |
 | Jev (typesafe-sdk via OpenRouter, `jev-1.13`) | `FakeJevClient` plus the 70-case live eval | **live eval run: 84.3% vs rules 100%** (ADR-0035); default stays `rules`. Direct TypeSafe key still untested |
 | Container sandbox | real `docker` run with `bash:latest` when Docker is present | passes where Docker exists; no podman tested |
-| Full multi-task run against real agents | fake agents (`test_dod.py`, G1–G10) | **not done live** |
+| Full multi-task run against real agents | fake agents (`test_dod.py`, G1–G10); **one real run**: claude plans + reviews, codex implements + tests, small task | **done once, small** (ADR-0036): 3/3 tasks, 0 retries, $0.16; evidence in `docs/playbook/evidence/real-run-claude-codex/`. The run exposed and fixed three real bugs |
 | Failure-mode recordings (auth, rate limit, context, network) | hand-written from documented schemas (`meta.yaml` says `synthetic: true`) | not captured from real services |
 
 Only the happy-path stream is real (`tests/fixtures/recordings/<agent>/live_read_only.jsonl`, sanitized by
@@ -54,8 +54,8 @@ Only the happy-path stream is real (`tests/fixtures/recordings/<agent>/live_read
 2. JWT run with fake agents: `tests/golden/test_dod.py` — 7 tasks, 3 agents, real toolchain checks, one retry
    after failed tests, 8 decisions, integration on the run branch, summary and bundle. Bundle attached:
    `docs/playbook/evidence/dod-jwt-run-bundle.zip` (verifies: 58 files).
-3. Real agents: works by construction (`aix run`), but only the tiny-prompt live tests were executed. **Not
-   demonstrated end to end with a real agent; no live run bundle is attached.**
+3. Real agents: one small real run (claude + codex) completed end to end; readable evidence is attached, the
+   bundle itself is not (its raw streams embed local paths). Larger tasks, gemini and opencode are unproven.
 4. Policy-gated actions need a human-channel approval: G4 and the M8 bypass tests.
 5. Decision replay: the walk-through replays its own `decision-log.json` with 0 differences. Jev drift is
    reported separately; no replay against live Jev was done.
@@ -64,8 +64,9 @@ Only the happy-path stream is real (`tests/fixtures/recordings/<agent>/live_read
 
 - **Jev is below rules.** Live eval 59/70 (84.3%) vs 70/70, with non-monotonic calibration (ADR-0035), so it is
   opt-in only. Latency and cost were not analysed. The live run found and fixed a real bug in the triage question builder.
-- **No end-to-end live run.** Agent behaviour under real multi-task load (long timeouts, tool prompts, rate
-  limits mid-run) is only exercised through fakes and recordings.
+- **Real-run coverage is thin.** One small task with claude + codex has been run for real. Long tasks, timeouts,
+  rate limits mid-run and gemini/opencode are only exercised through fakes and recordings.
+- **Bundles are not sanitized** and can contain local paths and agent plugin inventories (ADR-0036).
 - **Gemini adapter unverified live**, and Google has retired the CLI tier this account used.
 - **Synthetic failure recordings** could drift from what the CLIs actually print; re-run `aix dev record`
   after CLI upgrades.
@@ -126,3 +127,4 @@ AIX_LIVE=1 OPENROUTER_API_KEY=... uv run aix dev eval-decisions --provider jev -
 - ADR-0033: Decision provider stays `rules`; live Jev eval not run
 - ADR-0034: Jev via OpenRouter as a key fallback
 - ADR-0035: Live Jev evaluation — default provider stays `rules`
+- ADR-0036: Bugs found by the first real end-to-end run

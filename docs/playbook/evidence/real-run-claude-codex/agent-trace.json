@@ -1,0 +1,59 @@
+[
+  {
+    "agent_id": "codex",
+    "attempt_id": "att_01M3GA6SC46TMBSDA9TJB2EG5S",
+    "duration_ms": 31225,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GA6JKC89HWMBRPXJC0FWTW",
+    "usage": {
+      "cost_usd": null,
+      "estimated": false,
+      "input_tokens": 84919,
+      "model": null,
+      "output_tokens": 957
+    }
+  },
+  {
+    "agent_id": "codex",
+    "attempt_id": "att_01M3GA7SPGWY9CDK3DW3Q2D20Z",
+    "duration_ms": 45845,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GA6JKC89HWMBRPXJC0FWTX",
+    "usage": {
+      "cost_usd": null,
+      "estimated": false,
+      "input_tokens": 131825,
+      "model": null,
+      "output_tokens": 1594
+    }
+  },
+  {
+    "agent_id": "claude",
+    "attempt_id": "att_01M3GA97ENEA21G864KV9PQQGB",
+    "duration_ms": 21321,
+    "exit_code": 0,
+    "failure": null,
+    "model": null,
+    "mutation": null,
+    "number": 1,
+    "status": "completed",
+    "task_id": "task_01M3GA6JKC89HWMBRPXJC0FWTY",
+    "usage": {
+      "cost_usd": 0.1593916,
+      "estimated": false,
+      "input_tokens": 116092,
+      "model": "claude-sonnet-5",
+      "output_tokens": 1400
+    }
+  }
+]
