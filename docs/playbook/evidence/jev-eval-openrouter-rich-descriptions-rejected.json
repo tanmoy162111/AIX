@@ -1,0 +1,178 @@
+{
+  "total": 70,
+  "correct": 57,
+  "accuracy": 0.8142857142857143,
+  "per_point": {
+    "failure_triage": {
+      "n": 26.0,
+      "accuracy": 0.7307692307692307
+    },
+    "task_completion": {
+      "n": 44.0,
+      "accuracy": 0.8636363636363636
+    }
+  },
+  "adversarial_accuracy": 0.8,
+  "confusion": {
+    "accept": {
+      "accept": 17,
+      "ask_human": 2
+    },
+    "ask_human": {
+      "retry": 3,
+      "ask_human": 2
+    },
+    "escalate": {
+      "switch_agent": 1,
+      "retry": 1,
+      "escalate": 3,
+      "ask_human": 1
+    },
+    "retry": {
+      "retry": 25,
+      "ask_human": 3
+    },
+    "switch_agent": {
+      "retry": 2,
+      "switch_agent": 10
+    }
+  },
+  "calibration": [
+    {
+      "low": 0.0,
+      "high": 0.5,
+      "n": 27,
+      "accuracy": 1.0
+    },
+    {
+      "low": 0.5,
+      "high": 0.7,
+      "n": 9,
+      "accuracy": 0.4444444444444444
+    },
+    {
+      "low": 0.7,
+      "high": 0.85,
+      "n": 13,
+      "accuracy": 0.46153846153846156
+    },
+    {
+      "low": 0.85,
+      "high": 0.95,
+      "n": 4,
+      "accuracy": 0.75
+    },
+    {
+      "low": 0.95,
+      "high": 1.0,
+      "n": 15,
+      "accuracy": 1.0
+    }
+  ],
+  "failures": [
+    {
+      "id": "ft-002-verification-repeated",
+      "expected": "switch_agent",
+      "actual": "retry",
+      "reasons": [
+        "jev:mutation:same_agent_with_failure_context"
+      ]
+    },
+    {
+      "id": "ft-004-verification-exhausted",
+      "expected": "escalate",
+      "actual": "switch_agent",
+      "reasons": [
+        "jev:mutation:switch_agent"
+      ]
+    },
+    {
+      "id": "ft-020-auth",
+      "expected": "switch_agent",
+      "actual": "retry",
+      "reasons": [
+        "jev:mutation:same_agent_with_failure_context"
+      ]
+    },
+    {
+      "id": "ft-022-policy",
+      "expected": "ask_human",
+      "actual": "retry",
+      "reasons": [
+        "jev:mutation:same_agent_with_failure_context"
+      ]
+    },
+    {
+      "id": "ft-023-budget",
+      "expected": "ask_human",
+      "actual": "retry",
+      "reasons": [
+        "jev:mutation:same_agent_with_failure_context"
+      ]
+    },
+    {
+      "id": "ft-024-human-rejection",
+      "expected": "ask_human",
+      "actual": "retry",
+      "reasons": [
+        "jev:mutation:same_agent_with_failure_context"
+      ]
+    },
+    {
+      "id": "ft-026-tool-failure-exhausted",
+      "expected": "escalate",
+      "actual": "retry",
+      "reasons": [
+        "jev:mutation:same_agent_with_failure_context"
+      ]
+    },
+    {
+      "id": "tc-011-warning-low-findings-high",
+      "expected": "accept",
+      "actual": "ask_human",
+      "reasons": [
+        "jev:needs_human"
+      ]
+    },
+    {
+      "id": "tc-014-warning-medium-first-high-risk",
+      "expected": "retry",
+      "actual": "ask_human",
+      "reasons": [
+        "jev:needs_human"
+      ]
+    },
+    {
+      "id": "tc-021-failed-first-high-risk",
+      "expected": "retry",
+      "actual": "ask_human",
+      "reasons": [
+        "jev:needs_human"
+      ]
+    },
+    {
+      "id": "tc-026-failed-last-attempt-high-risk",
+      "expected": "escalate",
+      "actual": "ask_human",
+      "reasons": [
+        "jev:needs_human"
+      ]
+    },
+    {
+      "id": "tc-033-incomplete-high-risk",
+      "expected": "retry",
+      "actual": "ask_human",
+      "reasons": [
+        "jev:needs_human"
+      ]
+    },
+    {
+      "id": "tc-042-warning-medium-attempt-2-high-risk",
+      "expected": "accept",
+      "actual": "ask_human",
+      "reasons": [
+        "jev:needs_human"
+      ]
+    }
+  ]
+}

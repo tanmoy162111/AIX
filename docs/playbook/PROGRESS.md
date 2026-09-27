@@ -219,3 +219,4 @@ M10.4 — done; FINAL_REPORT.md written with live/fake matrix and open risks; ad
 M10.5 — done; exit gate: make check (green), make golden (13 passed), FINAL_REPORT.md present, AIX_LIVE=1 make test-live = 8 passed / 2 skipped (gemini auth, Jev key), documented in FINAL_REPORT. Tagged m10-done.
 M10.2 (follow-up) — live Jev eval done via OpenRouter key: 59/70 (84.3%) < rules 100%, default stays rules (ADR-0034/0035); fixed a one-option Choice bug in failure_triage found by the live run.
 M10 (follow-up) — first real end-to-end run (claude+codex, $0.16) done; found and fixed 3 bugs (worktree-path false violation, always-on fake agent, pyc committed/scope-failed); evidence in docs/playbook/evidence/real-run-claude-codex/ (ADR-0036). `make check` 1805 passed.
+M10.2 (experiment) — richer mutation descriptions for Jev scored 57/70 vs 59/70 baseline (deterministic), reverted (ADR-0037).

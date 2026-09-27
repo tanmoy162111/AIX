@@ -40,7 +40,7 @@ not a full multi-task run against a real agent.
 | opencode | same | live pass |
 | ollama (`qwen2.5:0.5b`) | fake HTTP server; live tiny prompt | live pass |
 | gemini | recordings + fake binary only | **live blocked**: Google rejects the account (`IneligibleTierError: UNSUPPORTED_CLIENT`, free tier of the CLI retired). aix now classifies this as `auth_failure`; the live test skips with the reason |
-| Jev (typesafe-sdk via OpenRouter, `jev-1.13`) | `FakeJevClient` plus the 70-case live eval | **live eval run: 84.3% vs rules 100%** (ADR-0035); default stays `rules`. Direct TypeSafe key still untested |
+| Jev (typesafe-sdk via OpenRouter, `jev-1.13`) | `FakeJevClient` plus the 70-case live eval | **live eval run: 84.3% vs rules 100%** (ADR-0035); default stays `rules`; a prompt-wording improvement was tried and made it worse (ADR-0037). Direct TypeSafe key still untested |
 | Container sandbox | real `docker` run with `bash:latest` when Docker is present | passes where Docker exists; no podman tested |
 | Full multi-task run against real agents | fake agents (`test_dod.py`, G1–G10); **one real run**: claude plans + reviews, codex implements + tests, small task | **done once, small** (ADR-0036): 3/3 tasks, 0 retries, $0.16; evidence in `docs/playbook/evidence/real-run-claude-codex/`. The run exposed and fixed three real bugs |
 | Failure-mode recordings (auth, rate limit, context, network) | hand-written from documented schemas (`meta.yaml` says `synthetic: true`) | not captured from real services |
@@ -128,3 +128,4 @@ AIX_LIVE=1 OPENROUTER_API_KEY=... uv run aix dev eval-decisions --provider jev -
 - ADR-0034: Jev via OpenRouter as a key fallback
 - ADR-0035: Live Jev evaluation — default provider stays `rules`
 - ADR-0036: Bugs found by the first real end-to-end run
+- ADR-0037: Richer retry-mutation descriptions tried for Jev and rejected
