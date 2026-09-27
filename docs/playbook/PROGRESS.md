@@ -134,7 +134,7 @@ PLAYBOOK §30 Exit Gate passes and `git tag m<N>-done` exists.
 - [x] M10.2 Live Jev eval if key present; ADR with accuracy/calibration vs rules; do NOT change default provider unless criteria in §18.7 met.
 - [x] M10.3 DoD §31 walk-through with fake agents; attach bundle.
 - [x] M10.4 `FINAL_REPORT.md`: built vs planned, live vs fake-only matrix, open risks, ADR titles, how to run.
-- [ ] M10.5 Run M10 Exit Gate; tag `m10-done`.
+- [x] M10.5 Run M10 Exit Gate; tag `m10-done`.
 
 ---
 
@@ -216,3 +216,4 @@ M10.1 — done; live: claude/codex/opencode pass (7 tests), gemini skipped (acco
 M10.2 — done as far as the environment allows; no TYPESAFE_API_KEY so no live eval; rules baseline 70/70 recorded, default stays rules (ADR-0033). Jev live eval remains an open item for FINAL_REPORT.
 M10.3 — done; tests/golden/test_dod.py walks §31 items 2 and 5 (7 tasks, 3 agents, real checks, 1 retry, 8 decisions, bundle verified, replay 0 differ); item 4 is G4; bundle attached at docs/playbook/evidence/. `make check` 1796 passed, `make golden` 13 passed.
 M10.4 — done; FINAL_REPORT.md written with live/fake matrix and open risks; added tests/live/test_ollama_live.py (local qwen2.5:0.5b passes) so every installed adapter has a live test.
+M10.5 — done; exit gate: make check (green), make golden (13 passed), FINAL_REPORT.md present, AIX_LIVE=1 make test-live = 8 passed / 2 skipped (gemini auth, Jev key), documented in FINAL_REPORT. Tagged m10-done.
